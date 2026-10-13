@@ -1864,7 +1864,7 @@ function speak(text, opt = {}) {
 }
 
 /* ---------- Trạng thái chung ---------- */
-const cur = { view: "home", lessonId: null, idx: 0, tab: "script", word: null, loop: 0, autopause: false, rate: 1, listen: null, formFile: null };
+const cur = { form: { job: 0 }, view: "home", lessonId: null, idx: 0, tab: "script", word: null, loop: 0, autopause: false, rate: 1, listen: null, formFile: null };
 const SESSION_FILES = {};   // lessonId -> objectURL (file từ máy)
 const RECS = {};            // "lessonId:idx" -> url ghi âm
 const ACACHE = new Map();
@@ -1965,7 +1965,8 @@ function renderHome() {
   <div class="home-hero">
     <div class="card card-pad">
       <div class="row between" style="margin-bottom:4px"><h1>Thêm bài học từ video</h1></div>
-      <p class="muted" style="margin:0 0 14px">Dán link video và lời thoại tiếng Hàn — trang sẽ chia câu, giải thích từng từ, từng ngữ pháp để bạn shadowing và làm flashcard.</p>
+      <p class="muted" style="margin:0 0 14px">Dán link video — trang tự lấy tên video và phụ đề tiếng Hàn, chia câu, giải thích từng từ, từng ngữ pháp để bạn shadowing và làm flashcard.</p>
+      ${DB.settings.aiKey ? "" : `<div class="note info" style="margin-bottom:14px">${ic("spark")} <b>Muốn dán link là tự có phụ đề tiếng Hàn?</b> Cần nhập <b>mã AI miễn phí</b> một lần (mất 2 phút). <button class="btn sm primary" data-go="settings" style="margin-top:6px">Nhập mã AI ngay</button></div>`}
       <div class="stack">
         <div>
           <label class="lbl" for="fUrl">1. Link video <span class="faint" style="font-weight:400">(YouTube, Facebook, TikTok, Instagram…)</span></label>
@@ -1974,13 +1975,15 @@ function renderHome() {
             <button class="btn" data-act="pick-file" title="Chọn file video/âm thanh trong máy">${ic("upload")}<span>File</span></button>
           </div>
           <div class="src-detect small" id="srcDetect" style="margin-top:6px"></div>
+          <div id="srcPreview"></div>
         </div>
         <div>
-          <label class="lbl" for="fTitle">2. Tên bài học <span class="faint" style="font-weight:400">(không bắt buộc)</span></label>
+          <label class="lbl" for="fTitle">2. Tên bài học <span class="faint" style="font-weight:400">(tự điền theo tên video, sửa được)</span></label>
           <input class="input" id="fTitle" placeholder="VD: Vlog đi chợ ở Seoul">
         </div>
         <div>
-          <label class="lbl" for="fText">3. Lời thoại tiếng Hàn <span class="faint" style="font-weight:400">(mỗi câu một dòng; có thể kèm giờ và bản dịch)</span></label>
+          <label class="lbl" for="fText">3. Phụ đề tiếng Hàn <span class="faint" style="font-weight:400">(tự lấy bằng AI khi dán link YouTube / chọn file; hoặc dán tay)</span></label>
+          <div id="autoStatus"></div>
           <textarea class="input" id="fText" rows="6" placeholder="0:05 안녕하세요 여러분\n0:09 오늘은 시장에 가 볼 거예요 | Hôm nay mình sẽ đi chợ thử\n\n(Hoặc dán nguyên phụ đề .srt, hoặc chỉ dán câu tiếng Hàn)"></textarea>
         </div>
         <details class="guide">
@@ -1994,7 +1997,7 @@ function renderHome() {
         </details>
         <div class="row">
           <button class="btn primary lg" data-act="create-lesson">${ic("plus")} Tạo bài học</button>
-          <button class="btn soft lg" data-act="ai-transcribe-form">${ic("spark")} AI lấy lời thoại</button>
+          <button class="btn soft lg" data-act="ai-transcribe-form" id="btnAiForm">${ic("spark")} AI lấy lại phụ đề</button>
         </div>
       </div>
     </div>
@@ -2019,13 +2022,17 @@ function renderHome() {
   <div class="row between" style="margin:6px 0 12px"><h2>Bài học của bạn <span class="faint" style="font-weight:500">(${lessons.length})</span></h2></div>
   ${lessons.length ? `<div class="lessons">${lessons.map(lessonCard).join("")}</div>` : `<div class="card empty"><div class="big">🎬</div>Chưa có bài học nào. Hãy thêm video đầu tiên ở phía trên nhé!</div>`}
   `;
-  const u = $("#fUrl"); u.addEventListener("input", updateDetect);
+  const u = $("#fUrl"); let tmr;
+  u.addEventListener("input", () => { updateDetect(); clearTimeout(tmr); tmr = setTimeout(onUrlChange, 500); });
+  $("#fTitle").addEventListener("input", () => { cur.form.titleTouched = true; });
+  cur.form = { job: (cur.form.job || 0) + 1, titleTouched: false, meta: null, src: null, running: false, lastUrl: "" };
   updateDetect();
 }
 function lessonCard(l) {
   const n = l.sentences.length, d = l.sentences.filter(s => s.done).length;
   const pct = n ? Math.round(d / n * 100) : 0;
   return `<div class="card lesson-card">
+    ${l.thumb ? `<img src="${esc(l.thumb)}" alt="" loading="lazy" style="width:100%;aspect-ratio:16/9;object-fit:cover;border-radius:10px;background:var(--surface-2)" onerror="this.remove()">` : ""}
     <div class="row between" style="flex-wrap:nowrap;align-items:flex-start">
       <h3>${esc(l.title)}</h3>
       <button class="btn ghost sm" data-act="del-lesson" data-id="${l.id}" title="Xoá bài học">${ic("trash")}</button>
@@ -2044,7 +2051,7 @@ function lessonCard(l) {
 function updateDetect() {
   const el = $("#srcDetect"); if (!el) return;
   if (cur.formFile) { el.innerHTML = `<span class="badge green">${ic("check")} File: ${esc(cur.formFile.name)}</span> <button class="btn ghost sm" data-act="clear-file">Bỏ file</button>`; return; }
-  const s = detectSource($("#fUrl").value);
+  const s = (cur.form && cur.form.src && cur.form.lastUrl === $("#fUrl").value.trim()) ? cur.form.src : detectSource($("#fUrl").value);
   if (!s) { el.innerHTML = `<span class="faint">Không có video cũng được — trang sẽ đọc bằng giọng máy.</span>`; return; }
   const warn = {
     "tiktok-short": "Link rút gọn của TikTok không nhúng được. Hãy mở link trong trình duyệt, đợi chuyển trang rồi copy link đầy đủ dạng tiktok.com/@ten/video/123…",
@@ -2059,18 +2066,101 @@ function updateDetect() {
 }
 ACT["pick-file"] = () => {
   const f = $("#hiddenFile"); f.accept = "video/*,audio/*"; f.value = "";
-  f.onchange = () => { if (f.files[0]) { cur.formFile = f.files[0]; if (!$("#fTitle").value) $("#fTitle").value = f.files[0].name.replace(/\.[^.]+$/, ""); updateDetect(); } };
+  f.onchange = () => { if (f.files[0]) { cur.formFile = f.files[0]; if (!cur.form.titleTouched) $("#fTitle").value = f.files[0].name.replace(/\.[^.]+$/, ""); $("#srcPreview").innerHTML = ""; updateDetect(); autoTranscribeForm(true); } };
   f.click();
 };
-ACT["clear-file"] = () => { cur.formFile = null; updateDetect(); };
+ACT["clear-file"] = () => { cur.formFile = null; cur.form.job++; setAutoStatus(""); updateDetect(); onUrlChange(); };
+
+/* ---------- Tự lấy tên video + phụ đề khi dán link ---------- */
+async function fetchMeta(url, s) {
+  const enc = encodeURIComponent;
+  const canon = s.type === "youtube" ? "https://www.youtube.com/watch?v=" + s.id : url;
+  const tries = [];
+  if (s.type === "youtube") tries.push("https://www.youtube.com/oembed?format=json&url=" + enc(canon));
+  if (s.type === "tiktok" || s.type === "tiktok-short") tries.push("https://www.tiktok.com/oembed?url=" + enc(url));
+  tries.push("https://noembed.com/embed?url=" + enc(canon));
+  for (const u of tries) {
+    try {
+      const ctl = new AbortController(); const t = setTimeout(() => ctl.abort(), 8000);
+      const r = await fetch(u, { signal: ctl.signal }); clearTimeout(t);
+      if (!r.ok) continue;
+      const j = await r.json();
+      if (j.error || !j.title) continue;
+      const m = { title: String(j.title).replace(/\s+/g, " ").trim().slice(0, 140), author: j.author_name || "", thumb: j.thumbnail_url || "" };
+      const vid = (j.html || "").match(/data-video-id="(\d+)"/) || (j.embed_product_id ? [0, j.embed_product_id] : null);
+      if (s.type === "tiktok-short" && vid) m.src = { type: "tiktok", id: String(vid[1]), label: "TikTok", tall: true };
+      return m;
+    } catch (e) { }
+  }
+  if (s.type === "youtube") return { title: "", author: "", thumb: `https://i.ytimg.com/vi/${s.id}/hqdefault.jpg` };
+  return null;
+}
+function setAutoStatus(html) { const el = $("#autoStatus"); if (el) el.innerHTML = html ? `<div class="note" style="margin-bottom:8px">${html}</div>` : ""; }
+function setFormBusy(on) {
+  cur.form.running = on;
+  const b = $("[data-act='create-lesson']"); if (b) { b.disabled = on; b.innerHTML = on ? `<span class="spinner"></span> Đang lấy phụ đề…` : `${ic("plus")} Tạo bài học`; }
+  const a = $("#btnAiForm"); if (a) a.disabled = on;
+}
+async function onUrlChange() {
+  if (cur.view !== "home" || !$("#fUrl")) return;
+  const url = $("#fUrl").value.trim();
+  if (url === cur.form.lastUrl) return;
+  cur.form.lastUrl = url; cur.form.meta = null; cur.form.src = null;
+  const job = ++cur.form.job; setFormBusy(false);
+  const pv = $("#srcPreview"); pv.innerHTML = ""; setAutoStatus("");
+  if (cur.formFile) return;
+  const s = detectSource(url);
+  if (!s || ["invalid", "link", "direct"].includes(s.type)) return;
+  pv.innerHTML = `<div class="note" style="margin-top:8px"><span class="spinner"></span> Đang lấy thông tin video…</div>`;
+  const meta = await fetchMeta(url, s);
+  if (job !== cur.form.job) return;
+  cur.form.meta = meta;
+  if (meta && meta.src) { cur.form.src = meta.src; updateDetect(); }
+  if (meta && meta.title && !cur.form.titleTouched) $("#fTitle").value = meta.title;
+  pv.innerHTML = meta && (meta.title || meta.thumb) ? `<div class="row" style="margin-top:10px;flex-wrap:nowrap;align-items:center;background:var(--surface-2);border-radius:10px;padding:8px">
+      ${meta.thumb ? `<img src="${esc(meta.thumb)}" alt="" style="width:96px;aspect-ratio:16/9;object-fit:cover;border-radius:8px;flex:none" onerror="this.remove()">` : ""}
+      <div class="grow small"><b>${esc(meta.title || "Video " + s.label)}</b>${meta.author ? `<div class="muted">${esc(meta.author)}</div>` : ""}${meta.src ? `<div class="muted">✓ Đã đổi link rút gọn thành link đầy đủ</div>` : ""}</div></div>`
+    : (s.type === "facebook" ? `<div class="hint" style="margin-top:6px">Facebook không cho lấy tên video tự động — bạn tự đặt tên ở ô bên dưới nhé.</div>` : "");
+  const eff = cur.form.src || s;
+  if (eff.type === "youtube") autoTranscribeForm(false);
+  else if (["tiktok", "tiktok-short", "facebook", "instagram"].includes(eff.type) && !$("#fText").value.trim())
+    setAutoStatus(`${esc(s.label.replace(/ \(.*\)/, ""))} không cho trang web khác tải âm thanh, nên AI không tự nghe được từ link. <b>Cách nhanh:</b> trong app ${esc(s.label.replace(/ \(.*\)/, ""))} bấm <b>Chia sẻ → Lưu video</b> về máy, rồi bấm nút <b>File</b> ở trên chọn video đó — AI sẽ tự chép phụ đề. Video vẫn được nhúng để xem bình thường.`);
+}
+async function autoTranscribeForm(fromFile) {
+  if (cur.view !== "home" || !$("#fText")) return;
+  if ($("#fText").value.trim() && !fromFile) { setAutoStatus(`Đã có phụ đề trong ô bên dưới. Muốn AI lấy lại thì bấm <b>AI lấy lại phụ đề</b>.`); return; }
+  if (!DB.settings.aiKey) {
+    setAutoStatus(`${ic("spark")} Để tự lấy phụ đề tiếng Hàn từ video cần <b>mã AI miễn phí</b> (nhập 1 lần). <a href="#settings">Vào Cài đặt để nhập mã</a> — hoặc tự dán phụ đề vào ô bên dưới.`);
+    return;
+  }
+  const job = ++cur.form.job;
+  const src = cur.formFile ? { type: "file" } : (cur.form.src || detectSource($("#fUrl").value));
+  setFormBusy(true);
+  const t0 = Date.now();
+  const tick = () => { if (job !== cur.form.job || !cur.form.running) return; setAutoStatus(`<span class="spinner"></span> AI đang nghe video và chép phụ đề tiếng Hàn kèm bản dịch… (${Math.round((Date.now() - t0) / 1000)} giây — video dài có thể mất vài phút) <button class="btn ghost sm" data-act="auto-cancel">Huỷ</button>`); setTimeout(tick, 1000); };
+  tick();
+  try {
+    const out = await aiTranscribe({ file: cur.formFile, src });
+    if (job !== cur.form.job) return;
+    $("#fText").value = serializeTranscript(out);
+    setAutoStatus(`${ic("check")} <b>Đã lấy ${out.length} câu phụ đề tiếng Hàn</b> kèm bản dịch${out.partial ? " (video dài nên AI chép được phần đầu)" : ""}. Bấm <b>Tạo bài học</b> để bắt đầu học.`);
+  } catch (e) {
+    if (job !== cur.form.job) return;
+    setAutoStatus(`<span style="color:var(--danger)">${esc(e.message)}</span> Bạn có thể bấm <b>AI lấy lại phụ đề</b> để thử lại, hoặc tự dán phụ đề vào ô bên dưới.`);
+  }
+  if (job === cur.form.job) setFormBusy(false);
+}
+ACT["auto-cancel"] = () => { cur.form.job++; setFormBusy(false); setAutoStatus("Đã huỷ. Bạn có thể tự dán phụ đề hoặc bấm <b>AI lấy lại phụ đề</b>."); };
 ACT["create-lesson"] = () => {
   const url = $("#fUrl").value.trim(), text = $("#fText").value;
-  let src = cur.formFile ? { type: "file", label: "File trong máy" } : (detectSource(url) || { type: "none", label: "Không có video" });
+  if (cur.form.running) { toast("AI đang lấy phụ đề, đợi chút nhé…"); return; }
+  let src = cur.formFile ? { type: "file", label: "File trong máy" } : (cur.form.src || detectSource(url) || { type: "none", label: "Không có video" });
   if (src.type === "invalid") { toast("Link video chưa đúng (phải bắt đầu bằng https://)", "err"); return; }
   const sentences = parseTranscript(text).map(s => ({ ...s, done: false }));
   if (!sentences.length && src.type === "none") { toast("Hãy dán link video hoặc lời thoại tiếng Hàn nhé.", "err"); return; }
   const d = new Date();
-  const l = { id: uid(), title: $("#fTitle").value.trim() || `Bài học ${d.getDate()}/${d.getMonth() + 1} – ${src.label}`, url, src, fileName: cur.formFile ? cur.formFile.name : "", sentences, created: Date.now(), opened: Date.now(), idx: 0 };
+  const l = { id: uid(), title: $("#fTitle").value.trim() || `Bài học ${d.getDate()}/${d.getMonth() + 1} – ${src.label}`, url, src, fileName: cur.formFile ? cur.formFile.name : "", sentences, thumb: (cur.form.meta && cur.form.meta.thumb) || "", created: Date.now(), opened: Date.now(), idx: 0 };
+  cur.form.job++;
   if (cur.formFile) SESSION_FILES[l.id] = URL.createObjectURL(cur.formFile);
   DB.lessons.push(l); cur.formFile = null; save();
   toast(sentences.length ? `Đã tạo bài học với ${sentences.length} câu` : "Đã tạo bài học. Hãy thêm lời thoại nhé!", "ok");
@@ -2763,6 +2853,11 @@ ACT["rename-lesson"] = () => {
 function parseJSONLoose(txt) {
   txt = (txt || "").trim().replace(/^```(?:json)?/i, "").replace(/```$/, "").trim();
   try { return JSON.parse(txt); } catch (e) { }
+  // Bị cắt giữa chừng (video dài): giữ lại các câu đã hoàn chỉnh
+  if (txt.startsWith("[")) {
+    let last = txt.lastIndexOf("}");
+    while (last > 0) { try { const arr = JSON.parse(txt.slice(0, last + 1) + "]"); arr._partial = true; return arr; } catch (e) { last = txt.lastIndexOf("}", last - 1); } }
+  }
   const a = txt.indexOf("["), o = txt.indexOf("{");
   const st = a >= 0 && (o < 0 || a < o) ? a : o;
   const en = Math.max(txt.lastIndexOf("]"), txt.lastIndexOf("}"));
@@ -2774,14 +2869,20 @@ async function gemini(parts, opts = {}) {
   if (!key) throw new Error("Bạn chưa nhập mã AI. Vào Cài đặt → AI để thêm mã (miễn phí).");
   const models = [DB.settings.aiModel || "gemini-flash-latest", "gemini-2.5-flash", "gemini-flash-latest"].filter((m, i, a) => a.indexOf(m) === i);
   let lastErr;
-  for (const model of models) {
+  let extra = opts.long ? { maxOutputTokens: 65536, mediaResolution: "MEDIA_RESOLUTION_LOW" } : {};
+  for (let mi = 0; mi < models.length; mi++) {
+    const model = models[mi];
     let r;
     try {
       r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`, {
         method: "POST", headers: { "Content-Type": "application/json", "x-goog-api-key": key },
-        body: JSON.stringify({ contents: [{ role: "user", parts }], generationConfig: { temperature: 0.2, responseMimeType: "application/json" } }),
+        body: JSON.stringify({ contents: [{ role: "user", parts }], generationConfig: { temperature: 0.2, responseMimeType: "application/json", ...extra } }),
       });
     } catch (e) { throw new Error("Không kết nối được tới AI. Kiểm tra mạng Internet."); }
+    if (r.status === 400 && Object.keys(extra).length) {
+      let m2 = ""; try { m2 = (await r.clone().json()).error?.message || ""; } catch (e) { }
+      if (!/API key/i.test(m2)) { extra = {}; mi--; continue; }
+    }
     if (r.ok) {
       const d = await r.json();
       const txt = (d.candidates?.[0]?.content?.parts || []).map(p => p.text || "").join("");
@@ -2852,23 +2953,19 @@ async function aiTranscribe({ url, file, src }) {
   } else if (src && src.type === "youtube") {
     parts = [{ fileData: { fileUri: "https://www.youtube.com/watch?v=" + src.id, mimeType: "video/*" } }, { text: TRANSCRIBE_PROMPT }];
   } else throw new Error("AI chỉ nghe được video YouTube công khai hoặc file trong máy. Với Facebook/TikTok hãy tải video về rồi chọn File.");
-  const res = await gemini(parts);
+  const res = await gemini(parts, { long: true });
   const arr = Array.isArray(res) ? res : (res.sentences || res.items || []);
   const out = arr.map(x => ({ ko: String(x.ko || x.text || "").trim(), vi: String(x.vi || "").trim(), start: x.start != null ? parseTime(x.start) : null, end: x.end != null ? parseTime(x.end) : null })).filter(x => x.ko && HG.isHangul(x.ko));
   if (!out.length) throw new Error("AI không nghe thấy lời thoại tiếng Hàn trong video này.");
+  out.sort((a, b) => (a.start ?? 0) - (b.start ?? 0));
+  if (res && res._partial) out.partial = true;
   return out;
 }
-ACT["ai-transcribe-form"] = async el => {
+ACT["ai-transcribe-form"] = () => {
   if (!DB.settings.aiKey) { toast("Hãy thêm mã AI trong Cài đặt trước (miễn phí) nhé", "err"); return; }
-  const src = cur.formFile ? { type: "file" } : detectSource($("#fUrl").value);
+  const src = cur.formFile ? { type: "file" } : (cur.form.src || detectSource($("#fUrl").value));
   if (!cur.formFile && (!src || src.type !== "youtube")) { toast("AI chỉ nghe được link YouTube hoặc file video trong máy (nút File).", "err"); return; }
-  busy(el, true, "AI đang nghe video… (1–3 phút)");
-  try {
-    const out = await aiTranscribe({ file: cur.formFile, src });
-    $("#fText").value = serializeTranscript(out);
-    toast(`AI đã chép ${out.length} câu. Kiểm tra lại rồi bấm Tạo bài học.`, "ok");
-  } catch (e) { toast(e.message, "err"); }
-  busy(el, false);
+  autoTranscribeForm(true);
 };
 ACT["ai-transcribe-lesson"] = async el => {
   const l = curLesson();
