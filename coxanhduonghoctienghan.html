@@ -599,6 +599,60 @@ body.wd-open .wd-bg{display:block;position:fixed;inset:0;background:rgba(10,15,2
   .lesson-bar .badge{display:none}
 }
 
+
+/* ===== Chế độ học: phát âm, luyện nghe, ôn tập, quiz, mindmap ===== */
+.mode-bar{display:flex;gap:8px;margin:-4px 0 14px;overflow-x:auto;scrollbar-width:none;padding:2px}
+.mode-bar::-webkit-scrollbar{display:none}
+.mode-btn{display:inline-flex;align-items:center;gap:8px;padding:10px 16px;border-radius:14px;border:1.5px solid var(--border);background:var(--surface);color:var(--text);font-weight:600;font-size:14.5px;cursor:pointer;white-space:nowrap;transition:all .12s}
+.mode-btn:hover{border-color:var(--lb);color:var(--lb)}
+.mode-btn.active{background:linear-gradient(135deg,var(--lb),var(--lb2));border-color:transparent;color:#fff;box-shadow:0 6px 16px color-mix(in srgb,var(--lb) 30%,transparent)}
+.mode-title{display:flex;align-items:center;gap:8px;font-weight:700;padding:8px 10px;color:var(--lb)}
+.seg.wrap{flex-wrap:wrap}
+.sring{--p:0;--c:var(--success);width:96px;height:96px;border-radius:50%;background:conic-gradient(var(--c) calc(var(--p)*1%),var(--surface-3) 0);display:grid;place-items:center;flex:none;margin:0 auto}
+.sring>div{width:76px;height:76px;border-radius:50%;background:var(--surface);display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.1}
+.sring b{font-size:26px;color:var(--c)} .sring small{font-size:11.5px;color:var(--muted)}
+.pron-card{text-align:center;padding:18px;border:1px solid var(--border);border-radius:18px;background:color-mix(in srgb,var(--lb) 3%,var(--surface))}
+.pron-ko{font-size:26px;font-weight:600;line-height:1.5;word-break:keep-all}
+.pron-rom{color:var(--faint);margin:4px 0 6px}
+.pron-result,.trans-res{display:flex;gap:16px;align-items:flex-start;margin-top:14px;padding:16px;border-radius:16px;border:1px solid var(--border);text-align:left}
+.pron-result .sring,.trans-res .sring{margin:0}
+.tips{margin:6px 0 0;padding-left:18px;font-size:14px;line-height:1.6}
+.tips li{margin:3px 0}
+.rv-word{font-size:34px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:6px}
+.qz-q{font-size:17px;line-height:1.5;margin-bottom:12px}
+.qz-opts{display:flex;flex-direction:column;gap:10px}
+.qz-opt{display:flex;align-items:center;gap:12px;padding:12px 14px;border:1.5px solid var(--border);border-radius:14px;background:var(--surface);cursor:pointer;text-align:left;font-size:15px;color:var(--text)}
+.qz-opt.ko{font-size:17px}
+.qz-opt:hover:not(:disabled){border-color:var(--lb)}
+.qz-letter{width:30px;height:30px;border-radius:9px;background:var(--surface-2);display:grid;place-items:center;font-weight:700;flex:none;font-family:var(--font)}
+.qz-opt.right{border-color:var(--success);background:var(--success-soft)} .qz-opt.right .qz-letter{background:var(--success);color:#fff}
+.qz-opt.wrong{border-color:var(--danger);background:var(--danger-soft)} .qz-opt.wrong .qz-letter{background:var(--danger);color:#fff}
+.mm-wrap{overflow:auto;border:1px solid var(--border);border-radius:16px;padding:16px;background:radial-gradient(color-mix(in srgb,var(--lb) 12%,transparent) 1px,transparent 1.2px) 0 0/22px 22px,var(--surface);max-height:calc(100vh - 260px)}
+.mm-wrap.full{max-height:78vh}
+.mm ul{list-style:none;margin:0;padding:0 0 0 26px;position:relative}
+.mm ul.mm-root{padding:0}
+.mm li{position:relative;display:flex;align-items:center;padding:5px 0 5px 22px}
+.mm-root>li{padding-left:0}
+.mm li::before{content:"";position:absolute;left:0;top:50%;width:22px;border-top:2px solid var(--bc)}
+.mm li::after{content:"";position:absolute;left:0;top:0;bottom:0;border-left:2px solid var(--bc)}
+.mm li:first-child::after{top:50%} .mm li:last-child::after{bottom:50%} .mm li:only-child::after{display:none}
+.mm-root>li::before,.mm-root>li::after{display:none}
+.mm ul ul::before{content:"";position:absolute;left:0;top:50%;width:26px;border-top:2px solid var(--bc)}
+.mm li>ul{padding-left:26px}
+.mm li>ul::before{left:0;width:26px}
+.mm-node{flex:none;display:flex;flex-direction:column;padding:8px 12px;border-radius:12px;background:var(--surface);border:2px solid var(--bc);max-width:260px;font-size:14px;line-height:1.35;box-shadow:0 2px 8px rgba(15,23,42,.06)}
+.mm-node small{color:var(--muted);font-size:12.5px;margin-top:2px}
+.mm-node.has{cursor:pointer}
+.mm li.d0>.mm-node{background:linear-gradient(135deg,var(--lb),var(--lb2));color:#fff;border-color:transparent;font-weight:700;font-size:16px;max-width:220px}
+.mm li.d1>.mm-node{background:var(--bc);color:#fff;border-color:transparent;font-weight:700}
+.mm li.d1>.mm-node small{color:rgba(255,255,255,.85)}
+.mm li.d2>.mm-node{background:color-mix(in srgb,var(--bc) 10%,var(--surface));font-weight:600}
+.mm li.d3>.mm-node{border-width:1.5px}
+.mm li.closed>ul{display:none}
+.mm li.closed>.mm-node::after{content:" +";font-weight:700}
+.modal-box.wide{max-width:min(1200px,96vw)}
+@media (max-width:720px){ .mode-btn{padding:8px 12px;font-size:13.5px} .pron-ko{font-size:21px} .rv-word{font-size:28px} .pron-result,.trans-res{flex-direction:column;align-items:center;text-align:center} }
+
 /* Responsive */
 @media (max-width:1080px){
   .topnav button span{display:none}
@@ -2130,7 +2184,7 @@ function openModal(title, body, foot, onClose) {
   $("#modalFoot").classList.toggle("hidden", !foot);
   $("#modal").classList.add("open"); modalOnClose = onClose || null;
 }
-function closeModal() { $("#modal").classList.remove("open"); const f = modalOnClose; modalOnClose = null; f && f(); }
+function closeModal() { $("#modal").classList.remove("open"); $("#modal .modal-box").classList.remove("wide"); const f = modalOnClose; modalOnClose = null; f && f(); }
 function confirmBox(msg, yes, yesLabel = "Đồng ý") {
   openModal("Xác nhận", `<p style="margin:0">${msg}</p>`, `<button class="btn" data-act="modal-close">Huỷ</button><button class="btn primary" id="cfYes">${esc(yesLabel)}</button>`);
   $("#cfYes").onclick = () => { closeModal(); yes(); };
@@ -2468,7 +2522,7 @@ ACT["clear-search"] = () => { cur.search = ""; const g = $("#gSearch"); if (g) g
 /* ---------- Luyện nói ---------- */
 const SPEAK_MODES = [
   ["shadow", "repeat", "Shadowing", "Nghe câu mẫu rồi nói đuổi theo ngay — luyện ngữ điệu và tốc độ tự nhiên.", "script"],
-  ["pron", "mic", "Phát âm", "Ghi âm giọng bạn và so sánh với giọng mẫu từng câu.", "script"],
+  ["pron", "mic", "Phát âm", "Đọc từng câu, máy chấm điểm và nhận xét phát âm của bạn.", "pron"],
   ["listen", "ear", "Luyện nghe", "Nghe rồi chọn từ còn thiếu hoặc chép chính tả.", "listen"],
 ];
 cur.speakMode = "shadow";
@@ -2833,7 +2887,8 @@ function openLesson(id, tab) {
   const changed = cur.lessonId !== id || !$("#playerWrap");
   if (cur.lessonId !== id) { cur.idx = Math.min(l.idx || 0, Math.max(0, l.sentences.length - 1)); cur.word = null; cur.listen = null; }
   cur.lessonId = id; DB.lastLesson = id; l.opened = Date.now(); save();
-  if (tab && ["script", "analysis", "vocab", "grammar", "listen"].includes(tab)) cur.tab = tab;
+  if (tab && ["script", "analysis", "vocab", "grammar", "listen", "pron", "review", "quiz", "mindmap"].includes(tab)) cur.tab = tab;
+  if (cur.lessonId !== id || changed) { cur.pron = null; cur.rv = null; cur.qz = null; cur.mmTried = false; }
   if (changed) {
     $("#view-lesson").innerHTML = `
     <div class="lesson-head">
@@ -2844,6 +2899,7 @@ function openLesson(id, tab) {
         <button class="btn sm" data-act="edit-script">${ic("list")} Sửa lời thoại</button>
       </div>
     </div>
+    <div class="mode-bar" id="modeBar"></div>
     <div class="lesson-grid">
       <div class="col-left">
         <div class="player-wrap" id="playerWrap"></div>
@@ -2867,13 +2923,19 @@ function openLesson(id, tab) {
   renderTabs(); renderShadow(); renderTab();
 }
 const TABS = [["script", "list", "Lời thoại"], ["analysis", "search", "Phân tích câu"], ["vocab", "book", "Từ vựng"], ["grammar", "spark", "Ngữ pháp"], ["listen", "ear", "Luyện nghe"]];
-function renderTabs() { $("#lessonTabs").innerHTML = TABS.map(([k, i, n]) => `<button data-act="tab" data-tab="${k}" class="${cur.tab === k ? "active" : ""}">${ic(i)}${n}</button>`).join("") + `<button class="tabs-close" data-act="tog-panel" title="Ẩn bảng này (video sẽ rộng hơn)">${ic("x")}</button>`; }
-ACT.tab = el => { cur.tab = el.dataset.tab; history.replaceState(null, "", "#lesson/" + cur.lessonId + "/" + cur.tab); renderTabs(); renderTab(); renderShadow(); };
+function renderTabs() {
+  const learn = LEARN_TABS.includes(cur.tab);
+  const md = MODES.find(m => m[0] === modeOf(cur.tab));
+  $("#lessonTabs").innerHTML = (learn ? TABS.filter(t => LEARN_TABS.includes(t[0])).map(([k, i, n]) => `<button data-act="tab" data-tab="${k}" class="${cur.tab === k ? "active" : ""}">${ic(i)}${n}</button>`).join("")
+    : `<span class="mode-title">${ic(md[1])} ${md[2]}</span>`) + `<button class="tabs-close" data-act="tog-panel" title="Ẩn bảng này (video sẽ rộng hơn)">${ic("x")}</button>`;
+  renderModeBar();
+}
+ACT.tab = el => { cur.tab = el.dataset.tab; if (LEARN_TABS.includes(cur.tab)) cur.lastLearnTab = cur.tab; history.replaceState(null, "", "#lesson/" + cur.lessonId + "/" + cur.tab); renderTabs(); renderTab(); renderShadow(); };
 function renderTab() {
   const l = curLesson(); if (!l) return;
   const body = $("#tabBody");
-  if (!l.sentences.length && cur.tab !== "script") { cur.tab = "script"; renderTabs(); }
-  ({ script: renderScriptTab, analysis: renderAnalysisTab, vocab: renderVocabTab, grammar: renderGrammarTab, listen: renderListenTab })[cur.tab](l, body);
+  if (!l.sentences.length && LEARN_TABS.includes(cur.tab) && cur.tab !== "script") { cur.tab = "script"; renderTabs(); }
+  ({ script: renderScriptTab, analysis: renderAnalysisTab, vocab: renderVocabTab, grammar: renderGrammarTab, listen: renderListenTab, pron: renderPronTab, review: renderReviewTab, quiz: renderQuizTab, mindmap: renderMindmapTab })[cur.tab](l, body);
 }
 function setIdx(i, opt = {}) {
   const l = curLesson(); if (!l || i < 0 || i >= l.sentences.length) return;
@@ -3173,99 +3235,6 @@ function renderGrammarTab(l, body) {
 
 /* ---------- Tab: luyện nghe ---------- */
 function shuffle(a) { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
-function newListen(l, mode) {
-  return { mode, order: shuffle(l.sentences.map((_, i) => i)), pos: 0, ok: 0, total: 0, answered: false, result: null, q: null };
-}
-function prepareFill(l, i) {
-  const toks = analyze(l.sentences[i].ko).tokens.filter(t => HG.isHangul(t.clean));
-  if (!toks.length) return null;
-  const cand = toks.filter(t => !["int"].includes(t.pos) && t.clean.length >= 1);
-  const target = (cand.length ? cand : toks)[Math.floor(Math.random() * (cand.length || toks.length))];
-  const pool = new Set();
-  l.sentences.forEach(s => analyze(s.ko).tokens.forEach(t => { if (HG.isHangul(t.clean) && t.clean !== target.clean) pool.add(t.clean); }));
-  let distract = shuffle([...pool]).slice(0, 3);
-  if (distract.length < 3) distract = distract.concat(shuffle(["사람", "학교", "먹어요", "좋아요", "친구", "어제", "가요", "있어요"].filter(x => x !== target.clean && !distract.includes(x)))).slice(0, 3);
-  return { target: target.clean, choices: shuffle([target.clean, ...distract]), picked: null };
-}
-function renderListenTab(l, body) {
-  if (!cur.listen) cur.listen = newListen(l, "fill");
-  const L = cur.listen;
-  if (L.pos >= L.order.length) {
-    const pct = L.total ? Math.round(L.ok / L.total * 100) : 0;
-    body.innerHTML = `<div class="listen-box"><div class="big" style="font-size:40px">🎉</div><h2>Hoàn thành!</h2><p class="score-big">${pct}%</p><p class="muted">Đúng ${L.ok}/${L.total} câu</p>
-      <div class="row" style="justify-content:center"><button class="btn primary" data-act="listen-restart">${ic("repeat")} Luyện lại</button></div></div>`;
-    return;
-  }
-  const i = L.order[L.pos];
-  if (cur.idx !== i) { cur.idx = i; l.idx = i; renderShadow(); }
-  const s = l.sentences[i];
-  if (L.mode === "fill" && !L.q) L.q = prepareFill(l, i);
-  const vid = canPlayVideo(l, i);
-  let main = "";
-  if (L.mode === "fill" && L.q) {
-    let replaced = false;
-    const shown = s.ko.split(/(\s+)/).map(w => { if (!replaced && w.replace(/[^가-힣0-9A-Za-z]/g, "") === L.q.target) { replaced = true; return L.answered ? `<b style="color:var(--success)">${esc(w)}</b>` : `<span class="blank">&nbsp;?&nbsp;</span>${esc(w.replace(/[가-힣0-9A-Za-z]/g, ""))}`; } return esc(w); }).join("");
-    main = `<div class="listen-q">${shown}</div>
-      <div class="choices">${L.q.choices.map(c => {
-        let cls = ""; if (L.answered) { if (c === L.q.target) cls = "right"; else if (c === L.q.picked) cls = "wrong"; }
-        return `<button class="choice ${cls}" data-act="listen-pick" data-c="${esc(c)}" ${L.answered ? "disabled" : ""}>${esc(c)}</button>`;
-      }).join("")}</div>`;
-  } else {
-    main = `<p class="muted small" style="margin:10px 0 6px">Nghe và gõ lại câu tiếng Hàn (cần bàn phím tiếng Hàn trên máy/điện thoại).</p>
-      <textarea class="input" id="dictIn" rows="2" style="min-height:70px;font-size:18px" placeholder="Gõ câu bạn nghe được…" ${L.answered ? "disabled" : ""}>${esc(L.input || "")}</textarea>
-      ${L.answered && L.result ? `<div class="diff">${L.result.html}</div><p style="margin:8px 0 0"><b>Đúng ${L.result.pct}%</b> · <span class="muted">${esc(s.vi || "")}</span></p>` : ""}`;
-  }
-  body.innerHTML = `
-    <div class="row between">
-      <div class="seg"><button class="${L.mode === "fill" ? "active" : ""}" data-act="listen-mode" data-m="fill">Điền từ còn thiếu</button><button class="${L.mode === "dict" ? "active" : ""}" data-act="listen-mode" data-m="dict">Chép chính tả</button></div>
-      <span class="muted small">Câu ${L.pos + 1}/${L.order.length} · Đúng ${L.ok}/${L.total}</span>
-    </div>
-    <div class="progress" style="margin:12px 0"><span style="width:${L.pos / L.order.length * 100}%"></span></div>
-    <div class="listen-box">
-      <div class="row" style="justify-content:center">
-        <button class="btn primary lg" data-act="listen-play">${ic("play")} Nghe${vid ? " (video)" : ""}</button>
-        <button class="btn lg" data-act="listen-slow">${ic("slow")} Nghe chậm</button>
-        ${vid ? `<button class="btn lg" data-act="listen-tts" title="Giọng máy đọc">${ic("vol")}</button>` : ""}
-      </div>
-      ${main}
-      ${L.answered && L.mode === "fill" && s.vi ? `<p class="muted" style="margin-top:10px">${esc(s.vi)}</p>` : ""}
-      <div class="row" style="justify-content:center;margin-top:16px">
-        ${L.mode === "dict" && !L.answered ? `<button class="btn primary" data-act="listen-check">${ic("check")} Kiểm tra</button><button class="btn ghost" data-act="listen-reveal">Xem đáp án</button>` : ""}
-        ${L.answered ? `<button class="btn primary" data-act="listen-next">Câu tiếp ${ic("right")}</button>` : `<button class="btn ghost" data-act="listen-skip">Bỏ qua</button>`}
-      </div>
-    </div>`;
-  const ta = $("#dictIn"); if (ta) ta.oninput = () => { L.input = ta.value; };
-}
-function diffScore(input, target) {
-  const norm = s => [...s.replace(/[^가-힣0-9A-Za-z]/g, "")];
-  const a = norm(input), b = norm(target);
-  const dp = Array.from({ length: a.length + 1 }, () => new Array(b.length + 1).fill(0));
-  for (let i = 1; i <= a.length; i++) for (let j = 1; j <= b.length; j++) dp[i][j] = a[i - 1] === b[j - 1] ? dp[i - 1][j - 1] + 1 : Math.max(dp[i - 1][j], dp[i][j - 1]);
-  const hit = new Array(b.length).fill(false);
-  let i = a.length, j = b.length;
-  while (i > 0 && j > 0) { if (a[i - 1] === b[j - 1]) { hit[j - 1] = true; i--; j--; } else if (dp[i - 1][j] >= dp[i][j - 1]) i--; else j--; }
-  let k = 0;
-  const html = [...target].map(ch => { if (!/[가-힣0-9A-Za-z]/.test(ch)) return esc(ch); const ok = hit[k++]; return `<span class="${ok ? "ok" : "miss"}">${esc(ch)}</span>`; }).join("");
-  return { pct: b.length ? Math.round(dp[a.length][b.length] / Math.max(b.length, a.length) * 100) : 0, html };
-}
-ACT["listen-mode"] = el => { cur.listen = newListen(curLesson(), el.dataset.m); renderTab(); };
-ACT["listen-restart"] = () => { cur.listen = newListen(curLesson(), cur.listen.mode); renderTab(); };
-ACT["listen-play"] = () => playSentence(cur.listen.order[cur.listen.pos], { keepIdx: true, loops: 0 });
-ACT["listen-tts"] = () => playSentence(cur.listen.order[cur.listen.pos], { keepIdx: true, loops: 0, tts: true });
-ACT["listen-slow"] = () => { const l = curLesson(), i = cur.listen.order[cur.listen.pos]; playSentence(i, { keepIdx: true, loops: 0, rate: canPlayVideo(l, i) ? 0.75 : 0.6 }); };
-ACT["listen-pick"] = el => {
-  const L = cur.listen; L.q.picked = el.dataset.c; L.answered = true; L.total++; DB.stats.listenTotal++;
-  if (L.q.picked === L.q.target) { L.ok++; DB.stats.listenOk++; } logAct("l"); renderTab();
-};
-ACT["listen-check"] = () => {
-  const L = cur.listen, l = curLesson(), s = l.sentences[L.order[L.pos]];
-  if (!(L.input || "").trim()) { toast("Hãy gõ câu bạn nghe được trước nhé", "err"); return; }
-  L.result = diffScore(L.input, s.ko); L.answered = true; L.total++; DB.stats.listenTotal++;
-  if (L.result.pct >= 80) { L.ok++; DB.stats.listenOk++; } logAct("l"); renderTab();
-};
-ACT["listen-reveal"] = () => { const L = cur.listen, s = curLesson().sentences[L.order[L.pos]]; L.result = diffScore(L.input || "", s.ko); L.answered = true; L.total++; DB.stats.listenTotal++; logAct("l"); renderTab(); };
-ACT["listen-next"] = ACT["listen-skip"] = () => { const L = cur.listen; L.pos++; L.answered = false; L.q = null; L.input = ""; L.result = null; renderTab(); if (L.pos < L.order.length) setTimeout(() => ACT["listen-play"](), 250); };
-
 /* ---------- Sửa lời thoại / đổi tên ---------- */
 ACT["edit-script"] = () => {
   const l = curLesson();
@@ -4149,6 +4118,536 @@ ACT["wd-ai"] = () => { if (!wdToken) return; if (!DB.settings.aiKey) { toast("H�
 ACT["wd-close"] = () => document.body.classList.remove("wd-open");
 $("#wdBg").addEventListener("click", () => document.body.classList.remove("wd-open"));
 document.addEventListener("keydown", e => { if (e.key === "Escape") { if (document.body.classList.contains("wd-open")) document.body.classList.remove("wd-open"); else closeWordPop(); } });
+</script>
+<script>
+"use strict";
+/* =========================================================
+   CHẾ ĐỘ HỌC: PHÁT ÂM · LUYỆN NGHE · ÔN TẬP · QUIZ · MINDMAP
+   ========================================================= */
+Object.assign(ICONS, {
+  target: '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.5" fill="currentColor"/>',
+  quiz: '<circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 0 1 4.9.7c0 1.7-2.4 2.3-2.4 3.8"/><circle cx="12" cy="17" r=".8" fill="currentColor"/>',
+  tree: '<circle cx="5" cy="12" r="2.5"/><circle cx="19" cy="5" r="2.5"/><circle cx="19" cy="12" r="2.5"/><circle cx="19" cy="19" r="2.5"/><path d="M7.5 12h9M7 11l9.5-5M7 13l9.5 5"/>',
+  pencil: '<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>',
+  expand: '<polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>',
+});
+const LEARN_TABS = ["script", "analysis", "vocab", "grammar"];
+const MODES = [["learn", "repeat", "Học & Shadowing"], ["pron", "target", "Phát âm"], ["listen", "ear", "Luyện nghe"], ["review", "cards", "Ôn tập"], ["quiz", "quiz", "Quiz"], ["mindmap", "tree", "Mindmap"]];
+const modeOf = tab => LEARN_TABS.includes(tab) ? "learn" : tab;
+function renderModeBar() {
+  const el = $("#modeBar"); if (!el) return;
+  const m = modeOf(cur.tab);
+  el.innerHTML = MODES.map(([k, i, n]) => `<button class="mode-btn ${m === k ? "active" : ""}" data-act="mode" data-m="${k}">${ic(i)}<span>${n}</span></button>`).join("");
+}
+ACT.mode = el => {
+  const m = el.dataset.m;
+  cur.tab = m === "learn" ? (cur.lastLearnTab || "script") : m;
+  if (DB.settings.panelHidden && m !== "learn") { DB.settings.panelHidden = false; save(); applyPanel(); }
+  history.replaceState(null, "", "#lesson/" + cur.lessonId + "/" + cur.tab);
+  closeWordPop(); renderTabs(); renderTab(); renderShadow();
+  if (innerWidth <= 900 && m !== "learn") setTimeout(() => $("#tabBody").scrollIntoView({ behavior: "smooth", block: "start" }), 50);
+};
+const needSentences = (l, body) => { if (l.sentences.length) return false; body.innerHTML = `<div class="empty"><div class="big">📝</div>Bài này chưa có lời thoại. Hãy thêm lời thoại trước (nút <b>Sửa lời thoại</b>).</div>`; return true; };
+const scoreColor = s => s >= 85 ? "var(--success)" : s >= 60 ? "var(--warn)" : "var(--danger)";
+const scoreRing = (s, label) => `<div class="sring" style="--p:${s};--c:${scoreColor(s)}"><div><b>${s}</b><small>${label || "điểm"}</small></div></div>`;
+
+/* ---------- Ghi âm + nhận dạng giọng nói ---------- */
+const SRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+const CAP = { active: false, stop: null };
+async function captureSpeech({ wantAudio, maxMs = 12000 }) {
+  let stream = null, mr = null; const chunks = [];
+  if (wantAudio || !SRec) {
+    try { stream = await navigator.mediaDevices.getUserMedia({ audio: true }); mr = new MediaRecorder(stream); mr.ondataavailable = e => e.data.size && chunks.push(e.data); mr.start(); }
+    catch (e) { if (!SRec) throw new Error("Không mở được micro. Hãy cho phép trang dùng micro."); }
+  }
+  CAP.active = true;
+  let texts = [], error = null;
+  if (SRec) {
+    texts = await new Promise(res => {
+      const rec = new SRec(); const out = [];
+      rec.lang = "ko-KR"; rec.interimResults = false; rec.maxAlternatives = 5; rec.continuous = false;
+      rec.onresult = e => { for (const r of e.results) for (const a of r) out.push(a.transcript); };
+      rec.onerror = e => { error = e.error; };
+      rec.onend = () => res(out);
+      CAP.stop = () => { try { rec.stop(); } catch (e) { } };
+      try { rec.start(); } catch (e) { error = "start"; res(out); }
+      setTimeout(() => CAP.stop && CAP.stop(), maxMs);
+    });
+  } else {
+    await new Promise(res => { CAP.stop = res; setTimeout(res, maxMs); });
+  }
+  CAP.active = false; CAP.stop = null;
+  let blob = null;
+  if (mr) { await new Promise(r => { mr.onstop = r; try { mr.stop(); } catch (e) { r(); } }); stream.getTracks().forEach(t => t.stop()); if (chunks.length) blob = new Blob(chunks, { type: mr.mimeType || "audio/webm" }); }
+  return { texts, error, blob };
+}
+async function blobToWavBase64(blob) {
+  const ab = await blob.arrayBuffer();
+  const AC = window.AudioContext || window.webkitAudioContext; const ac = new AC();
+  const buf = await ac.decodeAudioData(ab); ac.close && ac.close();
+  const rate = 16000, len = Math.ceil(buf.duration * rate);
+  const off = new OfflineAudioContext(1, len, rate); const src = off.createBufferSource(); src.buffer = buf; src.connect(off.destination); src.start();
+  const pcm = (await off.startRendering()).getChannelData(0);
+  const dv = new DataView(new ArrayBuffer(44 + pcm.length * 2));
+  const w = (o, s) => [...s].forEach((c, i) => dv.setUint8(o + i, c.charCodeAt(0)));
+  w(0, "RIFF"); dv.setUint32(4, 36 + pcm.length * 2, true); w(8, "WAVE"); w(12, "fmt "); dv.setUint32(16, 16, true); dv.setUint16(20, 1, true); dv.setUint16(22, 1, true);
+  dv.setUint32(24, rate, true); dv.setUint32(28, rate * 2, true); dv.setUint16(32, 2, true); dv.setUint16(34, 16, true); w(36, "data"); dv.setUint32(40, pcm.length * 2, true);
+  for (let i = 0; i < pcm.length; i++) { const v = Math.max(-1, Math.min(1, pcm[i])); dv.setInt16(44 + i * 2, v < 0 ? v * 0x8000 : v * 0x7fff, true); }
+  const bytes = new Uint8Array(dv.buffer); let bin = ""; for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+  return btoa(bin);
+}
+const SR_ERR = { "not-allowed": "Trang chưa được phép dùng micro.", "no-speech": "Không nghe thấy tiếng nói — hãy nói to và gần micro hơn.", "audio-capture": "Không thu được âm thanh từ micro.", network: "Nhận dạng giọng nói cần Internet.", start: "Không khởi động được nhận dạng giọng nói." };
+
+/* ---------- Chấm điểm phát âm (offline) ---------- */
+const syl = s => [...String(s).replace(/[^가-힣]/g, "")];
+function jamoSeq(chars) { const o = []; for (const ch of chars) { const d = HG.dec(ch); if (!d) continue; o.push("L" + d.L, "V" + d.V); if (d.T) o.push("T" + d.T); } return o; }
+function lev(a, b) { let prev = Array.from({ length: b.length + 1 }, (_, j) => j); for (let i = 1; i <= a.length; i++) { const cur2 = [i]; for (let j = 1; j <= b.length; j++) cur2[j] = Math.min(prev[j] + 1, cur2[j - 1] + 1, prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1)); prev = cur2; } return prev[b.length]; }
+function lcsMatch(a, b) {
+  const dp = Array.from({ length: a.length + 1 }, () => new Array(b.length + 1).fill(0));
+  for (let i = 1; i <= a.length; i++) for (let j = 1; j <= b.length; j++) dp[i][j] = a[i - 1] === b[j - 1] ? dp[i - 1][j - 1] + 1 : Math.max(dp[i - 1][j], dp[i][j - 1]);
+  const hit = new Array(a.length).fill(false); let i = a.length, j = b.length;
+  while (i > 0 && j > 0) { if (a[i - 1] === b[j - 1]) { hit[i - 1] = true; i--; j--; } else if (dp[i - 1][j] >= dp[i][j - 1]) i--; else j--; }
+  return hit;
+}
+const LCH = "ㄱㄲㄴㄷㄸㄹㅁㅂㅃㅅㅆㅇㅈㅉㅊㅋㅌㅍㅎ";
+const TCH = ["", "ㄱ", "ㄲ", "ㄱㅅ", "ㄴ", "ㄴㅈ", "ㄴㅎ", "ㄷ", "ㄹ", "ㄹㄱ", "ㄹㅁ", "ㄹㅂ", "ㄹㅅ", "ㄹㅌ", "ㄹㅍ", "ㄹㅎ", "ㅁ", "ㅂ", "ㅂㅅ", "ㅅ", "ㅆ", "ㅇ", "ㅈ", "ㅊ", "ㅋ", "ㅌ", "ㅍ", "ㅎ"];
+// Âm thanh hoá: bỏ ㅇ câm ở đầu âm tiết, patchim và phụ âm đầu dùng chung ký hiệu → 싶어요 ≈ 시퍼요
+const VSAME = { 1: 5, 3: 7, 10: 15, 11: 15 };
+function soundTokens(text) {
+  const toks = [], wordOf = [];
+  text.split(/\s+/).filter(Boolean).forEach((w, wi) => {
+    for (const ch of syl(w)) {
+      const d = HG.dec(ch); if (!d) continue;
+      if (d.L !== 11) { toks.push(LCH[d.L]); wordOf.push(wi); }
+      toks.push("V" + (VSAME[d.V] ?? d.V)); wordOf.push(wi);
+      for (const c of TCH[d.T]) { toks.push(c); wordOf.push(wi); }
+    }
+  });
+  return { toks, wordOf };
+}
+function scorePron(target, heardList) {
+  const T = soundTokens(target);
+  let best = null;
+  for (const h of heardList) {
+    const H = soundTokens(h); if (!H.toks.length) continue;
+    const sc = Math.max(0, Math.round(100 * (1 - lev(T.toks, H.toks) / Math.max(T.toks.length, 1))));
+    if (!best || sc > best.score) best = { score: sc, heard: h, H };
+  }
+  if (!best) best = { score: 0, heard: heardList[0] || "", H: { toks: [] } };
+  const hit = lcsMatch(T.toks, best.H.toks);
+  const ws = target.split(/\s+/).filter(Boolean);
+  const words = ws.map((w, wi) => { let n = 0, m = 0; T.wordOf.forEach((x, k) => { if (x === wi) { n++; if (hit[k]) m++; } }); return { w, r: n ? m / n : 1 }; });
+  return { score: best.score, heard: best.heard, words };
+}
+function pronFeedback(r, target) {
+  const tips = [];
+  const bad = r.words.filter(x => x.r < 0.5).map(x => x.w), mid = r.words.filter(x => x.r >= 0.5 && x.r < 0.85).map(x => x.w);
+  if (r.score >= 90) tips.push("Tuyệt vời! Phát âm rất rõ và gần giống người bản xứ.");
+  else if (r.score >= 75) tips.push("Khá tốt! Chỉ cần chỉnh lại vài âm nhỏ.");
+  else if (r.score >= 50) tips.push("Máy nghe được một phần. Hãy nghe lại câu mẫu và nói chậm, rõ từng âm.");
+  else tips.push("Máy chưa nghe rõ câu. Hãy nghe mẫu 2–3 lần, rồi đọc chậm từng cụm từ.");
+  if (bad.length) tips.push(`Chưa rõ hoặc bị thiếu: <b class="ko">${bad.map(esc).join(", ")}</b> — bấm vào từ trong phụ đề để nghe riêng từ đó.`);
+  if (mid.length) tips.push(`Gần đúng: <b class="ko">${mid.map(esc).join(", ")}</b> — chú ý nguyên âm và phụ âm cuối (patchim).`);
+  if (/[가-힣]/.test(target) && Rom.text(target) !== target.split(/\s+/).map(w => Rom.text(w)).join(" ")) {}
+  tips.push(`Cách đọc đúng (đã nối âm): <i>${esc(Rom.text(target))}</i>`);
+  return tips;
+}
+
+/* ---------- Tab: PHÁT ÂM ---------- */
+cur.pron = null;
+function renderPronTab(l, body) {
+  if (needSentences(l, body)) return;
+  const s = l.sentences[cur.idx]; const P = cur.pron && cur.pron.idx === cur.idx && cur.pron.lessonId === l.id ? cur.pron : null;
+  const best = (l.pronScores || {})[cur.idx];
+  const scores = Object.values(l.pronScores || {}); const avg = scores.length ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : null;
+  body.innerHTML = `
+    <div class="row between" style="margin-bottom:10px">
+      <span class="badge blue">Câu ${cur.idx + 1}/${l.sentences.length}</span>
+      <span class="muted small">${avg != null ? `Trung bình ${scores.length} câu: <b>${avg}</b> điểm` : "Chưa chấm câu nào"}</span>
+      <div class="row" style="gap:4px"><button class="btn sm" data-act="prev-sent" ${cur.idx === 0 ? "disabled" : ""}>${ic("left")}</button><button class="btn sm" data-act="next-sent" ${cur.idx >= l.sentences.length - 1 ? "disabled" : ""}>${ic("right")}</button></div>
+    </div>
+    <div class="pron-card">
+      <div class="pron-ko ko">${P && P.result ? P.result.words.map(x => `<span style="color:${x.r >= 0.85 ? "var(--success)" : x.r >= 0.5 ? "var(--warn)" : "var(--danger)"}">${esc(x.w)}</span>`).join(" ") : esc(s.ko)}</div>
+      <div class="pron-rom">${esc(Rom.text(s.ko))}</div>
+      ${s.vi ? `<div class="muted">${esc(s.vi)}</div>` : ""}
+      <div class="row" style="justify-content:center;margin-top:16px">
+        <button class="btn lg" data-act="pron-model">${ic("vol")} Nghe mẫu</button>
+        <button class="btn lg ${CAP.active ? "rec" : "primary"}" data-act="pron-go">${ic(CAP.active ? "stop" : "mic")} ${CAP.active ? "Dừng" : P && P.result ? "Nói lại" : "Bấm và đọc to"}</button>
+        ${P && P.blob ? `<button class="btn lg" data-act="pron-play">${ic("play")} Giọng tôi</button>` : ""}
+      </div>
+      ${CAP.active ? `<p class="muted small" style="margin:10px 0 0">🎙 Đang nghe… hãy đọc to câu trên. Đọc xong máy sẽ tự chấm.</p>` : ""}
+      ${best != null && !(P && P.result) ? `<p class="muted small" style="margin:10px 0 0">Điểm cao nhất của câu này: <b>${best}</b></p>` : ""}
+      ${!SRec ? `<div class="note warn" style="margin-top:12px">Trình duyệt này không có nhận dạng giọng nói nên không tự chấm được. Hãy dùng <b>Chrome</b> (máy tính / Android) hoặc <b>Safari</b> (iPhone/iPad)${DB.settings.aiKey ? ", hoặc bấm ghi âm rồi để AI chấm" : ""}.</div>` : ""}
+    </div>
+    ${P && P.busy ? `<div class="note info" style="margin-top:12px"><span class="spinner"></span> ${esc(P.busy)}</div>` : ""}
+    ${P && P.error ? `<div class="note warn" style="margin-top:12px">${esc(P.error)}</div>` : ""}
+    ${P && P.result ? `<div class="pron-result">
+      ${scoreRing(P.result.score)}
+      <div class="grow">
+        <div class="small muted">Máy nghe được:</div><div class="ko" style="font-size:17px;margin-bottom:8px">${esc(P.result.heard || "(không rõ)")}</div>
+        <ul class="tips">${pronFeedback(P.result, s.ko).map(t => `<li>${t}</li>`).join("")}</ul>
+      </div></div>` : ""}
+    ${P && P.ai ? `<div class="ai-box" style="margin-top:12px"><h4>${ic("spark")} AI nhận xét phát âm · ${P.ai.score ?? "?"} điểm</h4>
+      ${P.ai.heard ? `<div class="small muted">AI nghe được: <span class="ko">${esc(P.ai.heard)}</span></div>` : ""}
+      <p>${esc(P.ai.feedback || "")}</p>
+      ${(P.ai.words || []).length ? `<table class="ai-table">${P.ai.words.map(w => `<tr><td class="ko" style="white-space:nowrap"><b style="color:${scoreColor(w.score ?? 70)}">${esc(w.word)}</b></td><td>${w.score != null ? `<b>${w.score}</b> · ` : ""}${esc(w.note || "")}</td></tr>`).join("")}</table>` : ""}
+      ${(P.ai.tips || []).length ? `<ul class="tips">${P.ai.tips.map(x => `<li>${esc(x)}</li>`).join("")}</ul>` : ""}
+    </div>` : P && P.blob && DB.settings.aiKey && !P.busy ? `<button class="btn soft" style="margin-top:12px" data-act="pron-ai">${ic("spark")} AI nhận xét chi tiết từng âm</button>` : ""}
+    ${!DB.settings.aiKey && P && P.result ? `<p class="hint">Thêm mã AI trong Cài đặt để được AI nhận xét chi tiết từng âm.</p>` : ""}`;
+}
+ACT["pron-model"] = () => playSentence(cur.idx, { loops: 0 });
+ACT["pron-play"] = () => { const P = cur.pron; if (P && P.blob) new Audio(URL.createObjectURL(P.blob)).play(); };
+ACT["pron-go"] = async () => {
+  if (CAP.active) { CAP.stop && CAP.stop(); return; }
+  const l = curLesson(), idx = cur.idx, s = l.sentences[idx];
+  if (!SRec && !DB.settings.aiKey) { toast("Trình duyệt này không chấm được phát âm. Hãy dùng Chrome hoặc Safari.", "err"); return; }
+  if (PL && PL.ctrl) PL.pause(); if ("speechSynthesis" in window) speechSynthesis.cancel();
+  cur.pron = { lessonId: l.id, idx }; renderTab();
+  setTimeout(() => cur.tab === "pron" && renderTab(), 50);
+  let r;
+  try { const p = captureSpeech({ wantAudio: !!DB.settings.aiKey }); renderTab(); r = await p; }
+  catch (e) { cur.pron.error = e.message; renderTab(); return; }
+  const P = cur.pron; if (!P || P.idx !== idx) return;
+  P.blob = r.blob;
+  if (r.texts.length) {
+    P.result = scorePron(s.ko, r.texts);
+    l.pronScores = l.pronScores || {}; l.pronScores[idx] = Math.max(l.pronScores[idx] || 0, P.result.score);
+    if (P.result.score >= 70 && !s.done) { s.done = true; DB.stats.shadow++; }
+    logAct("s"); save();
+  } else if (SRec) P.error = (SR_ERR[r.error] || "Máy không nghe rõ.") + (P.blob && DB.settings.aiKey ? " Bạn có thể bấm “AI nhận xét” để AI chấm bản ghi âm." : "");
+  renderTab();
+  if (!SRec && P.blob && DB.settings.aiKey) ACT["pron-ai"]();
+};
+ACT["pron-ai"] = async () => {
+  const P = cur.pron, l = curLesson(); if (!P || !P.blob) return; const s = l.sentences[P.idx];
+  P.busy = "AI đang nghe và chấm phát âm…"; P.error = null; renderTab();
+  try {
+    const wav = await blobToWavBase64(P.blob);
+    const r = await gemini([{ inlineData: { mimeType: "audio/wav", data: wav } }, { text: `Đây là bản ghi âm một người Việt (trình độ sơ cấp) đọc câu tiếng Hàn: «${s.ko}». Hãy nghe kỹ và chấm phát âm như giáo viên. Trả về JSON: {"score": 0-100, "heard": "câu bạn thực sự nghe được (chữ Hàn)", "words": [{"word": "từ trong câu", "score": 0-100, "note": "nhận xét ngắn bằng tiếng Việt, chỉ ra âm sai và cách sửa"}], "feedback": "nhận xét chung 2-3 câu tiếng Việt, khích lệ", "tips": ["mẹo luyện cụ thể"]}` }]);
+    P.ai = r; if (r.score != null) { l.pronScores = l.pronScores || {}; l.pronScores[P.idx] = Math.max(l.pronScores[P.idx] || 0, +r.score || 0); save(); }
+  } catch (e) { P.error = e.message; }
+  P.busy = null; renderTab();
+};
+
+/* ---------- Tab: LUYỆN NGHE (3 chế độ) ---------- */
+function newListen(l, mode) {
+  let idxs = l.sentences.map((_, i) => i);
+  if (mode === "trans" && !DB.settings.aiKey) idxs = idxs.filter(i => l.sentences[i].vi);
+  return { mode, order: shuffle(idxs), pos: 0, ok: 0, total: 0, answered: false, result: null, q: null, input: "" };
+}
+function prepareFill(l, i) {
+  const toks = analyze(l.sentences[i].ko).tokens.filter(t => HG.isHangul(t.clean));
+  if (!toks.length) return null;
+  const cand = toks.filter(t => t.pos !== "int");
+  const target = (cand.length ? cand : toks)[Math.floor(Math.random() * (cand.length || toks.length))];
+  const pool = new Set();
+  l.sentences.forEach(s => analyze(s.ko).tokens.forEach(t => { if (HG.isHangul(t.clean) && t.clean !== target.clean) pool.add(t.clean); }));
+  let distract = shuffle([...pool]).slice(0, 3);
+  if (distract.length < 3) distract = distract.concat(shuffle(["사람", "학교", "먹어요", "좋아요", "친구", "어제", "가요", "있어요"].filter(x => x !== target.clean && !distract.includes(x)))).slice(0, 3);
+  return { target: target.clean, choices: shuffle([target.clean, ...distract]), picked: null };
+}
+function diffScore(input, target) {
+  const norm = s => [...s.replace(/[^가-힣0-9A-Za-z]/g, "")];
+  const a = norm(input), b = norm(target);
+  const hit = lcsMatch(b, a); const m = hit.filter(Boolean).length;
+  let k = 0;
+  const html = [...target].map(ch => { if (!/[가-힣0-9A-Za-z]/.test(ch)) return esc(ch); const ok = hit[k++]; return `<span class="${ok ? "ok" : "miss"}">${esc(ch)}</span>`; }).join("");
+  return { pct: b.length ? Math.round(m / Math.max(b.length, a.length) * 100) : 0, html };
+}
+const viWords = s => String(s || "").toLowerCase().replace(/[.,!?;:"'“”…()\-]/g, " ").split(/\s+/).filter(w => w.length > 0);
+function renderListenTab(l, body) {
+  if (needSentences(l, body)) return;
+  if (!cur.listen || cur.listen.lessonId !== l.id) { cur.listen = newListen(l, (cur.listen && cur.listen.mode) || "dict"); cur.listen.lessonId = l.id; }
+  const L = cur.listen;
+  const modes = `<div class="seg wrap">${[["dict", "Chép chính tả"], ["fill", "Điền từ"], ["trans", "Luyện dịch"]].map(([k, n]) => `<button class="${L.mode === k ? "active" : ""}" data-act="listen-mode" data-m="${k}">${n}</button>`).join("")}</div>`;
+  if (!L.order.length) { body.innerHTML = modes + `<div class="empty">Chưa có câu nào có bản dịch mẫu để luyện dịch. Hãy dùng <b>AI dịch cả bài</b> (tab Lời thoại) hoặc thêm mã AI để AI chấm bài dịch.</div>`; return; }
+  if (L.pos >= L.order.length) {
+    const pct = L.total ? Math.round(L.ok / L.total * 100) : 0;
+    body.innerHTML = modes + `<div class="listen-box">${scoreRing(pct, "%")}<h2 style="margin-top:12px">Hoàn thành!</h2><p class="muted">Đúng ${L.ok}/${L.total} câu</p><button class="btn primary" data-act="listen-restart">${ic("repeat")} Luyện lại</button></div>`;
+    return;
+  }
+  const i = L.order[L.pos];
+  if (cur.idx !== i) { cur.idx = i; l.idx = i; renderShadow(); }
+  const s = l.sentences[i];
+  if (L.mode === "fill" && !L.q) L.q = prepareFill(l, i);
+  const vid = canPlayVideo(l, i);
+  let main = "";
+  if (L.mode === "fill" && L.q) {
+    let replaced = false;
+    const shown = s.ko.split(/(\s+)/).map(w => { if (!replaced && w.replace(/[^가-힣0-9A-Za-z]/g, "") === L.q.target) { replaced = true; return L.answered ? `<b style="color:var(--success)">${esc(w)}</b>` : `<span class="blank">&nbsp;?&nbsp;</span>${esc(w.replace(/[가-힣0-9A-Za-z]/g, ""))}`; } return esc(w); }).join("");
+    main = `<p class="muted small" style="margin:12px 0 0">Nghe rồi chọn từ còn thiếu.</p><div class="listen-q">${shown}</div>
+      <div class="choices">${L.q.choices.map(c => { let cls = ""; if (L.answered) { if (c === L.q.target) cls = "right"; else if (c === L.q.picked) cls = "wrong"; } return `<button class="choice ${cls}" data-act="listen-pick" data-c="${esc(c)}" ${L.answered ? "disabled" : ""}>${esc(c)}</button>`; }).join("")}</div>
+      ${L.answered && s.vi ? `<p class="muted" style="margin-top:10px">${esc(s.vi)}</p>` : ""}`;
+  } else if (L.mode === "dict") {
+    main = `<p class="muted small" style="margin:12px 0 6px">Nghe và gõ lại câu tiếng Hàn (cần bàn phím tiếng Hàn).</p>
+      <textarea class="input" id="dictIn" rows="2" style="min-height:70px;font-size:18px" placeholder="Gõ câu bạn nghe được…" ${L.answered ? "disabled" : ""}>${esc(L.input || "")}</textarea>
+      ${L.answered && L.result ? `<div class="diff">${L.result.html}</div><p style="margin:8px 0 0"><b>Đúng ${L.result.pct}%</b> · <span class="muted">${esc(s.vi || "")}</span></p>` : ""}`;
+  } else {
+    main = `<p class="muted small" style="margin:12px 0 6px">Nghe câu tiếng Hàn rồi viết nghĩa bằng tiếng Việt.</p>
+      <textarea class="input" id="dictIn" rows="2" style="min-height:70px;font-size:16px;font-family:var(--font)" placeholder="Viết nghĩa tiếng Việt…" ${L.answered ? "disabled" : ""}>${esc(L.input || "")}</textarea>
+      ${L.busy ? `<div class="note info" style="margin-top:10px"><span class="spinner"></span> AI đang chấm bài dịch…</div>` : ""}
+      ${L.answered && L.result ? `<div class="trans-res">
+        ${scoreRing(L.result.pct, "%")}
+        <div class="grow">
+          <div><b>${esc(L.result.verdict || "")}</b></div>
+          ${L.result.feedback ? `<p style="margin:6px 0">${esc(L.result.feedback)}</p>` : ""}
+          <div class="small muted" style="margin-top:6px">Câu gốc: <span class="ko">${esc(s.ko)}</span></div>
+          <div class="small">Bản dịch mẫu: <b>${esc(L.result.better || s.vi || "")}</b></div>
+          ${L.result.self ? `<div class="row" style="margin-top:8px"><span class="small muted">Bạn tự chấm:</span><button class="btn sm" data-act="trans-self" data-ok="1">${ic("check")} Mình hiểu đúng</button><button class="btn sm" data-act="trans-self" data-ok="0">Chưa đúng</button></div>` : ""}
+        </div></div>` : ""}`;
+  }
+  body.innerHTML = `${modes}
+    <div class="row between" style="margin-top:12px"><span class="muted small">Câu ${L.pos + 1}/${L.order.length} · Đúng ${L.ok}/${L.total}</span></div>
+    <div class="progress" style="margin:8px 0 12px"><span style="width:${L.pos / L.order.length * 100}%"></span></div>
+    <div class="listen-box">
+      <div class="row" style="justify-content:center">
+        <button class="btn primary lg" data-act="listen-play">${ic("play")} Nghe${vid ? " (video)" : ""}</button>
+        <button class="btn lg" data-act="listen-slow">${ic("slow")} Nghe chậm</button>
+        ${vid ? `<button class="btn lg" data-act="listen-tts" title="Giọng máy đọc">${ic("vol")}</button>` : ""}
+      </div>
+      ${main}
+      <div class="row" style="justify-content:center;margin-top:16px">
+        ${L.mode !== "fill" && !L.answered ? `<button class="btn primary" data-act="listen-check" ${L.busy ? "disabled" : ""}>${ic("check")} Kiểm tra</button><button class="btn ghost" data-act="listen-reveal">Xem đáp án</button>` : ""}
+        ${L.answered ? `<button class="btn primary" data-act="listen-next">Câu tiếp ${ic("right")}</button>` : `<button class="btn ghost" data-act="listen-skip">Bỏ qua</button>`}
+      </div>
+    </div>`;
+  const ta = $("#dictIn"); if (ta) ta.oninput = () => { L.input = ta.value; };
+}
+ACT["listen-mode"] = el => { cur.listen = newListen(curLesson(), el.dataset.m); cur.listen.lessonId = cur.lessonId; renderTab(); };
+ACT["listen-restart"] = () => { const m = cur.listen.mode; cur.listen = newListen(curLesson(), m); cur.listen.lessonId = cur.lessonId; renderTab(); };
+ACT["listen-play"] = () => playSentence(cur.listen.order[cur.listen.pos], { keepIdx: true, loops: 0 });
+ACT["listen-tts"] = () => playSentence(cur.listen.order[cur.listen.pos], { keepIdx: true, loops: 0, tts: true });
+ACT["listen-slow"] = () => { const l = curLesson(), i = cur.listen.order[cur.listen.pos]; playSentence(i, { keepIdx: true, loops: 0, rate: canPlayVideo(l, i) ? 0.75 : 0.6 }); };
+const listenScore = ok => { const L = cur.listen; L.total++; DB.stats.listenTotal++; if (ok) { L.ok++; DB.stats.listenOk++; } logAct("l"); save(); };
+ACT["listen-pick"] = el => { const L = cur.listen; L.q.picked = el.dataset.c; L.answered = true; listenScore(L.q.picked === L.q.target); renderTab(); };
+ACT["listen-check"] = async () => {
+  const L = cur.listen, l = curLesson(), s = l.sentences[L.order[L.pos]];
+  if (!(L.input || "").trim()) { toast(L.mode === "trans" ? "Hãy viết nghĩa tiếng Việt trước nhé" : "Hãy gõ câu bạn nghe được trước nhé", "err"); return; }
+  if (L.mode === "dict") { L.result = diffScore(L.input, s.ko); L.answered = true; listenScore(L.result.pct >= 80); renderTab(); return; }
+  if (DB.settings.aiKey) {
+    L.busy = true; renderTab();
+    try {
+      const r = await gemini([{ text: `Câu tiếng Hàn: «${s.ko}»${s.vi ? ` (bản dịch tham khảo: «${s.vi}»)` : ""}. Người học (sơ cấp) nghe và dịch sang tiếng Việt: «${L.input}». Chấm xem bản dịch có đúng ý không (không cần giống từng chữ). Trả về JSON {"score":0-100,"verdict":"Đúng ý" hoặc "Gần đúng" hoặc "Chưa đúng","feedback":"nhận xét ngắn, chỉ ra chỗ hiểu sai","better":"bản dịch tự nhiên"}` }]);
+      L.result = { pct: Math.max(0, Math.min(100, Math.round(+r.score || 0))), verdict: r.verdict, feedback: r.feedback, better: r.better };
+      listenScore(L.result.pct >= 70);
+    } catch (e) { toast(e.message, "err"); L.busy = false; renderTab(); return; }
+    L.busy = false; L.answered = true; renderTab(); return;
+  }
+  const a = viWords(L.input), b = viWords(s.vi); const setA = new Set(a);
+  const pct = b.length ? Math.round(b.filter(w => setA.has(w)).length / b.length * 100) : 0;
+  L.result = { pct, verdict: pct >= 70 ? "Khá giống bản dịch mẫu" : "Khác với bản dịch mẫu — hãy so sánh xem có đúng ý không", self: true };
+  L.answered = true; renderTab();
+};
+ACT["trans-self"] = el => { const L = cur.listen; if (!L.result || !L.result.self) return; L.result.self = false; listenScore(el.dataset.ok === "1"); L.result.verdict = el.dataset.ok === "1" ? "Bạn đánh dấu: hiểu đúng ✓" : "Bạn đánh dấu: chưa đúng"; renderTab(); };
+ACT["listen-reveal"] = () => { const L = cur.listen, s = curLesson().sentences[L.order[L.pos]]; L.result = L.mode === "dict" ? diffScore(L.input || "", s.ko) : { pct: 0, verdict: "Đáp án", better: s.vi }; L.answered = true; listenScore(false); renderTab(); };
+ACT["listen-next"] = ACT["listen-skip"] = () => { const L = cur.listen; L.pos++; L.answered = false; L.q = null; L.input = ""; L.result = null; renderTab(); if (L.pos < L.order.length) setTimeout(() => ACT["listen-play"](), 250); };
+
+/* ---------- Tab: ÔN TẬP từ vựng của video ---------- */
+const RV_TYPES = [["mean", "Chọn nghĩa đúng"], ["listen", "Nghe và chép từ"], ["speak", "Phát âm từ"], ["write", "Viết câu ví dụ"]];
+const shortMean = m => String(m || "").split(/[;(]/)[0].trim();
+function reviewWords(l) { return lessonVocab(l).filter(v => v.meaning && v.pos !== "num" && HG.isHangul(v.base)); }
+function newReview(l, only) {
+  const words = shuffle(reviewWords(l)).slice(0, 10);
+  let types = RV_TYPES.map(x => x[0]).filter(t => t !== "speak" || SRec);
+  if (only) types = [only];
+  const tq = shuffle(types);
+  return { lessonId: l.id, only, i: 0, ok: 0, wrong: [], items: words.map((w, k) => ({ w, type: tq[k % tq.length] })), answered: false };
+}
+function meanChoices(l, w) {
+  const pool = shuffle(reviewWords(l).filter(v => v.base !== w.base).map(v => shortMean(v.meaning)).filter((m, i, a) => m && m !== shortMean(w.meaning) && a.indexOf(m) === i));
+  const extra = shuffle(["trường học", "ăn", "đẹp", "hôm qua", "bạn bè", "nhanh", "công ty", "đi"]).filter(x => !pool.includes(x) && x !== shortMean(w.meaning));
+  return shuffle([shortMean(w.meaning), ...pool.concat(extra).slice(0, 3)]);
+}
+function renderReviewTab(l, body) {
+  const words = reviewWords(l);
+  if (words.length < 2) { body.innerHTML = `<div class="empty"><div class="big">📚</div>Bài này chưa đủ từ vựng có nghĩa để ôn. Hãy thêm lời thoại hoặc thêm nghĩa cho từ.</div>`; return; }
+  if (!cur.rv || cur.rv.lessonId !== l.id) cur.rv = newReview(l);
+  const R = cur.rv;
+  const head = `<div class="seg wrap">${[["", "Trộn tất cả"]].concat(RV_TYPES).filter(([k]) => k !== "speak" || SRec).map(([k, n]) => `<button class="${(R.only || "") === k ? "active" : ""}" data-act="rv-only" data-t="${k}">${n}</button>`).join("")}</div>`;
+  if (R.i >= R.items.length) {
+    const pct = Math.round(R.ok / R.items.length * 100);
+    l.reviewBest = Math.max(l.reviewBest || 0, pct); save();
+    body.innerHTML = head + `<div class="listen-box">${scoreRing(pct, "%")}<h2 style="margin-top:12px">Xong bài ôn tập!</h2><p class="muted">Đúng ${R.ok}/${R.items.length} câu</p>
+      ${R.wrong.length ? `<div class="note" style="text-align:left">Từ cần ôn thêm: ${R.wrong.map(w => `<b class="ko">${esc(w.base)}</b> (${esc(shortMean(w.meaning))})`).join(", ")}</div><button class="btn soft" style="margin-top:10px" data-act="rv-addwrong">${ic("plus")} Thêm ${R.wrong.length} từ này vào flashcard</button>` : `<p>🎉 Bạn nhớ hết các từ!</p>`}
+      <div style="margin-top:12px"><button class="btn primary" data-act="rv-restart">${ic("repeat")} Ôn lượt mới</button></div></div>`;
+    return;
+  }
+  const it = R.items[R.i], w = it.w;
+  const ex = l.sentences.find(s => analyze(s.ko).tokens.some(t => t.base === w.base));
+  let main = "";
+  const res = R.answered ? `<div class="note ${R.correct ? "" : "warn"}" style="margin-top:12px;text-align:left">${R.correct ? "✓ Chính xác!" : "✕ Chưa đúng."} <b class="ko">${esc(w.base)}</b> = ${esc(w.meaning)}${R.extra ? `<div style="margin-top:6px">${R.extra}</div>` : ""}${ex ? `<div class="small muted" style="margin-top:6px">Trong video: <span class="ko">${esc(ex.ko)}</span> ${ex.vi ? "— " + esc(ex.vi) : ""}</div>` : ""}</div>` : "";
+  if (it.type === "mean") {
+    if (!it.choices) it.choices = meanChoices(l, w);
+    main = `<div class="rv-word ko">${esc(w.base)} <button class="btn ghost sm" data-act="say" data-text="${esc(w.base)}">${ic("vol")}</button></div><div class="muted small">${esc(Rom.text(w.base))}</div>
+      <div class="choices" style="margin-top:14px">${it.choices.map(c => { let cls = ""; if (R.answered) { if (c === shortMean(w.meaning)) cls = "right"; else if (c === R.picked) cls = "wrong"; } return `<button class="choice ${cls}" style="font-family:var(--font);font-size:16px" ${R.answered ? "disabled" : ""} data-act="rv-pick" data-c="${esc(c)}">${esc(c)}</button>`; }).join("")}</div>`;
+  } else if (it.type === "listen") {
+    if (!it.choices) it.choices = shuffle([w.base, ...shuffle(reviewWords(l).filter(v => v.base !== w.base)).slice(0, 3).map(v => v.base)]);
+    main = `<button class="btn primary lg" data-act="rv-hear">${ic("vol")} Nghe từ</button><div class="muted small" style="margin-top:8px">Nghĩa: ${esc(shortMean(w.meaning))}</div>
+      ${R.mc ? `<div class="choices" style="margin-top:14px">${it.choices.map(c => `<button class="choice ${R.answered ? (c === w.base ? "right" : c === R.picked ? "wrong" : "") : ""}" ${R.answered ? "disabled" : ""} data-act="rv-pick" data-c="${esc(c)}">${esc(c)}</button>`).join("")}</div>`
+      : `<input class="input ko" id="rvIn" style="margin-top:14px;font-size:20px;text-align:center" placeholder="Gõ từ bạn nghe được" value="${esc(R.input || "")}" ${R.answered ? "disabled" : ""} autocomplete="off">
+         ${R.answered ? "" : `<div class="row" style="justify-content:center;margin-top:10px"><button class="btn primary" data-act="rv-check">${ic("check")} Kiểm tra</button><button class="btn ghost sm" data-act="rv-mc">Không có bàn phím Hàn? Chọn đáp án</button></div>`}`}`;
+  } else if (it.type === "speak") {
+    main = `<div class="rv-word ko">${esc(w.base)}</div><div class="muted">${esc(Rom.text(w.base))} · ${esc(shortMean(w.meaning))}</div>
+      <div class="row" style="justify-content:center;margin-top:14px"><button class="btn lg" data-act="say" data-text="${esc(w.base)}">${ic("vol")} Nghe mẫu</button>
+      ${R.answered ? "" : `<button class="btn lg ${CAP.active ? "rec" : "primary"}" data-act="rv-speak">${ic(CAP.active ? "stop" : "mic")} ${CAP.active ? "Đang nghe…" : "Bấm và đọc"}</button>`}</div>
+      ${R.answered ? "" : `<button class="btn ghost sm" style="margin-top:8px" data-act="rv-skipspeak">Không tiện nói lúc này — bỏ qua</button>`}`;
+  } else {
+    main = `<div class="rv-word ko">${esc(w.base)}</div><div class="muted">${esc(shortMean(w.meaning))}</div>
+      <textarea class="input ko" id="rvIn" rows="2" style="margin-top:14px;font-size:17px" placeholder="Viết 1 câu tiếng Hàn có dùng từ này…" ${R.answered ? "disabled" : ""}>${esc(R.input || "")}</textarea>
+      ${R.busy ? `<div class="note info" style="margin-top:8px"><span class="spinner"></span> AI đang chấm câu của bạn…</div>` : ""}
+      ${R.answered ? "" : `<div class="row" style="justify-content:center;margin-top:10px"><button class="btn primary" data-act="rv-check" ${R.busy ? "disabled" : ""}>${ic("check")} Kiểm tra</button><button class="btn ghost sm" data-act="rv-giveup">Xem câu mẫu</button></div>`}`;
+  }
+  body.innerHTML = `${head}
+    <div class="row between" style="margin-top:12px"><span class="badge blue">${esc(RV_TYPES.find(x => x[0] === it.type)[1])}</span><span class="muted small">Câu ${R.i + 1}/${R.items.length} · Đúng ${R.ok}</span></div>
+    <div class="progress" style="margin:8px 0 12px"><span style="width:${R.i / R.items.length * 100}%"></span></div>
+    <div class="listen-box">${main}${res}
+      ${R.answered ? `<div style="margin-top:14px"><button class="btn primary" data-act="rv-next">Tiếp ${ic("right")}</button></div>` : ""}</div>`;
+  const inp = $("#rvIn"); if (inp) { inp.oninput = () => { R.input = inp.value; }; if (it.type === "listen") inp.onkeydown = e => { if (e.key === "Enter") ACT["rv-check"](); }; }
+  if (it.type === "listen" && !R.played) { R.played = true; setTimeout(() => speak(w.base), 300); }
+}
+function rvDone(correct, extra) {
+  const R = cur.rv, w = R.items[R.i].w; R.answered = true; R.correct = correct; R.extra = extra || "";
+  if (correct) R.ok++; else R.wrong.push(w);
+  logAct("r"); renderTab();
+}
+ACT["rv-only"] = el => { cur.rv = newReview(curLesson(), el.dataset.t || null); renderTab(); };
+ACT["rv-restart"] = () => { cur.rv = newReview(curLesson(), cur.rv.only); renderTab(); };
+ACT["rv-next"] = () => { const R = cur.rv; R.i++; R.answered = false; R.input = ""; R.picked = null; R.mc = false; R.played = false; R.extra = ""; renderTab(); };
+ACT["rv-pick"] = el => { const R = cur.rv, it = R.items[R.i]; R.picked = el.dataset.c; rvDone(it.type === "mean" ? R.picked === shortMean(it.w.meaning) : R.picked === it.w.base); };
+ACT["rv-hear"] = () => speak(cur.rv.items[cur.rv.i].w.base);
+ACT["rv-mc"] = () => { cur.rv.mc = true; renderTab(); };
+ACT["rv-skipspeak"] = () => rvDone(false, "Đã bỏ qua phần nói.");
+ACT["rv-giveup"] = () => rvDone(false);
+ACT["rv-speak"] = async () => {
+  if (CAP.active) { CAP.stop && CAP.stop(); return; }
+  const R = cur.rv, w = R.items[R.i].w;
+  const p = captureSpeech({ wantAudio: false, maxMs: 6000 }); renderTab();
+  let r; try { r = await p; } catch (e) { toast(e.message, "err"); renderTab(); return; }
+  if (!r.texts.length) { toast(SR_ERR[r.error] || "Máy chưa nghe rõ, thử lại nhé", "err"); renderTab(); return; }
+  const sc = scorePron(w.base.endsWith("다") ? w.base : w.base, r.texts).score;
+  const sc2 = w.surface ? scorePron(w.surface, r.texts).score : 0;
+  const best = Math.max(sc, sc2);
+  rvDone(best >= 70, `Điểm phát âm: <b style="color:${scoreColor(best)}">${best}</b> · Máy nghe được: <span class="ko">${esc(r.texts[0] || "")}</span>`);
+};
+ACT["rv-check"] = async () => {
+  const R = cur.rv, it = R.items[R.i], w = it.w, val = (R.input || "").trim();
+  if (!val) { toast("Hãy nhập câu trả lời trước nhé", "err"); return; }
+  if (it.type === "listen") { const n = s => s.replace(/[^가-힣]/g, ""); rvDone(n(val) === n(w.base) || n(val) === n(w.surface || "")); return; }
+  const stem = w.base.endsWith("다") && w.base.length > 1 ? w.base.slice(0, -1) : w.base;
+  const used = analyze(val).tokens.some(t => t.base === w.base) || val.includes(stem);
+  if (DB.settings.aiKey) {
+    R.busy = true; renderTab();
+    try {
+      const r = await gemini([{ text: `Người học tiếng Hàn sơ cấp viết câu ví dụ với từ «${w.base}» (${w.meaning}): «${val}». Chấm câu này. Trả về JSON {"ok":true/false (dùng đúng từ và câu hiểu được),"score":0-100,"feedback":"nhận xét ngắn bằng tiếng Việt về ngữ pháp/cách dùng","corrected":"câu đã sửa tự nhiên (chữ Hàn)","vi":"nghĩa câu đã sửa"}` }]);
+      R.busy = false;
+      rvDone(!!r.ok, `${r.score != null ? `Điểm: <b>${esc(r.score)}</b> · ` : ""}${esc(r.feedback || "")}${r.corrected ? `<div class="ko" style="margin-top:4px">✓ ${esc(r.corrected)}</div><div class="small muted">${esc(r.vi || "")}</div>` : ""}`);
+    } catch (e) { R.busy = false; toast(e.message, "err"); renderTab(); }
+    return;
+  }
+  rvDone(used, used ? "Câu của bạn có dùng từ này ✓ (thêm mã AI trong Cài đặt để được chấm cả ngữ pháp)." : "Câu chưa có từ này — hãy dùng đúng từ (có thể chia đuôi).");
+};
+ACT["rv-addwrong"] = () => {
+  const l = curLesson(); let n = 0;
+  cur.rv.wrong.forEach(w => { const s = l.sentences.find(x => analyze(x.ko).tokens.some(t => t.base === w.base)); if (addCard({ type: "word", front: w.base, back: w.meaning, pos: w.pos, ex: s ? s.ko : "", exVi: s ? s.vi || "" : "", lessonId: l.id })) n++; });
+  save(); renderNav(); toast(`Đã thêm ${n} từ vào flashcard`, "ok");
+};
+
+/* ---------- Tab: QUIZ nội dung video ---------- */
+function offlineQuiz(l) {
+  const withVi = l.sentences.filter(s => s.vi && s.ko.length > 3);
+  if (withVi.length < 4) return [];
+  return shuffle(withVi).slice(0, 8).map((s, k) => {
+    const others = shuffle(withVi.filter(x => x !== s)).slice(0, 3);
+    if (k % 2 === 0) { const opts = shuffle([s.vi, ...others.map(x => x.vi)]); return { q: `Trong video, câu «${s.ko}» có nghĩa là gì?`, options: opts, answer: opts.indexOf(s.vi), explain: `«${s.ko}» = ${s.vi}` }; }
+    const opts = shuffle([s.ko, ...others.map(x => x.ko)]); return { q: `Câu nào trong video có nghĩa: «${s.vi}»?`, options: opts, answer: opts.indexOf(s.ko), explain: `${s.ko} — ${s.vi}`, ko: true };
+  });
+}
+function renderQuizTab(l, body) {
+  if (needSentences(l, body)) return;
+  if (!cur.qz || cur.qz.lessonId !== l.id) cur.qz = { lessonId: l.id, i: 0, ok: 0, picked: null, items: l.quiz ? l.quiz.questions : null };
+  const Q = cur.qz;
+  const aiBtn = DB.settings.aiKey ? `<button class="btn soft sm" data-act="qz-ai" ${Q.busy ? "disabled" : ""}>${ic("spark")} ${l.quiz ? "Tạo bộ câu hỏi mới bằng AI" : "Tạo quiz bằng AI"}</button>` : "";
+  if (Q.busy) { body.innerHTML = `<div class="note info"><span class="spinner"></span> AI đang đọc nội dung video và soạn câu hỏi…</div>`; return; }
+  if (DB.settings.aiKey && !l.quiz && !Q.triedAI) { Q.triedAI = true; ACT["qz-ai"](); return; }
+  if (!Q.items) {
+    Q.items = offlineQuiz(l); Q.offline = true;
+  }
+  if (!Q.items.length) { body.innerHTML = `<div class="empty"><div class="big">❓</div>Cần ít nhất 4 câu có bản dịch để tạo quiz.<br>${DB.settings.aiKey ? aiBtn : "Thêm mã AI trong Cài đặt để AI tạo quiz về nội dung video."}</div>`; return; }
+  const top = `<div class="row between" style="margin-bottom:10px"><span class="muted small">${Q.offline ? "Quiz tạo từ lời thoại" : "Quiz do AI soạn theo nội dung video"}${l.quizBest != null ? ` · Điểm cao nhất: <b>${l.quizBest}%</b>` : ""}</span>${aiBtn}</div>`;
+  if (Q.i >= Q.items.length) {
+    const pct = Math.round(Q.ok / Q.items.length * 100); l.quizBest = Math.max(l.quizBest || 0, pct); save();
+    body.innerHTML = top + `<div class="listen-box">${scoreRing(pct, "%")}<h2 style="margin-top:12px">Hoàn thành quiz!</h2><p class="muted">Đúng ${Q.ok}/${Q.items.length} câu</p><button class="btn primary" data-act="qz-restart">${ic("repeat")} Làm lại</button></div>`;
+    return;
+  }
+  const it = Q.items[Q.i];
+  body.innerHTML = top + `
+    <div class="row between"><span class="badge blue">Câu ${Q.i + 1}/${Q.items.length}</span><span class="muted small">Đúng ${Q.ok}</span></div>
+    <div class="progress" style="margin:8px 0 14px"><span style="width:${Q.i / Q.items.length * 100}%"></span></div>
+    <h3 class="qz-q ${it.ko ? "" : ""}">${esc(it.q)}</h3>
+    <div class="qz-opts">${it.options.map((o, k) => { let cls = ""; if (Q.picked != null) { if (k === it.answer) cls = "right"; else if (k === Q.picked) cls = "wrong"; } return `<button class="qz-opt ${cls} ${it.ko ? "ko" : ""}" data-act="qz-pick" data-k="${k}" ${Q.picked != null ? "disabled" : ""}><span class="qz-letter">${"ABCD"[k]}</span><span>${esc(o)}</span></button>`; }).join("")}</div>
+    ${Q.picked != null ? `<div class="note ${Q.picked === it.answer ? "" : "warn"}" style="margin-top:12px">${Q.picked === it.answer ? "✓ Chính xác!" : "✕ Chưa đúng."} ${esc(it.explain || "")}</div><div style="margin-top:12px;text-align:center"><button class="btn primary" data-act="qz-next">Câu tiếp ${ic("right")}</button></div>` : ""}`;
+}
+ACT["qz-pick"] = el => { const Q = cur.qz; Q.picked = +el.dataset.k; if (Q.picked === Q.items[Q.i].answer) Q.ok++; logAct("l"); renderTab(); };
+ACT["qz-next"] = () => { const Q = cur.qz; Q.i++; Q.picked = null; renderTab(); };
+ACT["qz-restart"] = () => { const Q = cur.qz; Q.i = 0; Q.ok = 0; Q.picked = null; if (Q.offline) Q.items = offlineQuiz(curLesson()); else Q.items = shuffle(Q.items); renderTab(); };
+function transcriptText(l, max = 7000) { let t = ""; for (const s of l.sentences) { const line = s.ko + (s.vi ? " | " + s.vi : "") + "\n"; if (t.length + line.length > max) break; t += line; } return t; }
+ACT["qz-ai"] = async () => {
+  const l = curLesson(); const Q = cur.qz; Q.busy = true; renderTab();
+  try {
+    const r = await gemini([{ text: `Đây là lời thoại một video tiếng Hàn (kèm bản dịch nếu có), tên video: «${l.title}».\n${transcriptText(l)}\nHãy soạn 8 câu hỏi trắc nghiệm bằng tiếng Việt cho người học sơ cấp: khoảng 5 câu hỏi về NỘI DUNG video (ai, làm gì, ở đâu, vì sao…) và 3 câu về từ vựng/ngữ pháp xuất hiện trong video. Mỗi câu có 4 lựa chọn, chỉ 1 đáp án đúng. Trả về JSON {"questions":[{"q":"câu hỏi","options":["A","B","C","D"],"answer":0,"explain":"giải thích ngắn vì sao đúng"}]}` }]);
+    const qs = (r.questions || r).filter(q => q && q.q && Array.isArray(q.options) && q.options.length >= 2).map(q => ({ q: q.q, options: q.options.slice(0, 4), answer: Math.max(0, Math.min(3, +q.answer || 0)), explain: q.explain || "" }));
+    if (!qs.length) throw new Error("AI chưa tạo được câu hỏi, thử lại nhé.");
+    l.quiz = { questions: qs, created: Date.now() }; save();
+    Object.assign(Q, { items: qs, offline: false, i: 0, ok: 0, picked: null });
+  } catch (e) { toast(e.message, "err"); if (!Q.items) { Q.items = offlineQuiz(l); Q.offline = true; } }
+  Q.busy = false; renderTab();
+};
+
+/* ---------- Tab: MINDMAP ---------- */
+function offlineMindmap(l) {
+  const vocab = lessonVocab(l).filter(v => v.meaning);
+  const groups = [["n", "Danh từ"], ["v", "Động từ"], ["a", "Tính từ"], ["adv", "Phó từ"], ["int", "Câu giao tiếp"]];
+  const gram = new Map(); l.sentences.forEach(s => analyze(s.ko).grammar.forEach(g => gram.set(g.id, (gram.get(g.id) || 0) + 1)));
+  const topG = [...gram.entries()].sort((a, b) => b[1] - a[1]).slice(0, 8).map(([id]) => ({ title: G[id].p, note: G[id].m }));
+  const main = l.sentences.filter(s => s.vi).slice(0, 6).map(s => ({ title: s.vi, note: s.ko }));
+  return { title: l.title, children: [
+    main.length ? { title: "Nội dung chính", children: main } : null,
+    { title: "Từ vựng", children: groups.map(([p, n]) => { const ws = vocab.filter(v => (p === "n" ? ["n", "pron", "cnt"].includes(v.pos) : v.pos === p)).slice(0, 8); return ws.length ? { title: n, children: ws.map(v => ({ title: v.base, note: shortMean(v.meaning) })) } : null; }).filter(Boolean) },
+    topG.length ? { title: "Ngữ pháp", children: topG } : null,
+  ].filter(Boolean) };
+}
+function mmNode(n, depth, branch) {
+  const kids = (n.children || []).filter(Boolean);
+  return `<li class="mm-li d${Math.min(depth, 3)}" style="--bc:${branch}">
+    <div class="mm-node ${kids.length ? "has" : ""}" ${kids.length && depth > 0 ? `data-act="mm-toggle"` : ""}><span class="${HG.isHangul(n.title) && depth > 1 ? "ko" : ""}">${esc(n.title)}</span>${n.note ? `<small class="${HG.isHangul(n.note) ? "ko" : ""}">${esc(n.note)}</small>` : ""}</div>
+    ${kids.length ? `<ul>${kids.map((c, i) => mmNode(c, depth + 1, depth === 0 ? MM_COLORS[i % MM_COLORS.length] : branch)).join("")}</ul>` : ""}
+  </li>`;
+}
+const MM_COLORS = ["#2563eb", "#16a34a", "#db2777", "#ea580c", "#7c3aed", "#0891b2"];
+function mindmapHTML(m) { return `<div class="mm"><ul class="mm-root">${mmNode(m, 0, "#2563eb")}</ul></div>`; }
+function renderMindmapTab(l, body) {
+  if (needSentences(l, body)) return;
+  const m = l.mindmap || offlineMindmap(l);
+  body.innerHTML = `<div class="row between" style="margin-bottom:10px">
+      <span class="muted small">${l.mindmap ? "Mindmap do AI tóm tắt video" : "Mindmap tạo từ lời thoại & từ điển"} · bấm vào nhánh để thu gọn</span>
+      <div class="row" style="gap:6px">${DB.settings.aiKey ? `<button class="btn soft sm" data-act="mm-ai" ${cur.mmBusy ? "disabled" : ""}>${ic("spark")} ${l.mindmap ? "Tạo lại bằng AI" : "Tạo bằng AI"}</button>` : ""}<button class="btn sm" data-act="mm-full">${ic("expand")} Phóng to</button></div></div>
+    ${cur.mmBusy ? `<div class="note info" style="margin-bottom:10px"><span class="spinner"></span> AI đang tóm tắt video thành mindmap…</div>` : ""}
+    ${!DB.settings.aiKey ? `<div class="note" style="margin-bottom:10px">Thêm mã AI trong Cài đặt để AI tóm tắt nội dung video thành mindmap đầy đủ hơn.</div>` : ""}
+    <div class="mm-wrap">${mindmapHTML(m)}</div>`;
+  if (DB.settings.aiKey && !l.mindmap && !cur.mmBusy && !cur.mmTried) { cur.mmTried = true; ACT["mm-ai"](); }
+}
+ACT["mm-toggle"] = el => el.closest("li").classList.toggle("closed");
+ACT["mm-full"] = () => { const l = curLesson(); openModal("Mindmap: " + l.title, `<div class="mm-wrap full">${mindmapHTML(l.mindmap || offlineMindmap(l))}</div>`); $("#modal .modal-box").classList.add("wide"); };
+ACT["mm-ai"] = async () => {
+  const l = curLesson(); cur.mmBusy = true; renderTab();
+  try {
+    const r = await gemini([{ text: `Đây là lời thoại video tiếng Hàn «${l.title}»:\n${transcriptText(l)}\nHãy tạo MINDMAP tóm tắt video cho người Việt học tiếng Hàn sơ cấp. Trả về JSON dạng cây: {"title":"chủ đề video (tiếng Việt, ngắn)","children":[{"title":"nhánh","note":"","children":[{"title":"...","note":"giải thích ngắn"}]}]}.
+Gồm 4-6 nhánh chính: "Nội dung chính" (các ý chính theo trình tự), "Từ vựng quan trọng" (chia nhóm theo chủ đề; lá dạng title = từ tiếng Hàn, note = nghĩa), "Ngữ pháp" (title = cấu trúc, note = nghĩa), "Mẫu câu hữu ích" (title = câu Hàn, note = nghĩa), có thể thêm "Văn hoá / ghi chú". Tối đa 3 cấp, mỗi nhánh 3-7 mục, ngắn gọn.` }]);
+    if (!r || !r.title || !Array.isArray(r.children)) throw new Error("AI chưa tạo được mindmap, thử lại nhé.");
+    l.mindmap = r; save();
+  } catch (e) { toast(e.message, "err"); }
+  cur.mmBusy = false; if (cur.tab === "mindmap") renderTab();
+};
 </script>
 </body>
 </html>
