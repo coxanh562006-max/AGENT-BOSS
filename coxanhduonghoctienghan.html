@@ -638,6 +638,48 @@ body.wd-open .wd-bg{display:block;position:fixed;inset:0;background:rgba(10,15,2
 .lesson-sum>svg{color:var(--lb);margin-top:2px}
 .lesson-sum-add{margin:-8px 0 10px;color:var(--lb)}
 .vsum{margin:0;font-size:13px;color:var(--muted);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+
+/* ===== Luyện phát âm (kiểu ghi âm → AI chấm) ===== */
+.pr-head{display:flex;align-items:center;justify-content:space-between;font-size:17px}
+.pr-label{font-size:12.5px;font-weight:700;letter-spacing:.06em;color:var(--faint);margin:2px 0 8px}
+.pr-chips-row{display:flex;align-items:center;gap:8px;margin-bottom:16px}
+.pr-chips{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;flex:1;padding:4px 2px;scroll-behavior:smooth}
+.pr-chips::-webkit-scrollbar{display:none}
+.pr-chip{flex:none;width:44px;height:44px;border-radius:50%;border:1.5px solid var(--border);background:var(--surface);font-weight:600;cursor:pointer;color:var(--text);box-shadow:0 2px 0 var(--border)}
+.pr-chip.good{border-color:color-mix(in srgb,var(--success) 60%,transparent);color:var(--success)}
+.pr-chip.mid{border-color:color-mix(in srgb,var(--warn) 60%,transparent);color:var(--warn)}
+.pr-chip.bad{border-color:color-mix(in srgb,var(--danger) 60%,transparent);color:var(--danger)}
+.pr-chip.active{background:linear-gradient(135deg,var(--lb),var(--lb2));color:#fff;border-color:transparent;box-shadow:0 3px 0 color-mix(in srgb,var(--lb) 60%,#000)}
+.pr-nav{flex:none;width:40px;height:40px;border-radius:50%;border:1.5px solid var(--border);background:var(--surface);display:grid;place-items:center;cursor:pointer;color:var(--muted)}
+.pr-nav:disabled{opacity:.4}
+.pr-card{border:1px solid var(--border);border-radius:18px;padding:16px 18px;margin-bottom:16px}
+.pr-card-top{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.pr-tool{height:40px;min-width:46px;padding:0 12px;border-radius:12px;border:1.5px solid var(--border);background:var(--surface);display:inline-flex;align-items:center;justify-content:center;gap:6px;cursor:pointer;color:var(--text);font-weight:500;box-shadow:0 2px 0 var(--border)}
+.pr-tool.on{background:color-mix(in srgb,var(--lb) 10%,var(--surface));border-color:color-mix(in srgb,var(--lb) 40%,transparent);color:var(--lb)}
+.pr-ko{font-size:25px;font-weight:600;line-height:1.5;word-break:keep-all}
+.pr-rom{color:var(--faint);margin-top:4px}
+.pr-vi{color:var(--muted);margin-top:6px}
+.pr-actions{display:flex;gap:10px;align-items:flex-start}
+.pr-actions>div{display:flex;flex-direction:column;align-items:center;gap:6px}
+.pr-actions small{color:var(--faint);font-size:12px}
+.pr-btn{height:54px;padding:0 18px;border-radius:16px;border:1.5px solid var(--border);background:var(--surface);display:inline-flex;align-items:center;gap:8px;font-weight:600;font-size:15.5px;cursor:pointer;color:var(--text);box-shadow:0 3px 0 var(--border);white-space:nowrap}
+.pr-btn:disabled{opacity:.45}
+.pr-main{width:100%;height:54px;border-radius:16px;border:0;background:linear-gradient(135deg,var(--lb),#3b82f6 60%,var(--lb2));color:#fff;display:inline-flex;align-items:center;justify-content:center;gap:8px;font-weight:700;font-size:16px;cursor:pointer;box-shadow:0 3px 0 color-mix(in srgb,var(--lb) 60%,#000)}
+.pr-main.rec{background:var(--danger);box-shadow:0 3px 0 #7f1d1d;animation:pulse 1.2s infinite}
+.pr-main:disabled{opacity:.85;cursor:wait}
+.pr-recnote{display:flex;align-items:center;gap:8px;margin-top:12px;padding:10px 14px;border-radius:12px;background:var(--danger-soft);color:var(--danger);font-size:14px}
+.rec-dot{width:10px;height:10px;border-radius:50%;background:var(--danger);animation:pulse 1s infinite;flex:none}
+.pr-score{margin-top:16px;padding:16px;border-radius:18px;background:var(--surface-2)}
+.pr-metrics{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.pr-m{background:var(--surface);border-radius:14px;padding:14px 16px;display:flex;flex-direction:column;gap:4px}
+.pr-m span{color:var(--muted);font-size:14px}
+.pr-m b{font-size:28px;letter-spacing:-.02em}
+.pr-m.avg{box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--lb) 25%,transparent)}
+.pr-words{display:flex;flex-direction:column;gap:8px;margin-top:8px}
+.pr-w{background:var(--surface);border-radius:12px;padding:10px 12px;display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px}
+.pr-w .small{flex-basis:100%;color:var(--muted)}
+@media (max-width:720px){ .pr-btn{padding:0 12px;font-size:14px} .pr-ko{font-size:21px} .pr-m b{font-size:24px} .pr-chip{width:40px;height:40px} }
+
 /* Responsive */
 @media (max-width:1080px){
   .topnav button span{display:none}
@@ -2934,7 +2976,7 @@ function setIdx(i, opt = {}) {
   if (cur.tab === "script") {
     refreshSentenceRow(prev); refreshSentenceRow(i);
     if (DB.settings.follow || !opt.fromVideo) scrollRowInList($(`.sent[data-i="${i}"]`), true);
-  } else if (cur.tab === "analysis") renderTab();
+  } else if (cur.tab === "analysis" || cur.tab === "pron") renderTab();
   renderShadow();
 }
 ACT["prev-sent"] = () => { const l = curLesson(); if (l && cur.idx > 0) { setIdx(cur.idx - 1); if (PL && PL.ctrl && canPlayVideo(l, cur.idx)) playSentence(cur.idx, { keepIdx: true }); } };
@@ -3900,7 +3942,7 @@ Object.assign(ICONS, {
   eye: '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>',
   eyeoff: '<path d="M17.9 17.9A10.8 10.8 0 0 1 12 20C5 20 1 12 1 12a19.6 19.6 0 0 1 5.1-5.9M9.9 4.2A10 10 0 0 1 12 4c7 0 11 8 11 8a19.8 19.8 0 0 1-2.2 3.3M14.1 14.1a3 3 0 1 1-4.2-4.2"/><line x1="1" y1="1" x2="23" y2="23"/>', chevu: '<polyline points="18 15 12 9 6 15"/>',
 });
-if (DB.settings.showSub === undefined) DB.settings.showSub = true;
+if (DB.settings.subVi === undefined) DB.settings.subVi = false;   // nghĩa tiếng Việt dưới phụ đề: mặc định ẩn
 if (!DB.settings.subSize) DB.settings.subSize = "m";
 DB.wordInfo = DB.wordInfo || {};
 
@@ -3914,9 +3956,9 @@ function renderSubBox() {
   const s = l.sentences[cur.idx];
   if (cur.tab === "listen") { box.innerHTML = `<div class="sub-hide">${ic("ear")} Đang luyện nghe — phụ đề được ẩn</div>`; return; }
   const toks = subTokens(s);
-  const words = st.showSub ? `<div class="sub-line sz-${st.subSize}">${toks.map((t, i) => `<button class="sw k-${KIND_CLASS[t.pos] || "u"} ${cur.subWord === i ? "sel" : ""}" data-act="sub-word" data-i="${i}">${st.showRom ? `<span class="sr">${esc(Rom.text(t.clean))}</span>` : ""}<span class="sk">${esc(t.surface)}</span></button>`).join("")}</div>` : "";
-  const vi = st.showVi ? `<div class="sub-vi sz-${st.subSize}">${s.vi ? esc(s.vi) : `<span class="faint" style="font-weight:400">Chưa có bản dịch${st.aiKey ? ` · <a href="#" data-act="ai-explain">AI dịch</a>` : ""}</span>`}</div>` : "";
-  box.innerHTML = words || vi ? words + vi : `<div class="sub-hide">Phụ đề và bản dịch đang tắt</div>`;
+  const words = `<div class="sub-line sz-${st.subSize}">${toks.map((t, i) => `<button class="sw k-${KIND_CLASS[t.pos] || "u"} ${cur.subWord === i ? "sel" : ""}" data-act="sub-word" data-i="${i}">${st.showRom ? `<span class="sr">${esc(Rom.text(t.clean))}</span>` : ""}<span class="sk">${esc(t.surface)}</span></button>`).join("")}</div>`;
+  const vi = st.subVi ? `<div class="sub-vi sz-${st.subSize}">${s.vi ? esc(s.vi) : `<span class="faint" style="font-weight:400">Chưa có bản dịch${st.aiKey ? ` · <a href="#" data-act="ai-explain">AI dịch</a>` : ""}</span>`}</div>` : "";
+  box.innerHTML = words + vi;
 }
 
 /* ---------- Thanh công cụ dưới video ---------- */
@@ -3924,8 +3966,7 @@ function renderPlayerBar() {
   const bar = $("#lessonBar"); const l = curLesson(); if (!bar || !l) return;
   const st = DB.settings, ctrl = PL && PL.ctrl;
   bar.innerHTML = `
-    <button class="tchip ${st.showSub ? "on" : ""}" data-act="tog-sub" title="Bật / tắt phụ đề tiếng Hàn">${ic("cc")}<span>Phụ đề</span></button>
-    <button class="tchip ${st.showVi ? "on" : ""}" data-act="tog-vi" title="Bật / tắt bản dịch">${ic("translate")}<span>Bản dịch</span></button>
+    <button class="tchip ${st.subVi ? "on" : ""}" data-act="tog-vi" title="Hiện / ẩn nghĩa tiếng Việt dưới phụ đề">${ic("translate")}<span>Bản dịch</span></button>
     <span class="sep"></span>
     <button class="tbtn" data-act="prev-sent" title="Câu trước (←)">${ic("prev")}</button>
     ${ctrl ? `<button class="tbtn main" id="pplay" data-act="toggle-play" title="Phát / dừng video">${ic(PL.playing && PL.playing() ? "pause" : "play")}</button>` : `<button class="tbtn main" data-act="play-sent" title="Nghe câu (giọng máy)">${ic("vol")}</button>`}
@@ -3946,8 +3987,7 @@ function hideVideoBtn() {
   return `<button class="btn sm ${on ? "on" : ""}" data-act="tog-video" title="Che video, vẫn nghe được tiếng">${ic(on ? "eyeoff" : "eye")} ${on ? "Hiện video" : "Ẩn video"}</button>`;
 }
 ACT["tog-video"] = () => { DB.settings.hideVideo = !DB.settings.hideVideo; save(); applyPanel(); renderPlayerBar(); if (["listen", "review"].includes(cur.tab)) renderTab(); toast(DB.settings.hideVideo ? "Đã ẩn video — vẫn nghe được tiếng" : "Đã hiện video"); };
-ACT["tog-sub"] = () => { DB.settings.showSub = !DB.settings.showSub; save(); rerenderLessonBits(); };
-ACT["tog-vi"] = () => { DB.settings.showVi = !DB.settings.showVi; save(); rerenderLessonBits(); if (cur.tab === "script") renderTab(); };
+ACT["tog-vi"] = () => { DB.settings.subVi = !DB.settings.subVi; save(); rerenderLessonBits(); };
 ACT["tog-panel"] = () => { DB.settings.panelHidden = !DB.settings.panelHidden; save(); applyPanel(); renderPlayerBar(); };
 function applyPanel() {
   const g = $(".lesson-grid"); if (!g) return;
@@ -3962,8 +4002,8 @@ function renderLessonSettings() {
   const b = $("#lsBody"); if (!b) return; const st = DB.settings;
   const sw = (k, label, hint) => `<label class="ls-row"><span><b>${label}</b>${hint ? `<small>${hint}</small>` : ""}</span><span class="switch"><input type="checkbox" data-ls="${k}" ${st[k] ? "checked" : ""}></span></label>`;
   const body = {
-    general: sw("showVi", "Bản dịch tiếng Việt", "Hiện nghĩa của câu dưới phụ đề") + sw("hideVideo", "Ẩn video", "Chỉ nghe tiếng, không xem hình — luyện nghe tập trung") + sw("autoSpeak", "Tự động phát âm thanh", "Đọc to từ khi bấm vào từ") + sw("panelHidden", "Ẩn bảng bên phải", "Cho video rộng hơn"),
-    sub: sw("showSub", "Phụ đề tiếng Hàn", "Hiện câu tiếng Hàn dưới video") + sw("showRom", "Phiên âm trên mỗi từ", "Hiện cách đọc La-tinh phía trên chữ Hàn") +
+    general: sw("subVi", "Nghĩa tiếng Việt dưới phụ đề", "Phụ đề tiếng Hàn luôn hiện; bật để xem thêm nghĩa") + sw("hideVideo", "Ẩn video", "Chỉ nghe tiếng, không xem hình — luyện nghe tập trung") + sw("autoSpeak", "Tự động phát âm thanh", "Đọc to từ khi bấm vào từ") + sw("panelHidden", "Ẩn bảng bên phải", "Cho video rộng hơn"),
+    sub: sw("showRom", "Phiên âm trên mỗi từ", "Hiện cách đọc La-tinh phía trên chữ Hàn") +
       `<div class="ls-row"><span><b>Cỡ chữ phụ đề</b></span><div class="seg">${[["s", "Nhỏ"], ["m", "Vừa"], ["l", "Lớn"]].map(([k, n]) => `<button class="${st.subSize === k ? "active" : ""}" data-act="ls-size" data-s="${k}">${n}</button>`).join("")}</div></div>`,
     play: `<div class="ls-row"><span><b>Tốc độ phát</b></span><div class="seg">${[0.5, 0.75, 0.85, 1, 1.25].map(r => `<button class="${r === cur.rate ? "active" : ""}" data-act="ls-rate" data-r="${r}">${r}x</button>`).join("")}</div></div>
       <div class="ls-row"><span><b>Lặp lại mỗi câu</b><small>Khi bấm Nghe câu / chọn câu</small></span><div class="seg">${[[0, "Tắt"], [1, "×2"], [2, "×3"], [Infinity, "∞"]].map(([k, n]) => `<button class="${cur.loop === k ? "active" : ""}" data-act="ls-loop" data-l="${k}">${n}</button>`).join("")}</div></div>
@@ -4274,81 +4314,163 @@ function pronFeedback(r, target) {
   return tips;
 }
 
-/* ---------- Tab: PHÁT ÂM ---------- */
-cur.pron = null;
+/* ---------- Tab: PHÁT ÂM (ghi âm → bấm dừng → AI chấm) ---------- */
+cur.pronRes = {};   // "lessonId:idx" -> kết quả chấm gần nhất
+const PR = { state: "idle", mr: null, stream: null, chunks: [], t0: 0, timer: null, idx: null, error: null };
+if (DB.settings.pronShowText === undefined) DB.settings.pronShowText = true;
+if (DB.settings.pronRom === undefined) DB.settings.pronRom = true;
+if (DB.settings.pronVi === undefined) DB.settings.pronVi = false;
+const fmt1 = v => (v == null || isNaN(v)) ? "—" : (Math.round(v * 10) / 10).toFixed(1);
+const metricColor = v => v == null || isNaN(v) ? "var(--faint)" : scoreColor(v);
+function pronKey(l, i) { return l.id + ":" + i; }
 function renderPronTab(l, body) {
   if (needSentences(l, body)) return;
-  const s = l.sentences[cur.idx]; const P = cur.pron && cur.pron.idx === cur.idx && cur.pron.lessonId === l.id ? cur.pron : null;
-  const best = (l.pronScores || {})[cur.idx];
-  const scores = Object.values(l.pronScores || {}); const avg = scores.length ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : null;
+  const n = l.sentences.length, i = cur.idx, s = l.sentences[i];
+  const res = cur.pronRes[pronKey(l, i)];
+  const st = DB.settings, scores = l.pronScores || {};
+  const done = Object.keys(scores).length;
+  const recState = PR.idx === i ? PR.state : "idle";
+  const secs = PR.state === "recording" ? Math.floor((Date.now() - PR.t0) / 1000) : 0;
+  const chip = k => { const sc = scores[k]; const cls = sc == null ? "" : sc >= 85 ? "good" : sc >= 60 ? "mid" : "bad"; return `<button class="pr-chip ${cls} ${k === i ? "active" : ""}" data-act="pr-go" data-i="${k}" title="${sc != null ? "Điểm cao nhất: " + sc : "Chưa chấm"}">${k + 1}</button>`; };
+  const main = recState === "recording"
+    ? `<button class="pr-main rec" data-act="pr-check">${ic("stop")} Dừng ghi âm · ${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, "0")}</button>`
+    : recState === "scoring" ? `<button class="pr-main" disabled><span class="spinner"></span> ${esc(PR.note || "AI đang chấm điểm…")}</button>`
+    : `<button class="pr-main" data-act="pr-check">${ic("mic")} Kiểm tra phát âm</button>`;
+  const m = res || {};
   body.innerHTML = `
-    <div class="row between" style="margin-bottom:10px">
-      <span class="badge blue">Câu ${cur.idx + 1}/${l.sentences.length}</span>
-      <span class="muted small">${avg != null ? `Trung bình ${scores.length} câu: <b>${avg}</b> điểm` : "Chưa chấm câu nào"}</span>
-      <div class="row" style="gap:4px"><button class="btn sm" data-act="prev-sent" ${cur.idx === 0 ? "disabled" : ""}>${ic("left")}</button><button class="btn sm" data-act="next-sent" ${cur.idx >= l.sentences.length - 1 ? "disabled" : ""}>${ic("right")}</button></div>
+    <div class="pr-head"><b>Luyện phát âm</b><span class="badge">${i + 1}/${n}</span></div>
+    <div class="progress" style="margin:10px 0 14px"><span style="width:${done / n * 100}%;background:var(--lg)"></span></div>
+    <div class="pr-label">CÂU <span class="faint" style="font-weight:500;text-transform:none;letter-spacing:0">· đã chấm ${done}/${n}</span></div>
+    <div class="pr-chips-row">
+      <button class="pr-nav" data-act="prev-sent" ${i === 0 ? "disabled" : ""}>${ic("left")}</button>
+      <div class="pr-chips" id="prChips">${l.sentences.map((_, k) => chip(k)).join("")}</div>
+      <button class="pr-nav" data-act="next-sent" ${i >= n - 1 ? "disabled" : ""}>${ic("right")}</button>
     </div>
-    <div class="pron-card">
-      <div class="pron-ko ko">${P && P.result ? P.result.words.map(x => `<span style="color:${x.r >= 0.85 ? "var(--success)" : x.r >= 0.5 ? "var(--warn)" : "var(--danger)"}">${esc(x.w)}</span>`).join(" ") : esc(s.ko)}</div>
-      <div class="pron-rom">${esc(Rom.text(s.ko))}</div>
-      ${s.vi ? `<div class="muted">${esc(s.vi)}</div>` : ""}
-      <div class="row" style="justify-content:center;margin-top:16px">
-        <button class="btn lg" data-act="pron-model">${ic("vol")} Nghe mẫu</button>
-        <button class="btn lg ${CAP.active ? "rec" : "primary"}" data-act="pron-go">${ic(CAP.active ? "stop" : "mic")} ${CAP.active ? "Dừng" : P && P.result ? "Nói lại" : "Bấm và đọc to"}</button>
-        ${P && P.blob ? `<button class="btn lg" data-act="pron-play">${ic("play")} Giọng tôi</button>` : ""}
+    <div class="pr-card">
+      <div class="pr-card-top"><span class="pr-label" style="margin:0">CÂU HIỆN TẠI</span>
+        <div class="row" style="gap:6px">
+          <button class="pr-tool wide" data-act="pr-model" title="Nghe câu mẫu">${ic("vol")} Âm thanh</button>
+          <button class="pr-tool ${st.pronShowText ? "" : "on"}" data-act="pr-tog" data-k="pronShowText" title="Ẩn / hiện câu (luyện nhớ)">${ic(st.pronShowText ? "eye" : "eyeoff")}</button>
+          <button class="pr-tool ${st.pronRom ? "on" : ""}" data-act="pr-tog" data-k="pronRom" title="Phiên âm La-tinh" style="font-weight:700;font-family:serif;font-size:18px">T</button>
+          <button class="pr-tool ${st.pronVi ? "on" : ""}" data-act="pr-tog" data-k="pronVi" title="Nghĩa tiếng Việt">${ic("translate")}</button>
+        </div></div>
+      <div class="pr-ko ko">${st.pronShowText ? (res && res.words && res.words.length ? res.words.map(w => `<span style="color:${scoreColor(w.score ?? 70)}" title="${esc(w.note || "")}">${esc(w.word)}</span>`).join(" ") : esc(s.ko)) : `<span class="faint">•••••• (câu đang ẩn — bấm 👁 để hiện)</span>`}</div>
+      ${st.pronShowText && st.pronRom ? `<div class="pr-rom">${esc(Rom.text(s.ko))}</div>` : ""}
+      ${st.pronVi ? `<div class="pr-vi">${esc(s.vi || "Chưa có bản dịch")}</div>` : ""}
+    </div>
+    <div class="pr-actions">
+      <div><button class="pr-btn" data-act="pr-model">${ic("play")} Phát lại</button><small>Space</small></div>
+      <div class="grow">${main}<small>Enter</small></div>
+      <div><button class="pr-btn" data-act="pr-next" ${i >= n - 1 ? "disabled" : ""}>Tiếp ${ic("right")}</button><small>Shift + →</small></div>
+    </div>
+    ${recState === "recording" ? `<div class="pr-recnote"><span class="rec-dot"></span><span>Đang ghi âm… hãy đọc to câu trên, đọc xong bấm <b>Dừng ghi âm</b> (hoặc Enter).</span></div>` : ""}
+    ${PR.idx === i && PR.error ? `<div class="note warn" style="margin-top:12px">${esc(PR.error)}</div>` : ""}
+    <div class="pr-score">
+      <div class="pr-metrics">
+        <div class="pr-m"><span>Độ chính xác</span><b style="color:${metricColor(m.accuracy)}">${fmt1(m.accuracy)}</b></div>
+        <div class="pr-m"><span>Độ trôi chảy</span><b style="color:${metricColor(m.fluency)}">${fmt1(m.fluency)}</b></div>
+        <div class="pr-m"><span>Độ hoàn thiện</span><b style="color:${metricColor(m.completeness)}">${fmt1(m.completeness)}</b></div>
+        <div class="pr-m avg"><span>Điểm trung bình</span><b style="color:${metricColor(m.overall)}">${fmt1(m.overall)}</b></div>
       </div>
-      ${CAP.active ? `<p class="muted small" style="margin:10px 0 0">🎙 Đang nghe… hãy đọc to câu trên. Đọc xong máy sẽ tự chấm.</p>` : ""}
-      ${best != null && !(P && P.result) ? `<p class="muted small" style="margin:10px 0 0">Điểm cao nhất của câu này: <b>${best}</b></p>` : ""}
-      ${!SRec ? `<div class="note warn" style="margin-top:12px">Trình duyệt này không có nhận dạng giọng nói nên không tự chấm được. Hãy dùng <b>Chrome</b> (máy tính / Android) hoặc <b>Safari</b> (iPhone/iPad)${DB.settings.aiKey ? ", hoặc bấm ghi âm rồi để AI chấm" : ""}.</div>` : ""}
-    </div>
-    ${P && P.busy ? `<div class="note info" style="margin-top:12px"><span class="spinner"></span> ${esc(P.busy)}</div>` : ""}
-    ${P && P.error ? `<div class="note warn" style="margin-top:12px">${esc(P.error)}</div>` : ""}
-    ${P && P.result ? `<div class="pron-result">
-      ${scoreRing(P.result.score)}
-      <div class="grow">
-        <div class="small muted">Máy nghe được:</div><div class="ko" style="font-size:17px;margin-bottom:8px">${esc(P.result.heard || "(không rõ)")}</div>
-        <ul class="tips">${pronFeedback(P.result, s.ko).map(t => `<li>${t}</li>`).join("")}</ul>
-      </div></div>` : ""}
-    ${P && P.ai ? `<div class="ai-box" style="margin-top:12px"><h4>${ic("spark")} AI nhận xét phát âm · ${P.ai.score ?? "?"} điểm</h4>
-      ${P.ai.heard ? `<div class="small muted">AI nghe được: <span class="ko">${esc(P.ai.heard)}</span></div>` : ""}
-      <p>${esc(P.ai.feedback || "")}</p>
-      ${(P.ai.words || []).length ? `<table class="ai-table">${P.ai.words.map(w => `<tr><td class="ko" style="white-space:nowrap"><b style="color:${scoreColor(w.score ?? 70)}">${esc(w.word)}</b></td><td>${w.score != null ? `<b>${w.score}</b> · ` : ""}${esc(w.note || "")}</td></tr>`).join("")}</table>` : ""}
-      ${(P.ai.tips || []).length ? `<ul class="tips">${P.ai.tips.map(x => `<li>${esc(x)}</li>`).join("")}</ul>` : ""}
-    </div>` : P && P.blob && DB.settings.aiKey && !P.busy ? `<button class="btn soft" style="margin-top:12px" data-act="pron-ai">${ic("spark")} AI nhận xét chi tiết từng âm</button>` : ""}
-    ${!DB.settings.aiKey && P && P.result ? `<p class="hint">Thêm mã AI trong Cài đặt để được AI nhận xét chi tiết từng âm.</p>` : ""}`;
+      ${res ? `
+        ${res.heard ? `<div class="small muted" style="margin-top:12px">${res.byAI ? "AI" : "Máy"} nghe được: <span class="ko" style="color:var(--text);font-size:16px">${esc(res.heard)}</span></div>` : ""}
+        ${res.feedback ? `<p style="margin:10px 0 6px">${esc(res.feedback)}</p>` : ""}
+        ${(res.words || []).filter(w => w.note).length ? `<div class="pr-words">${res.words.filter(w => w.note).map(w => `<div class="pr-w"><b class="ko" style="color:${scoreColor(w.score ?? 70)}">${esc(w.word)}</b>${w.score != null ? `<span class="badge">${Math.round(w.score)}</span>` : ""}<div class="small">${esc(w.note)}</div></div>`).join("")}</div>` : ""}
+        ${(res.tips || []).length ? `<ul class="tips">${res.tips.map(t => `<li>${esc(t)}</li>`).join("")}</ul>` : ""}
+        ${res.blob ? `<button class="btn sm" style="margin-top:10px" data-act="pr-mine">${ic("play")} Nghe lại giọng tôi</button>` : ""}
+        ${!res.byAI ? `<p class="hint">Chấm nhanh bằng nhận dạng giọng nói của trình duyệt. Thêm <b>mã AI</b> trong Cài đặt để được chấm đủ 3 tiêu chí và nhận xét từng âm.</p>` : ""}`
+      : `<p class="hint" style="margin:12px 0 0">Bấm <b>Kiểm tra phát âm</b> → đọc to câu → bấm <b>Dừng ghi âm</b>. ${st.aiKey ? "AI sẽ nghe bản ghi và chấm điểm." : "Chưa có mã AI: trang chấm nhanh bằng nhận dạng giọng nói (Chrome / Safari)."}</p>`}
+    </div>`;
+  const act = $("#prChips .active"), box = $("#prChips");
+  if (act && box) { const br = box.getBoundingClientRect(), ar = act.getBoundingClientRect(); box.style.scrollBehavior = "auto"; box.scrollLeft += (ar.left + ar.width / 2) - (br.left + br.width / 2); box.style.scrollBehavior = ""; }
 }
-ACT["pron-model"] = () => playSentence(cur.idx, { loops: 0 });
-ACT["pron-play"] = () => { const P = cur.pron; if (P && P.blob) new Audio(URL.createObjectURL(P.blob)).play(); };
-ACT["pron-go"] = async () => {
-  if (CAP.active) { CAP.stop && CAP.stop(); return; }
-  const l = curLesson(), idx = cur.idx, s = l.sentences[idx];
-  if (!SRec && !DB.settings.aiKey) { toast("Trình duyệt này không chấm được phát âm. Hãy dùng Chrome hoặc Safari.", "err"); return; }
+function pronRerender() { if (cur.view === "lesson" && cur.tab === "pron") renderTab(); }
+ACT["pr-go"] = el => { if (PR.state !== "idle") return; setIdx(+el.dataset.i); renderTab(); };
+ACT["pr-next"] = () => { const l = curLesson(); if (PR.state === "idle" && cur.idx < l.sentences.length - 1) { setIdx(cur.idx + 1); renderTab(); } };
+ACT["pr-model"] = () => { if (PR.state === "recording") return; playSentence(cur.idx, { loops: 0, keepIdx: true }); };
+ACT["pr-tog"] = el => { const k = el.dataset.k; DB.settings[k] = !DB.settings[k]; save(); renderTab(); };
+ACT["pr-mine"] = () => { const l = curLesson(); const r = cur.pronRes[pronKey(l, cur.idx)]; if (r && r.blob) new Audio(URL.createObjectURL(r.blob)).play(); };
+ACT["pr-check"] = () => {
+  if (PR.state === "recording") return stopPronRecording();
+  if (PR.state !== "idle") return;
+  if (DB.settings.aiKey) startPronRecording(); else pronQuickSR();
+};
+async function startPronRecording() {
+  const l = curLesson(), i = cur.idx;
+  if (!navigator.mediaDevices || !window.MediaRecorder) { PR.idx = i; PR.error = "Trình duyệt này không ghi âm được. Hãy dùng Chrome, Edge hoặc Safari mới."; return pronRerender(); }
   if (PL && PL.ctrl) PL.pause(); if ("speechSynthesis" in window) speechSynthesis.cancel();
-  cur.pron = { lessonId: l.id, idx }; renderTab();
-  setTimeout(() => cur.tab === "pron" && renderTab(), 50);
-  let r;
-  try { const p = captureSpeech({ wantAudio: !!DB.settings.aiKey }); renderTab(); r = await p; }
-  catch (e) { cur.pron.error = e.message; renderTab(); return; }
-  const P = cur.pron; if (!P || P.idx !== idx) return;
-  P.blob = r.blob;
-  if (r.texts.length) {
-    P.result = scorePron(s.ko, r.texts);
-    l.pronScores = l.pronScores || {}; l.pronScores[idx] = Math.max(l.pronScores[idx] || 0, P.result.score);
-    if (P.result.score >= 70 && !s.done) { s.done = true; DB.stats.shadow++; }
-    logAct("s"); save();
-  } else if (SRec) P.error = (SR_ERR[r.error] || "Máy không nghe rõ.") + (P.blob && DB.settings.aiKey ? " Bạn có thể bấm “AI nhận xét” để AI chấm bản ghi âm." : "");
-  renderTab();
-  if (!SRec && P.blob && DB.settings.aiKey) ACT["pron-ai"]();
-};
-ACT["pron-ai"] = async () => {
-  const P = cur.pron, l = curLesson(); if (!P || !P.blob) return; const s = l.sentences[P.idx];
-  P.busy = "AI đang nghe và chấm phát âm…"; P.error = null; renderTab();
   try {
-    const wav = await blobToWavBase64(P.blob);
-    const r = await gemini([{ inlineData: { mimeType: "audio/wav", data: wav } }, { text: `Đây là bản ghi âm một người Việt (trình độ sơ cấp) đọc câu tiếng Hàn: «${s.ko}». Hãy nghe kỹ và chấm phát âm như giáo viên. Trả về JSON: {"score": 0-100, "heard": "câu bạn thực sự nghe được (chữ Hàn)", "words": [{"word": "từ trong câu", "score": 0-100, "note": "nhận xét ngắn bằng tiếng Việt, chỉ ra âm sai và cách sửa"}], "feedback": "nhận xét chung 2-3 câu tiếng Việt, khích lệ", "tips": ["mẹo luyện cụ thể"]}` }]);
-    P.ai = r; if (r.score != null) { l.pronScores = l.pronScores || {}; l.pronScores[P.idx] = Math.max(l.pronScores[P.idx] || 0, +r.score || 0); save(); }
-  } catch (e) { P.error = e.message; }
-  P.busy = null; renderTab();
-};
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } });
+    const mr = new MediaRecorder(stream);
+    Object.assign(PR, { state: "recording", mr, stream, chunks: [], t0: Date.now(), idx: i, error: null, lessonId: l.id });
+    mr.ondataavailable = e => e.data.size && PR.chunks.push(e.data);
+    mr.onstop = () => finishPronRecording();
+    mr.start(250);
+    clearInterval(PR.timer); PR.timer = setInterval(() => { if (PR.state !== "recording") return clearInterval(PR.timer); if (Date.now() - PR.t0 > 30000) stopPronRecording(); else { const b = $(".pr-main.rec"); const sec = Math.floor((Date.now() - PR.t0) / 1000); if (b) b.innerHTML = `${ic("stop")} Dừng ghi âm · ${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, "0")}`; } }, 500);
+    pronRerender();
+  } catch (e) {
+    Object.assign(PR, { state: "idle", idx: i, error: "Không mở được micro. Hãy cho phép trang dùng micro: bấm biểu tượng ổ khoá / ⓘ cạnh địa chỉ web → Quyền → Micrô → Cho phép, rồi thử lại." });
+    pronRerender();
+  }
+}
+function stopPronRecording() { if (PR.mr && PR.mr.state === "recording") { PR.state = "scoring"; PR.note = "Đang xử lý bản ghi…"; pronRerender(); PR.mr.stop(); } }
+async function finishPronRecording() {
+  clearInterval(PR.timer);
+  PR.stream && PR.stream.getTracks().forEach(t => t.stop());
+  const l = lessonById(PR.lessonId), i = PR.idx;
+  const blob = new Blob(PR.chunks, { type: (PR.mr && PR.mr.mimeType) || "audio/webm" });
+  const dur = Date.now() - PR.t0;
+  if (!l) { PR.state = "idle"; return; }
+  if (dur < 700 || blob.size < 1500) { Object.assign(PR, { state: "idle", error: "Bản ghi quá ngắn — hãy bấm Kiểm tra phát âm, đọc hết câu rồi mới bấm Dừng." }); return pronRerender(); }
+  const s = l.sentences[i];
+  PR.state = "scoring"; PR.note = "AI đang nghe và chấm điểm…"; pronRerender();
+  const tick = setInterval(() => { if (PR.state !== "scoring") return clearInterval(tick); const b = $(".pr-main[disabled]"); if (b) b.innerHTML = `<span class="spinner"></span> ${esc(aiRetryNote || "AI đang nghe và chấm điểm…")}`; }, 700);
+  try {
+    let part;
+    try { part = { inlineData: { mimeType: "audio/wav", data: await blobToWavBase64(blob) } }; }
+    catch (e) { const b64 = await fileToBase64(blob); part = { inlineData: { mimeType: (blob.type || "audio/webm").split(";")[0], data: b64 } }; }
+    const r = await gemini([part, { text: `Bạn là giám khảo chấm phát âm tiếng Hàn cho người Việt trình độ sơ cấp. Đây là bản ghi âm người học đọc câu: «${s.ko}»${s.vi ? ` (nghĩa: ${s.vi})` : ""}.
+Hãy nghe thật kỹ rồi chấm từ 0 đến 100:
+- "accuracy": độ chính xác phát âm từng âm (phụ âm, nguyên âm, patchim, nối âm),
+- "fluency": độ trôi chảy (tốc độ, ngắt nghỉ, ngữ điệu tự nhiên),
+- "completeness": độ hoàn thiện (đọc đủ các từ, không thiếu, không thừa).
+Nếu bản ghi không có tiếng nói hoặc đọc câu khác hẳn, cho điểm thấp và nói rõ trong feedback.
+Trả về JSON: {"accuracy":0,"fluency":0,"completeness":0,"heard":"chữ Hàn bạn thực sự nghe được","words":[{"word":"từ trong câu gốc (giữ nguyên thứ tự, đủ các từ)","score":0,"note":"âm sai và cách sửa, bằng tiếng Việt; để rỗng nếu đọc tốt"}],"feedback":"nhận xét chung 2-3 câu tiếng Việt, khích lệ","tips":["1-3 mẹo luyện cụ thể"]}` }]);
+    const num = v => Math.max(0, Math.min(100, +v || 0));
+    const res = { accuracy: num(r.accuracy), fluency: num(r.fluency), completeness: num(r.completeness), heard: r.heard || "", words: Array.isArray(r.words) ? r.words.map(w => ({ word: String(w.word || ""), score: w.score != null ? num(w.score) : null, note: w.note || "" })).filter(w => w.word) : [], feedback: r.feedback || "", tips: Array.isArray(r.tips) ? r.tips.slice(0, 3) : [], blob, byAI: true };
+    res.overall = (res.accuracy + res.fluency + res.completeness) / 3;
+    cur.pronRes[pronKey(l, i)] = res;
+    l.pronScores = l.pronScores || {}; l.pronScores[i] = Math.max(l.pronScores[i] || 0, Math.round(res.overall));
+    if (res.overall >= 70 && !s.done) { s.done = true; DB.stats.shadow++; }
+    logAct("s"); save();
+    PR.error = null;
+  } catch (e) { PR.error = e.message; cur.pronRes[pronKey(l, i)] = Object.assign(cur.pronRes[pronKey(l, i)] || {}, { blob }); }
+  clearInterval(tick);
+  PR.state = "idle"; pronRerender();
+}
+async function pronQuickSR() {
+  const l = curLesson(), i = cur.idx, s = l.sentences[i];
+  if (!SRec) { PR.idx = i; PR.error = "Chưa có mã AI và trình duyệt này không có nhận dạng giọng nói. Hãy thêm mã AI trong Cài đặt (để AI chấm) hoặc dùng Chrome / Safari."; return pronRerender(); }
+  if (PL && PL.ctrl) PL.pause(); if ("speechSynthesis" in window) speechSynthesis.cancel();
+  Object.assign(PR, { state: "recording", t0: Date.now(), idx: i, error: null, lessonId: l.id, mr: null });
+  pronRerender();
+  const r = await captureSpeech({ wantAudio: false, maxMs: 15000 });   // chỉ nhận dạng, không ghi âm song song (tránh tranh micro)
+  PR.state = "idle";
+  if (!r.texts.length) { PR.error = SR_ERR[r.error] || "Máy không nghe rõ — hãy nói to, gần micro, và cho phép trang dùng micro."; return pronRerender(); }
+  const sc = scorePron(s.ko, r.texts);
+  const comp = sc.words.length ? sc.words.filter(w => w.r >= 0.5).length / sc.words.length * 100 : 0;
+  const res = { accuracy: sc.score, fluency: null, completeness: comp, overall: (sc.score + comp) / 2, heard: sc.heard, words: sc.words.map(w => ({ word: w.w, score: Math.round(w.r * 100), note: w.r < 0.5 ? "Chưa rõ hoặc bị thiếu" : w.r < 0.85 ? "Gần đúng — chú ý nguyên âm / patchim" : "" })), feedback: pronFeedback(sc, s.ko)[0].replace(/<[^>]+>/g, ""), tips: [], byAI: false };
+  cur.pronRes[pronKey(l, i)] = res;
+  l.pronScores = l.pronScores || {}; l.pronScores[i] = Math.max(l.pronScores[i] || 0, Math.round(res.overall));
+  logAct("s"); save(); pronRerender();
+}
+// Phím tắt khi đang ở tab Phát âm: Space = phát lại, Enter = kiểm tra / dừng, Shift+→ = tiếp
+document.addEventListener("keydown", e => {
+  if (cur.view !== "lesson" || cur.tab !== "pron" || e.target.closest("input, textarea, select") || $("#modal").classList.contains("open")) return;
+  if (e.key === " ") { e.preventDefault(); e.stopImmediatePropagation(); ACT["pr-model"](); }
+  else if (e.key === "Enter") { e.preventDefault(); e.stopImmediatePropagation(); ACT["pr-check"](); }
+  else if (e.key === "ArrowRight" && e.shiftKey) { e.preventDefault(); e.stopImmediatePropagation(); ACT["pr-next"](); }
+}, true);
 
 /* ---------- Tab: LUYỆN NGHE (3 chế độ) ---------- */
 function newListen(l, mode) {
