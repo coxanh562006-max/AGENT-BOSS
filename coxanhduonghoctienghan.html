@@ -2255,6 +2255,40 @@ function speak(text, opt = {}) {
 const cur = { form: { job: 0 }, view: "home", lessonId: null, idx: 0, tab: "script", word: null, loop: 0, autopause: false, rate: 1, listen: null, formFile: null };
 const SESSION_FILES = {};   // lessonId -> objectURL (file từ máy)
 const RECS = {};            // "lessonId:idx" -> url ghi âm
+/* Kho video trong máy: lưu file vào IndexedDB để mở lại trang vẫn còn */
+const VStore = (() => {
+  let dbp = null;
+  const open = () => dbp || (dbp = new Promise((res, rej) => {
+    if (!window.indexedDB) return rej(new Error("no idb"));
+    const r = indexedDB.open("coxanh_videos", 1);
+    r.onupgradeneeded = () => r.result.createObjectStore("files");
+    r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error);
+  }));
+  const tx = (mode, fn) => open().then(db => new Promise((res, rej) => {
+    const t = db.transaction("files", mode), req = fn(t.objectStore("files"));
+    t.oncomplete = () => res(req.result); t.onerror = t.onabort = () => rej(t.error);
+  }));
+  return {
+    put: (id, file) => tx("readwrite", s => s.put(file, id)),
+    get: id => tx("readonly", s => s.get(id)),
+    del: id => tx("readwrite", s => s.delete(id)).catch(() => { }),
+  };
+})();
+function storeLessonFile(l, file) {
+  try { navigator.storage && navigator.storage.persist && navigator.storage.persist(); } catch (e) { }
+  VStore.put(l.id, file).then(() => {
+    l.stored = true; save(); toast("Đã lưu video vào trình duyệt — lần sau mở là có ngay", "ok");
+  }).catch(() => {
+    l.stored = false; save();
+    toast("Không lưu được file vào trình duyệt (file quá lớn hoặc máy hết dung lượng). Lần sau bạn cần chọn lại file.", "err");
+  });
+}
+async function lessonFileURL(l) {
+  if (SESSION_FILES[l.id]) return SESSION_FILES[l.id];
+  if (!l.stored) return null;
+  try { const b = await VStore.get(l.id); if (b) return (SESSION_FILES[l.id] = URL.createObjectURL(b)); } catch (e) { }
+  l.stored = false; save(); return null;
+}
 const ACACHE = new Map();
 function analyze(text) { if (!ACACHE.has(text)) ACACHE.set(text, analyzeSentence(text)); return ACACHE.get(text); }
 const lessonById = id => DB.lessons.find(l => l.id === id);
@@ -2696,7 +2730,7 @@ ACT["create-lesson"] = () => {
   const d = new Date();
   const l = { id: uid(), title: $("#fTitle").value.trim() || `Bài học ${d.getDate()}/${d.getMonth() + 1} – ${src.label}`, url, src, fileName: cur.formFile ? cur.formFile.name : "", sentences, summary: ($("#fSum") && $("#fSum").value.trim()) || "", cat: ($("#fCat") && $("#fCat").value) || "other", thumb: (cur.form.meta && cur.form.meta.thumb) || "", created: Date.now(), opened: Date.now(), idx: 0 };
   cur.form.job++;
-  if (cur.formFile) SESSION_FILES[l.id] = URL.createObjectURL(cur.formFile);
+  if (cur.formFile) { SESSION_FILES[l.id] = URL.createObjectURL(cur.formFile); storeLessonFile(l, cur.formFile); }
   DB.lessons.push(l); cur.formFile = null; save();
   toast(sentences.length ? `Đã tạo bài học với ${sentences.length} câu` : "Đã tạo bài học. Hãy thêm lời thoại nhé!", "ok");
   go("lesson/" + l.id + "/script");
@@ -2704,7 +2738,7 @@ ACT["create-lesson"] = () => {
 ACT["del-lesson"] = el => {
   const l = lessonById(el.dataset.id); if (!l) return;
   confirmBox(`Xoá bài học “<b>${esc(l.title)}</b>”? Thẻ flashcard đã lưu vẫn được giữ lại.`, () => {
-    DB.lessons = DB.lessons.filter(x => x.id !== l.id);
+    DB.lessons = DB.lessons.filter(x => x.id !== l.id); VStore.del(l.id);
     if (DB.lastLesson === l.id) DB.lastLesson = null;
     if (cur.lessonId === l.id) { destroyPlayer(); cur.lessonId = null; }
     save(); route(); toast("Đã xoá bài học");
@@ -2784,9 +2818,13 @@ function buildPlayer(l) {
     });
   } else if (s.type === "direct" || s.type === "file") {
     const src = s.type === "file" ? SESSION_FILES[l.id] : l.url;
-    if (!src) {
+    if (!src && s.type === "file" && l.stored) {
       wrap.className = "player-wrap novideo";
-      wrap.innerHTML = `<div class="novideo-inner">${ic("upload")}<div>Trình duyệt không giữ file video giữa các lần mở trang.<br>Hãy chọn lại file <b>${esc(l.fileName || "")}</b> để học tiếp.</div><button class="btn primary" data-act="repick-file">${ic("upload")} Chọn lại file</button></div>`;
+      wrap.innerHTML = `<div class="novideo-inner">${ic("upload")}<div>Đang mở video đã lưu…</div></div>`;
+      lessonFileURL(l).then(() => { if (cur.lessonId === l.id && $("#playerWrap") === wrap) { buildPlayer(l); renderShadow(); } });
+    } else if (!src) {
+      wrap.className = "player-wrap novideo";
+      wrap.innerHTML = `<div class="novideo-inner">${ic("upload")}<div>Chưa có file video trong máy cho bài này.<br>Chọn lại file <b>${esc(l.fileName || "")}</b> một lần — trang sẽ <b>lưu luôn</b>, lần sau không cần chọn nữa.</div><button class="btn primary" data-act="repick-file">${ic("upload")} Chọn lại file</button></div>`;
     } else {
       wrap.innerHTML = `<video id="vid" controls playsinline preload="metadata" src="${esc(src)}"></video>`;
       const v = $("#vid");
@@ -2822,7 +2860,7 @@ function ytError(code, l) {
 ACT["toggle-frame"] = () => { $("#playerWrap").classList.toggle("tall"); };
 ACT["repick-file"] = () => {
   const f = $("#hiddenFile"); f.accept = "video/*,audio/*"; f.value = "";
-  f.onchange = () => { const l = curLesson(); if (f.files[0] && l) { SESSION_FILES[l.id] = URL.createObjectURL(f.files[0]); l.fileName = f.files[0].name; save(); buildPlayer(l); renderShadow(); } };
+  f.onchange = () => { const l = curLesson(); if (f.files[0] && l) { SESSION_FILES[l.id] = URL.createObjectURL(f.files[0]); l.fileName = f.files[0].name; save(); storeLessonFile(l, f.files[0]); buildPlayer(l); renderShadow(); } };
   f.click();
 };
 let lastAutoPause = -1;
@@ -3446,8 +3484,9 @@ ACT["ai-transcribe-lesson"] = async el => {
   if (!DB.settings.aiKey) { toast("Hãy thêm mã AI trong Cài đặt trước nhé", "err"); return; }
   let file = null;
   if (l.src.type === "file") {
-    if (!SESSION_FILES[l.id]) { toast("Hãy chọn lại file video trước", "err"); return; }
-    file = await fetch(SESSION_FILES[l.id]).then(r => r.blob());
+    const u = await lessonFileURL(l);
+    if (!u) { toast("Hãy chọn lại file video trước", "err"); return; }
+    file = await fetch(u).then(r => r.blob());
   }
   busy(el, true, "AI đang nghe video…");
   try {
