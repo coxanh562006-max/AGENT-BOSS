@@ -600,7 +600,7 @@ body.wd-open .wd-bg{display:block;position:fixed;inset:0;background:rgba(10,15,2
 }
 
 
-/* ===== Chế độ học: phát âm, luyện nghe, ôn tập, quiz, mindmap ===== */
+/* ===== Chế độ học: phát âm, luyện nghe, ôn tập, quiz ===== */
 .mode-bar{display:flex;gap:8px;margin:-4px 0 14px;overflow-x:auto;scrollbar-width:none;padding:2px}
 .mode-bar::-webkit-scrollbar{display:none}
 .mode-btn{display:inline-flex;align-items:center;gap:8px;padding:10px 16px;border-radius:14px;border:1.5px solid var(--border);background:var(--surface);color:var(--text);font-weight:600;font-size:14.5px;cursor:pointer;white-space:nowrap;transition:all .12s}
@@ -627,29 +627,6 @@ body.wd-open .wd-bg{display:block;position:fixed;inset:0;background:rgba(10,15,2
 .qz-letter{width:30px;height:30px;border-radius:9px;background:var(--surface-2);display:grid;place-items:center;font-weight:700;flex:none;font-family:var(--font)}
 .qz-opt.right{border-color:var(--success);background:var(--success-soft)} .qz-opt.right .qz-letter{background:var(--success);color:#fff}
 .qz-opt.wrong{border-color:var(--danger);background:var(--danger-soft)} .qz-opt.wrong .qz-letter{background:var(--danger);color:#fff}
-.mm-wrap{overflow:auto;border:1px solid var(--border);border-radius:16px;padding:16px;background:radial-gradient(color-mix(in srgb,var(--lb) 12%,transparent) 1px,transparent 1.2px) 0 0/22px 22px,var(--surface);max-height:calc(100vh - 260px)}
-.mm-wrap.full{max-height:78vh}
-.mm ul{list-style:none;margin:0;padding:0 0 0 26px;position:relative}
-.mm ul.mm-root{padding:0}
-.mm li{position:relative;display:flex;align-items:center;padding:5px 0 5px 22px}
-.mm-root>li{padding-left:0}
-.mm li::before{content:"";position:absolute;left:0;top:50%;width:22px;border-top:2px solid var(--bc)}
-.mm li::after{content:"";position:absolute;left:0;top:0;bottom:0;border-left:2px solid var(--bc)}
-.mm li:first-child::after{top:50%} .mm li:last-child::after{bottom:50%} .mm li:only-child::after{display:none}
-.mm-root>li::before,.mm-root>li::after{display:none}
-.mm ul ul::before{content:"";position:absolute;left:0;top:50%;width:26px;border-top:2px solid var(--bc)}
-.mm li>ul{padding-left:26px}
-.mm li>ul::before{left:0;width:26px}
-.mm-node{flex:none;display:flex;flex-direction:column;padding:8px 12px;border-radius:12px;background:var(--surface);border:2px solid var(--bc);max-width:260px;font-size:14px;line-height:1.35;box-shadow:0 2px 8px rgba(15,23,42,.06)}
-.mm-node small{color:var(--muted);font-size:12.5px;margin-top:2px}
-.mm-node.has{cursor:pointer}
-.mm li.d0>.mm-node{background:linear-gradient(135deg,var(--lb),var(--lb2));color:#fff;border-color:transparent;font-weight:700;font-size:16px;max-width:220px}
-.mm li.d1>.mm-node{background:var(--bc);color:#fff;border-color:transparent;font-weight:700}
-.mm li.d1>.mm-node small{color:rgba(255,255,255,.85)}
-.mm li.d2>.mm-node{background:color-mix(in srgb,var(--bc) 10%,var(--surface));font-weight:600}
-.mm li.d3>.mm-node{border-width:1.5px}
-.mm li.closed>ul{display:none}
-.mm li.closed>.mm-node::after{content:" +";font-weight:700}
 .modal-box.wide{max-width:min(1200px,96vw)}
 @media (max-width:720px){ .mode-btn{padding:8px 12px;font-size:13.5px} .pron-ko{font-size:21px} .rv-word{font-size:28px} .pron-result,.trans-res{flex-direction:column;align-items:center;text-align:center} }
 
@@ -2887,8 +2864,8 @@ function openLesson(id, tab) {
   const changed = cur.lessonId !== id || !$("#playerWrap");
   if (cur.lessonId !== id) { cur.idx = Math.min(l.idx || 0, Math.max(0, l.sentences.length - 1)); cur.word = null; cur.listen = null; }
   cur.lessonId = id; DB.lastLesson = id; l.opened = Date.now(); save();
-  if (tab && ["script", "analysis", "vocab", "grammar", "listen", "pron", "review", "quiz", "mindmap"].includes(tab)) cur.tab = tab;
-  if (cur.lessonId !== id || changed) { cur.pron = null; cur.rv = null; cur.qz = null; cur.mmTried = false; }
+  if (tab && ["script", "analysis", "vocab", "grammar", "listen", "pron", "review", "quiz"].includes(tab)) cur.tab = tab;
+  if (cur.lessonId !== id || changed) { cur.pron = null; cur.rv = null; cur.qz = null; }
   if (changed) {
     $("#view-lesson").innerHTML = `
     <div class="lesson-head">
@@ -2935,7 +2912,7 @@ function renderTab() {
   const l = curLesson(); if (!l) return;
   const body = $("#tabBody");
   if (!l.sentences.length && LEARN_TABS.includes(cur.tab) && cur.tab !== "script") { cur.tab = "script"; renderTabs(); }
-  ({ script: renderScriptTab, analysis: renderAnalysisTab, vocab: renderVocabTab, grammar: renderGrammarTab, listen: renderListenTab, pron: renderPronTab, review: renderReviewTab, quiz: renderQuizTab, mindmap: renderMindmapTab })[cur.tab](l, body);
+  ({ script: renderScriptTab, analysis: renderAnalysisTab, vocab: renderVocabTab, grammar: renderGrammarTab, listen: renderListenTab, pron: renderPronTab, review: renderReviewTab, quiz: renderQuizTab })[cur.tab](l, body);
 }
 function setIdx(i, opt = {}) {
   const l = curLesson(); if (!l || i < 0 || i >= l.sentences.length) return;
@@ -4122,17 +4099,15 @@ document.addEventListener("keydown", e => { if (e.key === "Escape") { if (docume
 <script>
 "use strict";
 /* =========================================================
-   CHẾ ĐỘ HỌC: PHÁT ÂM · LUYỆN NGHE · ÔN TẬP · QUIZ · MINDMAP
+   CHẾ ĐỘ HỌC: PHÁT ÂM · LUYỆN NGHE · ÔN TẬP · QUIZ
    ========================================================= */
 Object.assign(ICONS, {
   target: '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.5" fill="currentColor"/>',
   quiz: '<circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 0 1 4.9.7c0 1.7-2.4 2.3-2.4 3.8"/><circle cx="12" cy="17" r=".8" fill="currentColor"/>',
-  tree: '<circle cx="5" cy="12" r="2.5"/><circle cx="19" cy="5" r="2.5"/><circle cx="19" cy="12" r="2.5"/><circle cx="19" cy="19" r="2.5"/><path d="M7.5 12h9M7 11l9.5-5M7 13l9.5 5"/>',
   pencil: '<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>',
-  expand: '<polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>',
 });
 const LEARN_TABS = ["script", "analysis", "vocab", "grammar"];
-const MODES = [["learn", "repeat", "Học & Shadowing"], ["pron", "target", "Phát âm"], ["listen", "ear", "Luyện nghe"], ["review", "cards", "Ôn tập"], ["quiz", "quiz", "Quiz"], ["mindmap", "tree", "Mindmap"]];
+const MODES = [["learn", "repeat", "Học & Shadowing"], ["pron", "target", "Phát âm"], ["listen", "ear", "Luyện nghe"], ["review", "cards", "Ôn tập"], ["quiz", "quiz", "Quiz"]];
 const modeOf = tab => LEARN_TABS.includes(tab) ? "learn" : tab;
 function renderModeBar() {
   const el = $("#modeBar"); if (!el) return;
@@ -4603,51 +4578,6 @@ ACT["qz-ai"] = async () => {
   Q.busy = false; renderTab();
 };
 
-/* ---------- Tab: MINDMAP ---------- */
-function offlineMindmap(l) {
-  const vocab = lessonVocab(l).filter(v => v.meaning);
-  const groups = [["n", "Danh từ"], ["v", "Động từ"], ["a", "Tính từ"], ["adv", "Phó từ"], ["int", "Câu giao tiếp"]];
-  const gram = new Map(); l.sentences.forEach(s => analyze(s.ko).grammar.forEach(g => gram.set(g.id, (gram.get(g.id) || 0) + 1)));
-  const topG = [...gram.entries()].sort((a, b) => b[1] - a[1]).slice(0, 8).map(([id]) => ({ title: G[id].p, note: G[id].m }));
-  const main = l.sentences.filter(s => s.vi).slice(0, 6).map(s => ({ title: s.vi, note: s.ko }));
-  return { title: l.title, children: [
-    main.length ? { title: "Nội dung chính", children: main } : null,
-    { title: "Từ vựng", children: groups.map(([p, n]) => { const ws = vocab.filter(v => (p === "n" ? ["n", "pron", "cnt"].includes(v.pos) : v.pos === p)).slice(0, 8); return ws.length ? { title: n, children: ws.map(v => ({ title: v.base, note: shortMean(v.meaning) })) } : null; }).filter(Boolean) },
-    topG.length ? { title: "Ngữ pháp", children: topG } : null,
-  ].filter(Boolean) };
-}
-function mmNode(n, depth, branch) {
-  const kids = (n.children || []).filter(Boolean);
-  return `<li class="mm-li d${Math.min(depth, 3)}" style="--bc:${branch}">
-    <div class="mm-node ${kids.length ? "has" : ""}" ${kids.length && depth > 0 ? `data-act="mm-toggle"` : ""}><span class="${HG.isHangul(n.title) && depth > 1 ? "ko" : ""}">${esc(n.title)}</span>${n.note ? `<small class="${HG.isHangul(n.note) ? "ko" : ""}">${esc(n.note)}</small>` : ""}</div>
-    ${kids.length ? `<ul>${kids.map((c, i) => mmNode(c, depth + 1, depth === 0 ? MM_COLORS[i % MM_COLORS.length] : branch)).join("")}</ul>` : ""}
-  </li>`;
-}
-const MM_COLORS = ["#2563eb", "#16a34a", "#db2777", "#ea580c", "#7c3aed", "#0891b2"];
-function mindmapHTML(m) { return `<div class="mm"><ul class="mm-root">${mmNode(m, 0, "#2563eb")}</ul></div>`; }
-function renderMindmapTab(l, body) {
-  if (needSentences(l, body)) return;
-  const m = l.mindmap || offlineMindmap(l);
-  body.innerHTML = `<div class="row between" style="margin-bottom:10px">
-      <span class="muted small">${l.mindmap ? "Mindmap do AI tóm tắt video" : "Mindmap tạo từ lời thoại & từ điển"} · bấm vào nhánh để thu gọn</span>
-      <div class="row" style="gap:6px">${DB.settings.aiKey ? `<button class="btn soft sm" data-act="mm-ai" ${cur.mmBusy ? "disabled" : ""}>${ic("spark")} ${l.mindmap ? "Tạo lại bằng AI" : "Tạo bằng AI"}</button>` : ""}<button class="btn sm" data-act="mm-full">${ic("expand")} Phóng to</button></div></div>
-    ${cur.mmBusy ? `<div class="note info" style="margin-bottom:10px"><span class="spinner"></span> AI đang tóm tắt video thành mindmap…</div>` : ""}
-    ${!DB.settings.aiKey ? `<div class="note" style="margin-bottom:10px">Thêm mã AI trong Cài đặt để AI tóm tắt nội dung video thành mindmap đầy đủ hơn.</div>` : ""}
-    <div class="mm-wrap">${mindmapHTML(m)}</div>`;
-  if (DB.settings.aiKey && !l.mindmap && !cur.mmBusy && !cur.mmTried) { cur.mmTried = true; ACT["mm-ai"](); }
-}
-ACT["mm-toggle"] = el => el.closest("li").classList.toggle("closed");
-ACT["mm-full"] = () => { const l = curLesson(); openModal("Mindmap: " + l.title, `<div class="mm-wrap full">${mindmapHTML(l.mindmap || offlineMindmap(l))}</div>`); $("#modal .modal-box").classList.add("wide"); };
-ACT["mm-ai"] = async () => {
-  const l = curLesson(); cur.mmBusy = true; renderTab();
-  try {
-    const r = await gemini([{ text: `Đây là lời thoại video tiếng Hàn «${l.title}»:\n${transcriptText(l)}\nHãy tạo MINDMAP tóm tắt video cho người Việt học tiếng Hàn sơ cấp. Trả về JSON dạng cây: {"title":"chủ đề video (tiếng Việt, ngắn)","children":[{"title":"nhánh","note":"","children":[{"title":"...","note":"giải thích ngắn"}]}]}.
-Gồm 4-6 nhánh chính: "Nội dung chính" (các ý chính theo trình tự), "Từ vựng quan trọng" (chia nhóm theo chủ đề; lá dạng title = từ tiếng Hàn, note = nghĩa), "Ngữ pháp" (title = cấu trúc, note = nghĩa), "Mẫu câu hữu ích" (title = câu Hàn, note = nghĩa), có thể thêm "Văn hoá / ghi chú". Tối đa 3 cấp, mỗi nhánh 3-7 mục, ngắn gọn.` }]);
-    if (!r || !r.title || !Array.isArray(r.children)) throw new Error("AI chưa tạo được mindmap, thử lại nhé.");
-    l.mindmap = r; save();
-  } catch (e) { toast(e.message, "err"); }
-  cur.mmBusy = false; if (cur.tab === "mindmap") renderTab();
-};
 </script>
 </body>
 </html>
