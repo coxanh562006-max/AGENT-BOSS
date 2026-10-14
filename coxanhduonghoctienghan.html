@@ -2540,6 +2540,14 @@ ACT["del-lesson"] = el => {
    TRÌNH PHÁT VIDEO
    ========================================================= */
 let PL = null, pollTimer = null;
+const WEB_URL = "https://coxanh562006-max.github.io/AGENT-BOSS/coxanhduonghoctienghan.html";
+const isWebOrigin = () => /^https?:$/.test(location.protocol);
+function localFileWarn(l) {
+  return `<div class="note warn">${ic("video")} <b>YouTube không phát được khi mở trang từ file trong máy</b> (sẽ báo “Lỗi 153”). Hãy mở trang bằng <b>link web</b> để xem video:
+    <div class="row" style="margin-top:8px"><a class="btn sm primary" href="${WEB_URL}#lesson/${esc(l.id)}/script" target="_blank" rel="noopener">${ic("ext")} Mở bằng link web</a>
+    <a class="btn sm ghost" href="${esc(l.url)}" target="_blank" rel="noopener">${ic("ext")} Xem trên YouTube</a></div>
+    <div class="small" style="margin-top:6px">Lưu ý: trang web và file trong máy lưu dữ liệu riêng — trên link web bạn dán lại link video (hoặc dùng Cài đặt → Sao lưu để chuyển dữ liệu). Phụ đề bằng AI vẫn lấy được ở cả hai nơi.</div></div>`;
+}
 const SEG = { on: false, start: 0, end: 0, loops: 0, after: null };
 let ytApi = null;
 function loadYT() {
@@ -2573,6 +2581,7 @@ function buildPlayer(l) {
   };
   if (s.type === "youtube") {
     wrap.classList.toggle("tall", !!s.short);
+    if (!isWebOrigin()) note.innerHTML = localFileWarn(l);
     wrap.innerHTML = `<div id="ytp"></div>`;
     loadYT().then(() => {
       if (!PL || PL.lessonId !== l.id) return;
@@ -2596,7 +2605,7 @@ function buildPlayer(l) {
       startPoll(); renderPlayerBar();
     }).catch(() => {
       iframe(`https://www.youtube.com/embed/${s.id}?playsinline=1&rel=0`, s.short);
-      note.innerHTML = `<div class="note warn">Không tải được bộ điều khiển YouTube (kiểm tra mạng). Video vẫn xem được nhưng không tự phát từng câu.</div>`;
+      note.innerHTML = isWebOrigin() ? `<div class="note warn">Không tải được bộ điều khiển YouTube (kiểm tra mạng). Video vẫn xem được nhưng không tự phát từng câu.</div>` : localFileWarn(l);
     });
   } else if (s.type === "direct" || s.type === "file") {
     const src = s.type === "file" ? SESSION_FILES[l.id] : l.url;
@@ -2630,7 +2639,8 @@ function ytError(code, l) {
     101: "Chủ video không cho phép phát trên trang khác.", 150: "Chủ video không cho phép phát trên trang khác.",
     153: "YouTube chặn phát khi mở trang trực tiếp từ file trong máy (lỗi 153).",
   }[code] || ("Lỗi YouTube " + code);
-  const fix = code === 153 ? " Cách khắc phục: mở trang qua đường link web (hỏi người tạo trang), hoặc tạm thời học bằng giọng máy." : " Bạn vẫn học được bằng giọng máy, hoặc mở video gốc ở tab khác.";
+  if (code === 153 || !isWebOrigin()) { $("#playerNote").innerHTML = localFileWarn(l); PL.ctrl = false; renderPlayerBar(); return; }
+  const fix = " Bạn vẫn học được bằng giọng máy, hoặc mở video gốc ở tab khác.";
   $("#playerNote").innerHTML = `<div class="note warn">${esc(m + fix)} <a class="btn ghost sm" href="${esc(l.url)}" target="_blank" rel="noopener">${ic("ext")} Mở trên YouTube</a></div>`;
   PL.ctrl = false; renderPlayerBar();
 }
