@@ -627,6 +627,12 @@ body.wd-open .wd-bg{display:block;position:fixed;inset:0;background:rgba(10,15,2
 .qz-opts{display:flex;flex-direction:column;gap:10px}
 .qz-opt{display:flex;align-items:center;gap:12px;padding:12px 14px;border:1.5px solid var(--border);border-radius:14px;background:var(--surface);cursor:pointer;text-align:left;font-size:15px;color:var(--text)}
 .qz-opt.ko{font-size:17px}
+.qz-q.ko{font-family:var(--font-ko);font-size:19px;font-weight:600}
+.qz-vi{color:var(--muted);margin:-6px 0 10px;font-size:14.5px}
+.qz-ov{display:block;font-family:var(--font);font-size:13px;color:var(--muted);margin-top:2px}
+.qz-refs{margin-top:10px;border:1px solid var(--border);border-radius:14px;padding:6px 10px}
+.qz-ref{display:flex;gap:6px;align-items:flex-start;padding:6px 0;border-top:1px dashed var(--border)}
+.qz-ref:first-child{border-top:0}
 .qz-opt:hover:not(:disabled){border-color:var(--lb)}
 .qz-letter{width:30px;height:30px;border-radius:9px;background:var(--surface-2);display:grid;place-items:center;font-weight:700;flex:none;font-family:var(--font)}
 .qz-opt.right{border-color:var(--success);background:var(--success-soft)} .qz-opt.right .qz-letter{background:var(--success);color:#fff}
@@ -3955,6 +3961,7 @@ function renderSubBox() {
   box.classList.remove("hidden");
   const s = l.sentences[cur.idx];
   if (cur.tab === "listen") { box.innerHTML = `<div class="sub-hide">${ic("ear")} Đang luyện nghe — phụ đề được ẩn</div>`; return; }
+  if (cur.tab === "quiz" && cur.qz && cur.qz.items && cur.qz.i < cur.qz.items.length && cur.qz.picked == null) { box.innerHTML = `<div class="sub-hide">${ic("ear")} Đang làm quiz — nghe video để tìm đáp án, phụ đề hiện sau khi trả lời</div>`; return; }
   const toks = subTokens(s);
   const words = `<div class="sub-line sz-${st.subSize}">${toks.map((t, i) => `<button class="sw k-${KIND_CLASS[t.pos] || "u"} ${cur.subWord === i ? "sel" : ""}" data-act="sub-word" data-i="${i}">${st.showRom ? `<span class="sr">${esc(Rom.text(t.clean))}</span>` : ""}<span class="sk">${esc(t.surface)}</span></button>`).join("")}</div>`;
   const vi = st.subVi ? `<div class="sub-vi sz-${st.subSize}">${s.vi ? esc(s.vi) : `<span class="faint" style="font-weight:400">Chưa có bản dịch${st.aiKey ? ` · <a href="#" data-act="ai-explain">AI dịch</a>` : ""}</span>`}</div>` : "";
@@ -4696,55 +4703,104 @@ ACT["rv-addwrong"] = () => {
   save(); renderNav(); toast(`Đã thêm ${n} từ vào flashcard`, "ok");
 };
 
-/* ---------- Tab: QUIZ nội dung video ---------- */
+/* ---------- Tab: QUIZ nội dung video (câu hỏi tiếng Hàn, giải thích tiếng Việt) ---------- */
+const QUIZ_VER = 2;
 function offlineQuiz(l) {
-  const withVi = l.sentences.filter(s => s.vi && s.ko.length > 3);
+  const withVi = l.sentences.map((s, idx) => ({ s, idx })).filter(x => x.s.vi && x.s.ko.length > 3);
   if (withVi.length < 4) return [];
-  return shuffle(withVi).slice(0, 8).map((s, k) => {
-    const others = shuffle(withVi.filter(x => x !== s)).slice(0, 3);
-    if (k % 2 === 0) { const opts = shuffle([s.vi, ...others.map(x => x.vi)]); return { q: `Trong video, câu «${s.ko}» có nghĩa là gì?`, options: opts, answer: opts.indexOf(s.vi), explain: `«${s.ko}» = ${s.vi}` }; }
-    const opts = shuffle([s.ko, ...others.map(x => x.ko)]); return { q: `Câu nào trong video có nghĩa: «${s.vi}»?`, options: opts, answer: opts.indexOf(s.ko), explain: `${s.ko} — ${s.vi}`, ko: true };
+  return shuffle(withVi).slice(0, 8).map(({ s, idx }, k) => {
+    const others = shuffle(withVi.filter(x => x.s !== s)).slice(0, 3).map(x => x.s);
+    if (k % 2 === 0) {
+      const opts = shuffle([s.vi, ...others.map(x => x.vi)]);
+      return { q: `영상에서 "${s.ko}"는 무슨 뜻이에요?`, qVi: `Trong video, câu "${s.ko}" có nghĩa là gì?`, options: opts, optionsVi: null, answer: opts.indexOf(s.vi), explain: `«${s.ko}» nghĩa là: ${s.vi}`, ref: [idx], optVi: true };
+    }
+    const opts = shuffle([s.ko, ...others.map(x => x.ko)]);
+    return { q: `"${s.vi}" — 이 뜻에 맞는 문장은 무엇이에요?`, qVi: `Câu nào có nghĩa: "${s.vi}"?`, options: opts, optionsVi: null, answer: opts.indexOf(s.ko), explain: `Câu đúng: «${s.ko}» — ${s.vi}`, ref: [idx] };
   });
+}
+function quizRef(l, it) {
+  const r = (Array.isArray(it.ref) ? it.ref : []).map(Number).filter(n => Number.isInteger(n) && n >= 0 && n < l.sentences.length).sort((a, b) => a - b);
+  return r.length ? [r[0], Math.min(r[r.length - 1], r[0] + 3)] : null;
+}
+function quizJump(l, it) {
+  const r = quizRef(l, it); if (!r) return;
+  setIdx(r[0]);
+  const s = l.sentences[r[0]];
+  if (PL && PL.ctrl && s.start != null) { SEG.on = false; PL.pause(); PL.seek(Math.max(0, s.start - 0.05)); }
+}
+function playRange(l, a, b) {
+  const sa = l.sentences[a], sb = l.sentences[b];
+  if (PL && PL.ctrl && sa.start != null) {
+    if ("speechSynthesis" in window) speechSynthesis.cancel();
+    PL.setRate(cur.rate);
+    Object.assign(SEG, { on: true, start: sa.start, end: sentenceEnd(l, b), loops: 0, after: null });
+    PL.seek(Math.max(0, sa.start - 0.05)); PL.play();
+  } else {
+    let k = a; const next = () => { if (k > b) return; speak(l.sentences[k++].ko, { onend: () => setTimeout(next, 350) }); }; next();
+  }
 }
 function renderQuizTab(l, body) {
   if (needSentences(l, body)) return;
-  if (!cur.qz || cur.qz.lessonId !== l.id) cur.qz = { lessonId: l.id, i: 0, ok: 0, picked: null, items: l.quiz ? l.quiz.questions : null };
+  const valid = l.quiz && l.quiz.v === QUIZ_VER ? l.quiz : null;
+  if (!cur.qz || cur.qz.lessonId !== l.id) cur.qz = { lessonId: l.id, i: 0, ok: 0, picked: null, items: valid ? valid.questions : null, jumped: -1 };
   const Q = cur.qz;
-  const aiBtn = DB.settings.aiKey ? `<button class="btn soft sm" data-act="qz-ai" ${Q.busy ? "disabled" : ""}>${ic("spark")} ${l.quiz ? "Tạo bộ câu hỏi mới bằng AI" : "Tạo quiz bằng AI"}</button>` : "";
-  if (Q.busy) { body.innerHTML = `<div class="note info"><span class="spinner"></span> AI đang đọc nội dung video và soạn câu hỏi…</div>`; return; }
-  if (DB.settings.aiKey && !l.quiz && !Q.triedAI) { Q.triedAI = true; ACT["qz-ai"](); return; }
-  if (!Q.items) {
-    Q.items = offlineQuiz(l); Q.offline = true;
-  }
+  const aiBtn = DB.settings.aiKey ? `<button class="btn soft sm" data-act="qz-ai" ${Q.busy ? "disabled" : ""}>${ic("spark")} ${valid ? "Tạo bộ câu hỏi mới bằng AI" : "Tạo quiz bằng AI"}</button>` : "";
+  if (Q.busy) { body.innerHTML = `<div class="note info"><span class="spinner"></span> AI đang đọc nội dung video và soạn câu hỏi tiếng Hàn…${aiRetryNote ? `<br><span style="color:var(--warn)">${esc(aiRetryNote)}</span>` : ""}</div>`; return; }
+  if (DB.settings.aiKey && !valid && !Q.triedAI) { Q.triedAI = true; ACT["qz-ai"](); return; }
+  if (!Q.items) { Q.items = offlineQuiz(l); Q.offline = true; }
   if (!Q.items.length) { body.innerHTML = `<div class="empty"><div class="big">❓</div>Cần ít nhất 4 câu có bản dịch để tạo quiz.<br>${DB.settings.aiKey ? aiBtn : "Thêm mã AI trong Cài đặt để AI tạo quiz về nội dung video."}</div>`; return; }
   const top = `<div class="row between" style="margin-bottom:10px"><span class="muted small">${Q.offline ? "Quiz tạo từ lời thoại" : "Quiz do AI soạn theo nội dung video"}${l.quizBest != null ? ` · Điểm cao nhất: <b>${l.quizBest}%</b>` : ""}</span>${aiBtn}</div>`;
   if (Q.i >= Q.items.length) {
     const pct = Math.round(Q.ok / Q.items.length * 100); l.quizBest = Math.max(l.quizBest || 0, pct); save();
     body.innerHTML = top + `<div class="listen-box">${scoreRing(pct, "%")}<h2 style="margin-top:12px">Hoàn thành quiz!</h2><p class="muted">Đúng ${Q.ok}/${Q.items.length} câu</p><button class="btn primary" data-act="qz-restart">${ic("repeat")} Làm lại</button></div>`;
-    return;
+    renderSubBox(); return;
   }
-  const it = Q.items[Q.i];
+  const it = Q.items[Q.i], ref = quizRef(l, it);
+  if (Q.jumped !== Q.i) { Q.jumped = Q.i; Q.showVi = false; quizJump(l, it); }
+  const refLabel = ref ? `câu ${ref[0] + 1}${ref[1] > ref[0] ? "–" + (ref[1] + 1) : ""}${l.sentences[ref[0]].start != null ? " · " + fmtTime(l.sentences[ref[0]].start) : ""}` : "";
+  const answered = Q.picked != null;
   body.innerHTML = top + `
     <div class="row between"><span class="badge blue">Câu ${Q.i + 1}/${Q.items.length}</span><span class="muted small">Đúng ${Q.ok}</span></div>
     <div class="progress" style="margin:8px 0 14px"><span style="width:${Q.i / Q.items.length * 100}%"></span></div>
-    <h3 class="qz-q ${it.ko ? "" : ""}">${esc(it.q)}</h3>
-    <div class="qz-opts">${it.options.map((o, k) => { let cls = ""; if (Q.picked != null) { if (k === it.answer) cls = "right"; else if (k === Q.picked) cls = "wrong"; } return `<button class="qz-opt ${cls} ${it.ko ? "ko" : ""}" data-act="qz-pick" data-k="${k}" ${Q.picked != null ? "disabled" : ""}><span class="qz-letter">${"ABCD"[k]}</span><span>${esc(o)}</span></button>`; }).join("")}</div>
-    ${Q.picked != null ? `<div class="note ${Q.picked === it.answer ? "" : "warn"}" style="margin-top:12px">${Q.picked === it.answer ? "✓ Chính xác!" : "✕ Chưa đúng."} ${esc(it.explain || "")}</div><div style="margin-top:12px;text-align:center"><button class="btn primary" data-act="qz-next">Câu tiếp ${ic("right")}</button></div>` : ""}`;
+    <h3 class="qz-q ko">${esc(it.q)}</h3>
+    ${Q.showVi && it.qVi ? `<div class="qz-vi">${esc(it.qVi)}</div>` : ""}
+    <div class="row" style="gap:8px;margin:2px 0 12px">
+      ${ref ? `<button class="btn sm primary" data-act="qz-listen">${ic("ear")} Nghe đoạn liên quan <span style="opacity:.8;font-weight:400">(${refLabel})</span></button>` : ""}
+      ${it.qVi ? `<button class="btn sm ${Q.showVi ? "on" : ""}" data-act="qz-vi">${ic("translate")} ${Q.showVi ? "Ẩn nghĩa" : "Dịch"}</button>` : ""}
+    </div>
+    <div class="qz-opts">${it.options.map((o, k) => { let cls = ""; if (answered) { if (k === it.answer) cls = "right"; else if (k === Q.picked) cls = "wrong"; } const ov = Q.showVi && it.optionsVi && it.optionsVi[k]; return `<button class="qz-opt ${cls} ${it.optVi ? "" : "ko"}" data-act="qz-pick" data-k="${k}" ${answered ? "disabled" : ""}><span class="qz-letter">${"ABCD"[k]}</span><span>${esc(o)}${ov ? `<small class="qz-ov">${esc(ov)}</small>` : ""}</span></button>`; }).join("")}</div>
+    ${answered ? `<div class="note ${Q.picked === it.answer ? "" : "warn"}" style="margin-top:12px">${Q.picked === it.answer ? "✓ Chính xác!" : "✕ Chưa đúng."} ${esc(it.explain || "")}</div>
+      ${ref ? `<div class="qz-refs">${l.sentences.slice(ref[0], ref[1] + 1).map((s, k) => `<div class="qz-ref"><button class="btn ghost sm" data-act="qz-say" data-i="${ref[0] + k}" title="Nghe câu này">${ic("play")}</button><div><div class="ko">${esc(s.ko)}</div>${s.vi ? `<div class="small muted">${esc(s.vi)}</div>` : ""}</div></div>`).join("")}</div>` : ""}
+      <div style="margin-top:12px;text-align:center"><button class="btn primary" data-act="qz-next">Câu tiếp ${ic("right")}</button></div>` : `<p class="hint" style="margin-top:10px">Phụ đề dưới video đang ẩn để bạn nghe và tự tìm đáp án — trả lời xong sẽ hiện lại.</p>`}`;
+  renderSubBox();
 }
+ACT["qz-listen"] = () => { const l = curLesson(), r = quizRef(l, cur.qz.items[cur.qz.i]); if (r) playRange(l, r[0], r[1]); };
+ACT["qz-say"] = el => { const i = +el.dataset.i; setIdx(i); playSentence(i, { loops: 0, keepIdx: true }); renderSubBox(); };
+ACT["qz-vi"] = () => { cur.qz.showVi = !cur.qz.showVi; renderTab(); };
 ACT["qz-pick"] = el => { const Q = cur.qz; Q.picked = +el.dataset.k; if (Q.picked === Q.items[Q.i].answer) Q.ok++; logAct("l"); renderTab(); };
 ACT["qz-next"] = () => { const Q = cur.qz; Q.i++; Q.picked = null; renderTab(); };
-ACT["qz-restart"] = () => { const Q = cur.qz; Q.i = 0; Q.ok = 0; Q.picked = null; if (Q.offline) Q.items = offlineQuiz(curLesson()); else Q.items = shuffle(Q.items); renderTab(); };
-function transcriptText(l, max = 7000) { let t = ""; for (const s of l.sentences) { const line = s.ko + (s.vi ? " | " + s.vi : "") + "\n"; if (t.length + line.length > max) break; t += line; } return t; }
+ACT["qz-restart"] = () => { const Q = cur.qz; Q.i = 0; Q.ok = 0; Q.picked = null; Q.jumped = -1; if (Q.offline) Q.items = offlineQuiz(curLesson()); else Q.items = shuffle(Q.items); renderTab(); };
+function transcriptText(l, max = 7000, numbered) { let t = ""; l.sentences.forEach((s, i) => { const line = (numbered ? `[${i}] ` : "") + s.ko + (s.vi ? " | " + s.vi : "") + "\n"; if (t.length + line.length <= max) t += line; }); return t; }
 ACT["qz-ai"] = async () => {
   const l = curLesson(); const Q = cur.qz; Q.busy = true; renderTab();
+  const tk = setInterval(() => { if (!Q.busy) return clearInterval(tk); if (cur.tab === "quiz") renderTab(); }, 1500);
   try {
-    const r = await gemini([{ text: `Đây là lời thoại một video tiếng Hàn (kèm bản dịch nếu có), tên video: «${l.title}».\n${sumCtx(l) ? sumCtx(l) + "\n" : ""}${transcriptText(l)}\nHãy soạn 8 câu hỏi trắc nghiệm bằng tiếng Việt cho người học sơ cấp: khoảng 5 câu hỏi về NỘI DUNG video (ai, làm gì, ở đâu, vì sao…) và 3 câu về từ vựng/ngữ pháp xuất hiện trong video. Mỗi câu có 4 lựa chọn, chỉ 1 đáp án đúng. Trả về JSON {"questions":[{"q":"câu hỏi","options":["A","B","C","D"],"answer":0,"explain":"giải thích ngắn vì sao đúng"}]}` }]);
-    const qs = (r.questions || r).filter(q => q && q.q && Array.isArray(q.options) && q.options.length >= 2).map(q => ({ q: q.q, options: q.options.slice(0, 4), answer: Math.max(0, Math.min(3, +q.answer || 0)), explain: q.explain || "" }));
+    const r = await gemini([{ text: `Đây là lời thoại một video tiếng Hàn, mỗi dòng có số thứ tự [n] (kèm bản dịch nếu có). Tên video: «${l.title}».
+${sumCtx(l) ? sumCtx(l) + "\n" : ""}${transcriptText(l, 7000, true)}
+Hãy soạn 8 câu hỏi trắc nghiệm cho người Việt học tiếng Hàn sơ cấp (TOPIK 1-2): khoảng 5 câu hỏi về NỘI DUNG video (누가, 어디에서, 무엇을, 왜…) và 3 câu về từ vựng/ngữ pháp xuất hiện trong video.
+YÊU CẦU BẮT BUỘC:
+- "q" (câu hỏi) và "options" (4 lựa chọn) viết bằng TIẾNG HÀN đơn giản, câu ngắn, từ dễ, đuôi lịch sự -아요/어요.
+- "qVi": dịch câu hỏi sang tiếng Việt; "optionsVi": dịch 4 lựa chọn sang tiếng Việt.
+- "explain": giải thích bằng TIẾNG VIỆT vì sao đáp án đúng, có trích câu tiếng Hàn trong video.
+- "ref": mảng số thứ tự [n] của 1-3 câu thoại liên tiếp chứa thông tin để trả lời.
+- Chỉ 1 đáp án đúng, "answer" là chỉ số 0-3, vị trí đáp án đúng ngẫu nhiên.
+Trả về JSON: {"questions":[{"q":"","qVi":"","options":["","","",""],"optionsVi":["","","",""],"answer":0,"explain":"","ref":[0]}]}` }]);
+    const qs = (r.questions || r).filter(q => q && q.q && Array.isArray(q.options) && q.options.length >= 2).map(q => ({ q: String(q.q), qVi: q.qVi || "", options: q.options.slice(0, 4).map(String), optionsVi: Array.isArray(q.optionsVi) ? q.optionsVi.slice(0, 4).map(String) : null, answer: Math.max(0, Math.min(3, +q.answer || 0)), explain: q.explain || "", ref: Array.isArray(q.ref) ? q.ref : (q.ref != null ? [q.ref] : []) }));
     if (!qs.length) throw new Error("AI chưa tạo được câu hỏi, thử lại nhé.");
-    l.quiz = { questions: qs, created: Date.now() }; save();
-    Object.assign(Q, { items: qs, offline: false, i: 0, ok: 0, picked: null });
+    l.quiz = { v: QUIZ_VER, questions: qs, created: Date.now() }; save();
+    Object.assign(Q, { items: qs, offline: false, i: 0, ok: 0, picked: null, jumped: -1 });
   } catch (e) { toast(e.message, "err"); if (!Q.items) { Q.items = offlineQuiz(l); Q.offline = true; } }
-  Q.busy = false; renderTab();
+  Q.busy = false; clearInterval(tk); renderTab();
 };
 
 </script>
