@@ -26,12 +26,17 @@ Việc chia vào 3 chặng là Claude tự xếp theo tên chặng, chưa đối
 - Thiết kế lại giao diện theo ảnh mẫu: trang chào mừng, thanh bên trái (Trang chủ, Luyện nói, Video của tôi, Từ vựng), 10 mục phân loại video (Công nghệ, AI, Tin tức, Kinh doanh, Phim ảnh, Giáo dục, Văn hóa, Bán hàng, Giao tiếp hằng ngày, Khác).
 - Tự ra quyết định sản phẩm: thêm phần đăng nhập, rồi bỏ đi vì trang chỉ dành cho một mình bạn học, đỡ tốn công và chi phí.
 - Thêm phụ đề từng từ dưới video, bấm vào từ để xem nghĩa, bảng "Xem thêm" chi tiết, phụ đề và cài đặt ẩn/hiện được.
+- Làm landing page nhập số 360DH cùng AI (theo lời bạn kể, Claude không thấy dự án này trong lịch sử nên chưa xếp chặng chắc chắn).
 
 ## 3 việc nên tự hào nhất
 
-1. **Trang "Báo cáo ca tối"**: công cụ dùng được ngay cho công việc thật, mỗi ca tối đều dùng lại được.
-2. **Trang web học tiếng Hàn qua video đã lên mạng**: từ một ý tưởng thành sản phẩm khoảng 4.150 dòng có link riêng, trong khi bạn không viết dòng code nào.
-3. **Cách làm việc với AI như một người quản lý**: giao việc rõ ràng, sửa "từng chút một", gửi ảnh và video mẫu, dám bỏ tính năng không cần (đăng nhập).
+1. **Landing page nhập số 360DH**: bạn chọn đưa lên vị trí số 1.
+2. **Trang "Báo cáo ca tối"**: công cụ dùng được ngay cho công việc thật, mỗi ca tối đều dùng lại được.
+3. **Trang web học tiếng Hàn qua video đã lên mạng**: từ một ý tưởng thành sản phẩm khoảng 4.150 dòng có link riêng.
+
+## Ảnh tổng kết
+
+File `anh-tong-ket-hanh-trinh.png` (1080×1350, khổ dọc Facebook), bạn đã duyệt ngày 14/10/2026.
 
 ## Câu hỏi còn mở
 
