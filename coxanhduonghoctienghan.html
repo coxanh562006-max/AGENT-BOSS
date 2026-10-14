@@ -2622,7 +2622,7 @@ async function autoTranscribeForm(fromFile, force) {
   const src = cur.formFile ? { type: "file" } : (cur.form.src || detectSource($("#fUrl").value));
   setFormBusy(true);
   const t0 = Date.now();
-  const tick = () => { if (job !== cur.form.job || !cur.form.running) return; setAutoStatus(`<span class="spinner"></span> AI đang nghe video và chép phụ đề tiếng Hàn kèm bản dịch… (${Math.round((Date.now() - t0) / 1000)} giây — video dài có thể mất vài phút) <button class="btn ghost sm" data-act="auto-cancel">Huỷ</button>`); setTimeout(tick, 1000); };
+  const tick = () => { if (job !== cur.form.job || !cur.form.running) return; setAutoStatus(`<span class="spinner"></span> AI đang nghe video và chép phụ đề tiếng Hàn kèm bản dịch… (${Math.round((Date.now() - t0) / 1000)} giây — video dài có thể mất vài phút)${aiRetryNote ? `<br><span style="color:var(--warn)">${esc(aiRetryNote)}</span>` : ""} <button class="btn ghost sm" data-act="auto-cancel">Huỷ</button>`); setTimeout(tick, 1000); };
   tick();
   try {
     const out = await aiTranscribe({ file: cur.formFile, src, summary: ($("#fSum") && $("#fSum").value.trim()) || "" });
@@ -2631,10 +2631,11 @@ async function autoTranscribeForm(fromFile, force) {
     setAutoStatus(`${ic("check")} <b>Đã lấy ${out.length} câu phụ đề tiếng Hàn</b> kèm bản dịch${out.partial ? " (video dài nên AI chép được phần đầu)" : ""}. Bấm <b>Tạo bài học</b> để bắt đầu học.`);
   } catch (e) {
     if (job !== cur.form.job) return;
-    setAutoStatus(`<span style="color:var(--danger)">${esc(e.message)}</span> Bạn có thể bấm <b>AI lấy lại phụ đề</b> để thử lại, hoặc tự dán phụ đề vào ô bên dưới.`);
+    setAutoStatus(`<span style="color:var(--danger)">${esc(e.message)}</span><div class="row" style="margin-top:8px"><button class="btn sm primary" data-act="auto-retry">${ic("repeat")} Thử lại</button><span class="small muted">hoặc chọn “Tự dán phụ đề” để dán tay.</span></div>`);
   }
   if (job === cur.form.job) setFormBusy(false);
 }
+ACT["auto-retry"] = () => autoTranscribeForm(true, true);
 ACT["auto-cancel"] = () => { cur.form.job++; setFormBusy(false); setAutoStatus("Đã huỷ. Bạn có thể tự dán phụ đề hoặc bấm <b>AI lấy lại phụ đề</b>."); };
 ACT["create-lesson"] = () => {
   const url = $("#fUrl").value.trim(), text = $("#fText").value;
@@ -3273,39 +3274,52 @@ function parseJSONLoose(txt) {
   if (st >= 0 && en > st) return JSON.parse(txt.slice(st, en + 1));
   throw new Error("AI trả về dữ liệu không đọc được. Hãy thử lại.");
 }
+let aiRetryNote = "";
+const sleepMs = ms => new Promise(r => setTimeout(r, ms));
 async function gemini(parts, opts = {}) {
   const key = (DB.settings.aiKey || "").trim();
   if (!key) throw new Error("Bạn chưa nhập mã AI. Vào Cài đặt → AI để thêm mã (miễn phí).");
-  const models = [DB.settings.aiModel || "gemini-flash-latest", "gemini-2.5-flash", "gemini-flash-latest"].filter((m, i, a) => a.indexOf(m) === i);
-  let lastErr;
+  // Model chính + các model dự phòng (mỗi model có hạn mức miễn phí và mức tải riêng)
+  const models = [DB.settings.aiModel || "gemini-flash-latest", "gemini-flash-latest", "gemini-2.5-flash", "gemini-flash-lite-latest", "gemini-2.5-flash-lite"].filter((m, i, a) => m && a.indexOf(m) === i);
+  let lastKind = "", lastMsg = "";
   let extra = opts.long ? { maxOutputTokens: 65536, mediaResolution: "MEDIA_RESOLUTION_LOW" } : {};
-  for (let mi = 0; mi < models.length; mi++) {
-    const model = models[mi];
-    let r;
-    try {
-      r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`, {
-        method: "POST", headers: { "Content-Type": "application/json", "x-goog-api-key": key },
-        body: JSON.stringify({ contents: [{ role: "user", parts }], generationConfig: { temperature: 0.2, responseMimeType: "application/json", ...extra } }),
-      });
-    } catch (e) { throw new Error("Không kết nối được tới AI. Kiểm tra mạng Internet."); }
-    if (r.status === 400 && Object.keys(extra).length) {
-      let m2 = ""; try { m2 = (await r.clone().json()).error?.message || ""; } catch (e) { }
-      if (!/API key/i.test(m2)) { extra = {}; mi--; continue; }
+  aiRetryNote = "";
+  try {
+    for (let mi = 0; mi < models.length; mi++) {
+      const model = models[mi];
+      for (let attempt = 1; attempt <= 3; attempt++) {
+        let r;
+        try {
+          r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`, {
+            method: "POST", headers: { "Content-Type": "application/json", "x-goog-api-key": key },
+            body: JSON.stringify({ contents: [{ role: "user", parts }], generationConfig: { temperature: 0.2, responseMimeType: "application/json", ...extra } }),
+          });
+        } catch (e) { throw new Error("Không kết nối được tới AI. Kiểm tra mạng Internet."); }
+        if (r.ok) {
+          const d = await r.json();
+          const txt = (d.candidates?.[0]?.content?.parts || []).map(p => p.text || "").join("");
+          if (!txt) throw new Error("AI không trả lời (có thể video quá dài, riêng tư hoặc bị chặn). Hãy thử lại.");
+          return parseJSONLoose(txt);
+        }
+        let msg = ""; try { msg = (await r.clone().json()).error?.message || ""; } catch (e) { }
+        if (r.status === 400 && Object.keys(extra).length && !/API key/i.test(msg)) { extra = {}; attempt--; continue; }
+        if (r.status === 400 && /API key/i.test(msg)) throw new Error("Mã AI không đúng. Kiểm tra lại trong Cài đặt.");
+        if (r.status === 403) throw new Error("Mã AI không có quyền dùng (403). Hãy tạo mã mới tại aistudio.google.com.");
+        if (r.status === 404) { lastKind = lastKind || "notfound"; break; }               // model không có → thử model khác
+        if (r.status === 429) { lastKind = "quota"; lastMsg = msg; aiRetryNote = "Model này hết lượt miễn phí, đang chuyển sang model AI khác…"; break; }
+        if ([500, 502, 503, 504].includes(r.status)) {                                       // máy chủ AI quá tải → chờ rồi thử lại
+          lastKind = "busy"; lastMsg = msg;
+          if (attempt < 3) { aiRetryNote = `Máy chủ AI của Google đang quá tải, tự thử lại (lần ${attempt + 1}/3)…`; await sleepMs(attempt * 2500); continue; }
+          aiRetryNote = "Máy chủ AI vẫn quá tải, đang chuyển sang model AI dự phòng…"; break;
+        }
+        if (r.status === 400 && /video|youtube|file/i.test(msg)) throw new Error("AI không mở được video này (có thể video riêng tư, giới hạn độ tuổi hoặc quá dài). Hãy thử video khác hoặc tự dán phụ đề.");
+        throw new Error("AI báo lỗi " + r.status + (msg ? ": " + msg : ""));
+      }
     }
-    if (r.ok) {
-      const d = await r.json();
-      const txt = (d.candidates?.[0]?.content?.parts || []).map(p => p.text || "").join("");
-      if (!txt) throw new Error("AI không trả lời (có thể video quá dài hoặc bị chặn). Hãy thử lại.");
-      return parseJSONLoose(txt);
-    }
-    let msg = ""; try { msg = (await r.json()).error?.message || ""; } catch (e) { }
-    if (r.status === 404) { lastErr = new Error("Không tìm thấy model AI “" + model + "”. Vào Cài đặt đổi tên model."); continue; }
-    if (r.status === 400 && /API key/i.test(msg)) throw new Error("Mã AI không đúng. Kiểm tra lại trong Cài đặt.");
-    if (r.status === 403) throw new Error("Mã AI không có quyền dùng (403). Hãy tạo mã mới tại aistudio.google.com.");
-    if (r.status === 429) throw new Error("Đã dùng hết lượt AI miễn phí tạm thời. Đợi 1–2 phút rồi thử lại.");
-    throw new Error("AI báo lỗi " + r.status + (msg ? ": " + msg : ""));
-  }
-  throw lastErr;
+  } finally { aiRetryNote = ""; }
+  if (lastKind === "busy") throw new Error("Máy chủ AI của Google đang quá tải (lỗi 503) — đây là lỗi tạm thời phía Google, không phải do video hay mã của bạn. Trang đã tự thử lại nhiều lần với các model khác nhau. Hãy đợi vài phút rồi bấm thử lại.");
+  if (lastKind === "quota") throw new Error("Đã dùng hết lượt AI miễn phí của tất cả model trong lúc này. Đợi khoảng 1 phút (hoặc đến ngày mai nếu hết lượt trong ngày) rồi thử lại.");
+  throw new Error("Không tìm thấy model AI phù hợp. Vào Cài đặt → AI, để trống ô tên model hoặc chọn gemini-2.5-flash.");
 }
 function busy(el, on, label) {
   if (!el) return;
