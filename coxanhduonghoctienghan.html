@@ -366,6 +366,158 @@ body.is-landing main{max-width:none;padding:0}
 }
 @media (max-width:400px){ .land-brand-name{font-size:15px} }
 
+
+/* ===== Khung ứng dụng: thanh bên + thanh trên ===== */
+:root{--sbw:280px;--lb:#2563eb;--lb2:#60a5fa;--lg:#22c55e;--lp:#ec4899}
+body.sb-collapsed{--sbw:84px}
+body.is-landing .sidebar,body.is-landing .appbar,body.is-landing .drawer-bg{display:none}
+body.is-landing .shell-main{margin-left:0}
+.shell-main{margin-left:var(--sbw);min-width:0;transition:margin-left .2s}
+.sidebar{position:fixed;left:0;top:0;bottom:0;width:var(--sbw);background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;padding:16px 14px;z-index:80;overflow-y:auto;overflow-x:hidden;transition:width .2s,transform .25s}
+.sb-top{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:18px}
+.sb-brand{display:flex;align-items:center;gap:10px;cursor:pointer;min-width:0}
+.sb-brand .logo{width:42px;height:42px;font-size:22px;border-radius:13px;background:linear-gradient(135deg,var(--lb),var(--lb2));color:#fff;box-shadow:0 6px 16px color-mix(in srgb,var(--lb) 30%,transparent)}
+.sb-name{font-weight:700;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sb-name b{color:var(--lb)}
+.sb-collapse{width:36px;height:36px;border-radius:50%;border:1px solid var(--border);background:var(--surface);display:grid;place-items:center;cursor:pointer;color:var(--muted);flex:none}
+.sb-collapse:hover{color:var(--lb);border-color:var(--lb)}
+.sb-streak{padding:12px 10px 14px;border-radius:16px;background:color-mix(in srgb,var(--lb) 6%,var(--surface));border:1px solid color-mix(in srgb,var(--lb) 12%,var(--border));cursor:pointer;margin-bottom:16px}
+.sb-label{display:flex;align-items:center;justify-content:space-between;font-weight:600;font-size:15px;margin-bottom:10px}
+.sb-fire{display:inline-flex;align-items:center;gap:3px;color:#f97316;font-weight:700}
+.sb-fire svg{fill:#fb923c;stroke:#f97316}
+.week{display:grid;grid-template-columns:repeat(7,1fr);gap:2px}
+.day{display:flex;flex-direction:column;align-items:center;gap:4px;font-size:11.5px;color:var(--muted)}
+.day svg{width:24px;height:24px;color:color-mix(in srgb,var(--lg) 65%,var(--border));stroke-width:1.8}
+.day.on svg{fill:#facc15;color:#eab308}
+.day.today span{color:var(--lb);font-weight:700}
+.day.today svg{color:var(--lb)}
+.day.today.on svg{color:#eab308}
+.sb-nav{display:flex;flex-direction:column;gap:4px}
+.sb-item{display:flex;align-items:center;gap:14px;padding:12px 14px;border-radius:14px;border:0;background:none;cursor:pointer;color:var(--text);font-size:15.5px;font-weight:500;text-align:left;position:relative;white-space:nowrap}
+.sb-item svg.i{width:22px;height:22px;color:var(--muted)}
+.sb-item:hover{background:var(--surface-2)}
+.sb-item.active{background:color-mix(in srgb,var(--lb) 11%,var(--surface));color:var(--lb);font-weight:600}
+.sb-item.active::before{content:"";position:absolute;left:-14px;top:8px;bottom:8px;width:4px;border-radius:0 4px 4px 0;background:var(--lb)}
+.sb-item.active svg.i{color:var(--lb)}
+.sb-item.sub{font-size:14px;padding:9px 14px}
+.sb-badge{margin-left:auto;font-style:normal;background:var(--lp);color:#fff;font-size:11px;font-weight:700;border-radius:999px;padding:1px 7px}
+.sb-foot{margin-top:auto;padding-top:14px;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:2px}
+body.sb-collapsed .sb-name,body.sb-collapsed .sb-item span,body.sb-collapsed .sb-label,body.sb-collapsed .day span,body.sb-collapsed .sb-badge{display:none}
+body.sb-collapsed .sb-top{flex-direction:column}
+body.sb-collapsed .sb-item{justify-content:center;padding:12px}
+body.sb-collapsed .week{grid-template-columns:1fr;gap:6px}
+body.sb-collapsed .day svg{width:20px;height:20px}
+body.sb-collapsed .sb-streak{padding:10px 4px}
+.appbar{position:sticky;top:0;z-index:50;display:flex;align-items:center;gap:12px;padding:12px 24px;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(12px)}
+.menu-btn{display:none}
+.gsearch{display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:0 14px;height:46px;width:min(420px,40vw);color:var(--muted);box-shadow:0 1px 2px rgba(16,24,40,.04)}
+.gsearch input{border:0;background:none;outline:none;flex:1;min-width:0;width:100%;font-size:15px}
+.gsearch:focus-within{border-color:var(--lb);box-shadow:0 0 0 3px var(--primary-soft)}
+.add-video{height:46px;padding:0 20px;border-radius:14px;border:0;background:linear-gradient(135deg,var(--lb),var(--lb2));color:#fff;font-weight:600;font-size:15px;box-shadow:0 8px 20px color-mix(in srgb,var(--lb) 30%,transparent)}
+.add-video:hover{background:linear-gradient(135deg,var(--primary-strong),var(--lb))}
+.add-video svg.i{width:24px;height:24px}
+.add-video svg rect{fill:#fff}.add-video svg polygon{fill:var(--lb)}
+.appbar .icon-btn{width:46px;height:46px;border-radius:14px}
+.fire-btn{display:flex!important;gap:2px;width:auto!important;padding:0 12px;color:var(--faint)}
+.fire-btn b{font-size:14px}
+.fire-btn.hot{color:#f97316}.fire-btn.hot svg{fill:#fb923c}
+.appbar .lang-btn{height:46px;border-radius:14px;padding:0 12px}
+.mascot-btn{width:50px;height:50px;border-radius:50%;border:2px solid color-mix(in srgb,var(--lb) 25%,var(--border));background:color-mix(in srgb,var(--lb) 8%,var(--surface));cursor:pointer;padding:2px;overflow:hidden;flex:none}
+.mascot-btn .mascot{position:static;width:100%;height:100%;animation:none}
+.drawer-bg{display:none}
+.page-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:4px 0 18px}
+.page-head h1{font-size:26px}
+.sec-title{font-size:21px}
+.add-hero{display:grid;grid-template-columns:minmax(0,1fr) 260px;gap:20px;align-items:center;padding:26px;border-radius:28px;background:linear-gradient(135deg,var(--lb) 0%,#3b82f6 45%,#38bdf8 100%);box-shadow:0 18px 40px color-mix(in srgb,var(--lb) 25%,transparent);position:relative;overflow:hidden}
+.add-hero::after{content:"";position:absolute;right:-60px;top:-60px;width:260px;height:260px;border-radius:50%;background:radial-gradient(circle,color-mix(in srgb,var(--lp) 45%,transparent),transparent 70%);pointer-events:none}
+.add-main{position:relative;z-index:1;min-width:0}
+.add-main h2{color:#fff;font-size:clamp(19px,2.2vw,25px);font-weight:800;margin-bottom:16px}
+.add-tabs{display:flex;gap:4px}
+.add-tabs button{display:flex;align-items:center;gap:8px;padding:12px 20px;border:0;border-radius:16px 16px 0 0;background:color-mix(in srgb,#fff 25%,transparent);color:#fff;font-weight:600;font-size:15px;cursor:pointer}
+.add-tabs button svg.i{width:22px;height:22px}
+.add-tabs button.active{background:var(--surface);color:var(--lb)}
+.add-box{background:var(--surface);border-radius:0 18px 18px 18px;padding:20px;position:relative;z-index:1}
+.add-row{display:grid;grid-template-columns:1fr 1fr auto;gap:12px;align-items:end;margin-top:14px}
+.add-go{height:46px;border-radius:14px;padding:0 22px}
+.dropzone{width:100%;display:flex;flex-direction:column;align-items:center;gap:6px;padding:26px;border:2px dashed color-mix(in srgb,var(--lb) 35%,var(--border));border-radius:16px;background:color-mix(in srgb,var(--lb) 4%,var(--surface));cursor:pointer;color:var(--text);font-size:15px}
+.dropzone svg.i{width:30px;height:30px;color:var(--lb)}
+.dropzone small{color:var(--muted)}
+.dropzone:hover{border-color:var(--lb)}
+.add-art{position:relative;height:250px;z-index:1}
+.art-screen{position:absolute;left:10px;top:20px;width:200px;height:130px;border-radius:24px;background:color-mix(in srgb,#fff 92%,transparent);transform:rotate(-8deg);box-shadow:0 14px 30px rgba(15,23,42,.18);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;color:var(--lp);font-weight:700;font-size:18px}
+.art-screen svg.i{width:64px;height:64px}
+.add-art .mascot{position:absolute;right:0;bottom:0;width:170px;left:auto;animation:floaty 6s ease-in-out infinite}
+.cat-chips{display:flex;flex-wrap:wrap;gap:10px;margin-top:22px}
+.cat-chip{--c:var(--lb);display:inline-flex;align-items:center;gap:8px;padding:10px 16px;border-radius:999px;border:1.5px solid color-mix(in srgb,var(--c) 22%,transparent);background:color-mix(in srgb,var(--c) 8%,var(--surface));color:color-mix(in srgb,var(--c) 80%,var(--text));font-weight:500;font-size:14.5px;cursor:pointer;transition:all .12s}
+.cat-chip:hover{border-color:var(--c);transform:translateY(-1px)}
+.cat-chip.active{background:var(--c);border-color:var(--c);color:#fff}
+.cat-chip.all{--c:#1e3a8a}
+.cat-chip em{font-style:normal;font-size:12px;opacity:.75}
+.vgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:18px}
+.vcard{background:var(--surface);border:1px solid var(--border);border-radius:20px;overflow:hidden;display:flex;flex-direction:column;transition:transform .15s,box-shadow .15s}
+.vcard:hover{transform:translateY(-3px);box-shadow:0 14px 30px color-mix(in srgb,var(--c) 15%,transparent)}
+.vthumb{position:relative;aspect-ratio:16/9;background:linear-gradient(135deg,color-mix(in srgb,var(--c) 22%,var(--surface)),color-mix(in srgb,var(--c) 6%,var(--surface)));cursor:pointer;overflow:hidden}
+.vthumb img{width:100%;height:100%;object-fit:cover;display:block}
+.vthumb-ph{position:absolute;inset:0;display:grid;place-items:center;color:var(--c)}
+.vthumb-ph svg.i{width:46px;height:46px;opacity:.7}
+.vplay{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%) scale(.85);width:52px;height:52px;border-radius:50%;background:rgba(255,255,255,.92);color:var(--lb);display:grid;place-items:center;opacity:0;transition:all .15s}
+.vcard:hover .vplay{opacity:1;transform:translate(-50%,-50%) scale(1)}
+.vtag{position:absolute;left:10px;top:10px;background:var(--lp);color:#fff;font-size:11.5px;font-weight:700;padding:3px 9px;border-radius:999px}
+.vcount{position:absolute;right:10px;bottom:10px;background:rgba(15,23,42,.72);color:#fff;font-size:12px;padding:2px 8px;border-radius:8px}
+.vbody{padding:12px 14px 14px;display:flex;flex-direction:column;gap:8px}
+.vbody h3{font-size:15.5px;line-height:1.35;cursor:pointer;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:2.7em}
+.vbody h3:hover{color:var(--lb)}
+.cat-badge{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;color:var(--c);background:color-mix(in srgb,var(--c) 10%,transparent);padding:3px 9px;border-radius:999px;white-space:nowrap}
+.cat-badge svg.i{width:14px;height:14px}
+.speak-modes{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.speak-mode{display:flex;flex-direction:column;align-items:flex-start;gap:6px;text-align:left;padding:18px;border-radius:20px;border:1.5px solid var(--border);background:var(--surface);cursor:pointer;color:var(--text);font-size:14px}
+.speak-mode svg.i{width:26px;height:26px;color:var(--lb)}
+.speak-mode b{font-size:17px}
+.speak-mode span{color:var(--muted)}
+.speak-mode.active{border-color:var(--lb);background:color-mix(in srgb,var(--lb) 7%,var(--surface));box-shadow:0 8px 22px color-mix(in srgb,var(--lb) 14%,transparent)}
+.speak-mode:nth-child(2) svg.i{color:var(--lp)} .speak-mode:nth-child(3) svg.i{color:var(--lg)}
+.col-left{top:84px}
+@media (max-width:1100px){
+  body:not(.sb-collapsed){--sbw:84px}
+  body .sb-name,body .sb-item span,body .sb-label,body .day span,body .sb-badge{display:none}
+  .sb-top{flex-direction:column} .sb-collapse{display:none}
+  .sb-item{justify-content:center;padding:12px}
+  .week{grid-template-columns:1fr;gap:6px} .day svg{width:20px;height:20px} .sb-streak{padding:10px 4px}
+  .add-hero{grid-template-columns:1fr} .add-art{display:none}
+  .add-video span{display:none} .add-video{padding:0 12px}
+}
+@media (max-width:720px){
+  :root{--sbw:0px} body:not(.sb-collapsed){--sbw:0px}
+  .sidebar{width:280px;transform:translateX(-100%);box-shadow:0 0 40px rgba(0,0,0,.2)}
+  body.sb-open .sidebar{transform:none}
+  body.sb-open .drawer-bg{display:block;position:fixed;inset:0;background:rgba(10,15,25,.45);z-index:75}
+  body.sb-open .sb-name,body.sb-open .sb-item span,body.sb-open .sb-label,body.sb-open .day span,body.sb-open .sb-badge{display:revert}
+  body.sb-open .sb-top{flex-direction:row} body.sb-open .sb-collapse{display:grid}
+  body.sb-open .sb-item{justify-content:flex-start;padding:12px 14px}
+  body.sb-open .week{grid-template-columns:repeat(7,1fr);gap:2px} body.sb-open .sb-streak{padding:12px 10px 14px}
+  body.sb-open .sb-label{display:flex}
+  .menu-btn{display:grid}
+  .appbar{padding:10px 12px;gap:8px}
+  .gsearch{flex:1;width:auto;min-width:0;height:42px;padding:0 10px}
+  .appbar .grow{display:none}
+  .appbar .lang-btn svg.i{display:none}
+  .appbar .icon-btn,.add-video,.appbar .lang-btn{height:42px}
+  .appbar .icon-btn{width:42px}
+  .appbar #themeBtn,.appbar .fire-btn,.mascot-btn{display:none!important}
+  .add-hero{padding:16px;border-radius:22px}
+  .add-row{grid-template-columns:1fr 1fr}
+  .add-go{grid-column:1/-1}
+  .add-tabs button{padding:10px 14px;font-size:14px}
+  .add-box{padding:14px}
+  .speak-modes{grid-template-columns:1fr}
+  .vgrid{grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px}
+  .cat-chips{flex-wrap:nowrap;overflow-x:auto;padding-bottom:4px;scrollbar-width:none}
+  .cat-chip{white-space:nowrap}
+  .page-head h1{font-size:22px}
+  .col-left{top:auto}
+}
+@media (max-width:420px){ .vgrid{grid-template-columns:1fr 1fr} .vbody h3{font-size:14px} .lang-btn .flag{width:24px;height:16px} }
+
 /* Responsive */
 @media (max-width:1080px){
   .topnav button span{display:none}
@@ -409,23 +561,21 @@ body.is-landing main{max-width:none;padding:0}
 </style>
 </head>
 <body>
-<header class="topbar">
-  <div class="brand" data-go="welcome" title="Trang chủ">
-    <span class="logo">한</span>
-    <span class="brand-name">coxanhduonghoctienghan</span>
-  </div>
-  <nav class="topnav" id="topnav"></nav>
-  <button class="icon-btn" id="themeBtn" title="Đổi giao diện sáng / tối"></button>
-</header>
-
+<aside class="sidebar" id="sidebar"></aside>
+<div class="drawer-bg" id="drawerBg"></div>
+<div class="shell-main">
+<header class="appbar" id="appbar"></header>
 <main>
   <section class="view" id="view-welcome"></section>
   <section class="view" id="view-home"></section>
+  <section class="view" id="view-speak"></section>
+  <section class="view" id="view-videos"></section>
   <section class="view" id="view-lesson"></section>
   <section class="view" id="view-cards"></section>
   <section class="view" id="view-progress"></section>
   <section class="view" id="view-settings"></section>
 </main>
+</div>
 
 <nav class="bottomnav" id="bottomnav"></nav>
 <div id="toast"></div>
@@ -1909,13 +2059,8 @@ function applyTheme() {
   const t = DB.settings.theme;
   if (t === "auto") document.documentElement.removeAttribute("data-theme"); else document.documentElement.setAttribute("data-theme", t);
   const dark = t === "dark" || (t === "auto" && matchMedia("(prefers-color-scheme: dark)").matches);
-  $("#themeBtn").innerHTML = ic(dark ? "sun" : "moon");
+  const tb = $("#themeBtn"); if (tb) tb.innerHTML = ic(dark ? "sun" : "moon");
 }
-$("#themeBtn").onclick = () => {
-  const dark = DB.settings.theme === "dark" || (DB.settings.theme === "auto" && matchMedia("(prefers-color-scheme: dark)").matches);
-  DB.settings.theme = dark ? "light" : "dark"; applyTheme(); save();
-  if (cur.view === "settings") renderSettings();
-};
 matchMedia("(prefers-color-scheme: dark)").addEventListener?.("change", applyTheme);
 
 /* ---------- Giọng đọc (TTS) ---------- */
@@ -1960,7 +2105,7 @@ function seedSample() {
 어제 영화를 봤는데 너무 슬펐어요. | Hôm qua tôi xem phim mà buồn quá.
 천천히 말해 주세요. | Hãy nói chậm giúp tôi.
 내일 또 만나요! | Mai gặp lại nhé!`;
-  DB.lessons.push({ id: "sample", title: "Bài mẫu: Gặp bạn ở quán cà phê", url: "", src: { type: "none", label: "Không có video" }, sentences: parseTranscript(txt).map(s => ({ ...s, done: false })), created: Date.now(), opened: 0, idx: 0 });
+  DB.lessons.push({ id: "sample", title: "Bài mẫu: Gặp bạn ở quán cà phê", url: "", src: { type: "none", label: "Không có video" }, sentences: parseTranscript(txt).map(s => ({ ...s, done: false })), cat: "daily", created: Date.now(), opened: 0, idx: 0 });
   save();
 }
 
@@ -1982,35 +2127,24 @@ const SRC_ICON = { youtube: "video", facebook: "video", tiktok: "video", instagr
 /* =========================================================
    ĐIỀU HƯỚNG
    ========================================================= */
-const NAV = [["home", "home", "Bài học"], ["lesson", "video", "Học video"], ["cards", "cards", "Flashcard"], ["progress", "chart", "Tiến độ"], ["settings", "gear", "Cài đặt"]];
-function renderNav() {
-  const due = dueCards().length;
-  const html = NAV.map(([v, i, l]) => {
-    const dis = v === "lesson" && !lessonById(DB.lastLesson) ? "disabled" : "";
-    const badge = v === "cards" && due ? ` <span class="badge red" style="padding:1px 6px">${due}</span>` : "";
-    return `<button data-nav="${v}" class="${cur.view === v ? "active" : ""}" ${dis} title="${t("nav_" + v)}">${ic(i)}<span>${t("nav_" + v)}${badge}</span></button>`;
-  }).join("");
-  $("#topnav").innerHTML = html;
-  $("#bottomnav").innerHTML = NAV.map(([v, i, l]) => {
-    const dis = v === "lesson" && !lessonById(DB.lastLesson) ? "disabled" : "";
-    return `<button data-nav="${v}" class="${cur.view === v ? "active" : ""}" ${dis}>${ic(i)}${t("nav_" + v)}</button>`;
-  }).join("");
-}
 function go(hash) { if (location.hash === "#" + hash) route(); else location.hash = hash; }
 function route() {
   const h = decodeURIComponent(location.hash.slice(1)) || "welcome";
   const [v, id, tab] = h.split("/");
   if (cur.view === "lesson" && v !== "lesson") { PL && PL.pause && PL.pause(); stopRecIfAny(); }
   if ("speechSynthesis" in window) speechSynthesis.cancel();
-  cur.view = v === "welcome" ? "welcome" : NAV.some(n => n[0] === v) ? v : "home";
+  cur.view = v === "welcome" ? "welcome" : VIEWS.includes(v) ? v : "home";
+  document.body.classList.remove("sb-open");
   document.body.classList.toggle("is-landing", cur.view === "welcome");
   $$(".view").forEach(s => s.classList.toggle("active", s.id === "view-" + cur.view));
   if (cur.view === "welcome") { renderLanding(); window.scrollTo(0, 0); return; }
   if (cur.view === "lesson") {
     const lid = id || DB.lastLesson;
-    if (!lessonById(lid)) { cur.view = "home"; $$(".view").forEach(s => s.classList.toggle("active", s.id === "view-home")); renderHome(); renderNav(); return; }
+    if (!lessonById(lid)) { location.replace("#videos"); return; }
     openLesson(lid, tab);
   } else if (cur.view === "home") renderHome();
+  else if (cur.view === "videos") { $("#view-videos").dataset.ready = ""; renderVideos(); }
+  else if (cur.view === "speak") { if (id) cur.speakMode = id; renderSpeak(); }
   else if (cur.view === "cards") renderCards();
   else if (cur.view === "progress") renderProgress();
   else if (cur.view === "settings") renderSettings();
@@ -2019,7 +2153,7 @@ function route() {
 }
 document.addEventListener("click", e => {
   const n = e.target.closest("[data-nav]");
-  if (n && !n.disabled) { const v = n.dataset.nav; go(v === "lesson" ? "lesson/" + DB.lastLesson : v); return; }
+  if (n && !n.disabled) { go(n.dataset.nav); return; }
   const g = e.target.closest("[data-go]");
   if (g) { go(g.dataset.go); return; }
   const a = e.target.closest("[data-act]");
@@ -2031,97 +2165,247 @@ ACT["modal-close"] = () => closeModal();
 /* =========================================================
    TRANG CHỦ
    ========================================================= */
-function renderHome() {
-  const due = dueCards().length;
-  const st = streak(), pts = todayPoints(), goal = DB.settings.goal || 30;
-  const lessons = DB.lessons.slice().sort((a, b) => (b.opened || b.created) - (a.opened || a.created));
-  $("#view-home").innerHTML = `
-  <div class="home-hero">
-    <div class="card card-pad">
-      <div class="row between" style="margin-bottom:4px"><h1>Thêm bài học từ video</h1></div>
-      <p class="muted" style="margin:0 0 14px">Dán link video — trang tự lấy tên video và phụ đề tiếng Hàn, chia câu, giải thích từng từ, từng ngữ pháp để bạn shadowing và làm flashcard.</p>
-      ${DB.settings.aiKey ? "" : `<div class="note info" style="margin-bottom:14px">${ic("spark")} <b>Muốn dán link là tự có phụ đề tiếng Hàn?</b> Cần nhập <b>mã AI miễn phí</b> một lần (mất 2 phút). <button class="btn sm primary" data-go="settings" style="margin-top:6px">Nhập mã AI ngay</button></div>`}
-      <div class="stack">
-        <div>
-          <label class="lbl" for="fUrl">1. Link video <span class="faint" style="font-weight:400">(YouTube, Facebook, TikTok, Instagram…)</span></label>
-          <div class="row" style="flex-wrap:nowrap">
-            <input class="input" id="fUrl" placeholder="https://www.youtube.com/watch?v=..." autocomplete="off">
-            <button class="btn" data-act="pick-file" title="Chọn file video/âm thanh trong máy">${ic("upload")}<span>File</span></button>
-          </div>
-          <div class="src-detect small" id="srcDetect" style="margin-top:6px"></div>
-          <div id="srcPreview"></div>
-        </div>
-        <div>
-          <label class="lbl" for="fTitle">2. Tên bài học <span class="faint" style="font-weight:400">(tự điền theo tên video, sửa được)</span></label>
-          <input class="input" id="fTitle" placeholder="VD: Vlog đi chợ ở Seoul">
-        </div>
-        <div>
-          <label class="lbl" for="fText">3. Phụ đề tiếng Hàn <span class="faint" style="font-weight:400">(tự lấy bằng AI khi dán link YouTube / chọn file; hoặc dán tay)</span></label>
-          <div id="autoStatus"></div>
-          <textarea class="input" id="fText" rows="6" placeholder="0:05 안녕하세요 여러분\n0:09 오늘은 시장에 가 볼 거예요 | Hôm nay mình sẽ đi chợ thử\n\n(Hoặc dán nguyên phụ đề .srt, hoặc chỉ dán câu tiếng Hàn)"></textarea>
-        </div>
-        <details class="guide">
-          <summary>Lấy lời thoại ở đâu? (bấm để xem hướng dẫn)</summary>
-          <ol>
-            <li><b>YouTube trên máy tính:</b> mở video → bấm <b>…Xem thêm</b> ở phần mô tả → <b>Hiện bản chép lời</b> → chọn ngôn ngữ tiếng Hàn → bôi đen toàn bộ → Copy → dán vào ô trên. Trang tự nhận giờ từng câu.</li>
-            <li><b>Có mã AI (miễn phí):</b> dán link YouTube hoặc chọn file video trong máy rồi bấm <b>AI lấy lời thoại</b>, AI sẽ tự nghe và chép lời kèm bản dịch.</li>
-            <li><b>TikTok / Facebook:</b> nếu video có phụ đề, bạn gõ hoặc dán lại; hoặc tải video về máy rồi chọn <b>File</b> để AI nghe giúp.</li>
-            <li>Muốn kèm bản dịch: viết sau dấu <b>|</b>, ví dụ: <span class="ko">감사합니다 | Cảm ơn</span>.</li>
-          </ol>
-        </details>
-        <div class="row">
-          <button class="btn primary lg" data-act="create-lesson">${ic("plus")} Tạo bài học</button>
-          <button class="btn soft lg" data-act="ai-transcribe-form" id="btnAiForm">${ic("spark")} AI lấy lại phụ đề</button>
-        </div>
-      </div>
-    </div>
-    <div class="stack">
-      <div class="stats-strip">
-        <div class="card stat accent"><span class="num">${ic("flame")} ${st}</span><span class="lab">ngày học liên tiếp</span></div>
-        <div class="card stat"><span class="num">${due}</span><span class="lab">thẻ cần ôn hôm nay</span></div>
-        <div class="card stat"><span class="num">${Math.min(100, Math.round(pts / goal * 100))}%</span><span class="lab">mục tiêu hôm nay (${pts}/${goal} điểm)</span></div>
-        <div class="card stat"><span class="num">${DB.cards.length}</span><span class="lab">thẻ flashcard đã lưu</span></div>
-      </div>
-      <div class="card card-pad">
-        <h3 style="margin-bottom:10px">Cách học hiệu quả với video</h3>
-        <div class="steps" style="grid-template-columns:1fr">
-          <div class="step"><span class="n">1</span><div><b>Nghe & hiểu:</b> bấm vào từng câu để xem nghĩa từng từ, ngữ pháp.</div></div>
-          <div class="step"><span class="n">2</span><div><b>Shadowing:</b> nghe câu mẫu → ghi âm nói theo → so sánh giọng.</div></div>
-          <div class="step"><span class="n">3</span><div><b>Ghi nhớ:</b> thêm từ vào flashcard, ôn mỗi ngày, rồi luyện nghe chép chính tả.</div></div>
-        </div>
-        ${due ? `<button class="btn primary" style="margin-top:14px;width:100%" data-go="cards">${ic("cards")} Ôn ${due} thẻ ngay</button>` : ""}
-      </div>
-    </div>
-  </div>
-  <div class="row between" style="margin:6px 0 12px"><h2>Bài học của bạn <span class="faint" style="font-weight:500">(${lessons.length})</span></h2></div>
-  ${lessons.length ? `<div class="lessons">${lessons.map(lessonCard).join("")}</div>` : `<div class="card empty"><div class="big">🎬</div>Chưa có bài học nào. Hãy thêm video đầu tiên ở phía trên nhé!</div>`}
-  `;
-  const u = $("#fUrl"); let tmr;
-  u.addEventListener("input", () => { updateDetect(); clearTimeout(tmr); tmr = setTimeout(onUrlChange, 500); });
-  $("#fTitle").addEventListener("input", () => { cur.form.titleTouched = true; });
-  cur.form = { job: (cur.form.job || 0) + 1, titleTouched: false, meta: null, src: null, running: false, lastUrl: "" };
-  updateDetect();
+/* =========================================================
+   KHUNG ỨNG DỤNG: THANH BÊN TRÁI + THANH TRÊN
+   ========================================================= */
+Object.assign(ICONS, {
+  cpu: '<rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><path d="M9 1v3M15 1v3M9 20v3M15 20v3M20 9h3M20 14h3M1 9h3M1 14h3"/>',
+  bot: '<rect x="3" y="8" width="18" height="12" rx="3"/><path d="M12 8V4"/><circle cx="12" cy="3" r="1"/><circle cx="8.5" cy="14" r="1.2"/><circle cx="15.5" cy="14" r="1.2"/>',
+  news: '<path d="M4 4h13v16H6a2 2 0 0 1-2-2z"/><path d="M17 8h3v10a2 2 0 0 1-2 2"/><path d="M8 8h5M8 12h5M8 16h3"/>',
+  briefcase: '<rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/><path d="M2 13h20"/>',
+  film: '<rect x="2" y="3" width="20" height="18" rx="2"/><path d="M7 3v18M17 3v18M2 8h5M2 16h5M17 8h5M17 16h5M2 12h20"/>',
+  grad: '<path d="M22 10L12 5 2 10l10 5 10-5z"/><path d="M6 12v5c3 2 9 2 12 0v-5"/>',
+  landmark: '<path d="M3 21h18M5 21V10M9 21V10M15 21V10M19 21V10"/><path d="M12 3l9 5H3z"/>',
+  cart: '<circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.7 13.4a2 2 0 0 0 2 1.6h9.7a2 2 0 0 0 2-1.6L23 6H6"/>',
+  chat: '<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>',
+  grid: '<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>',
+  menu: '<line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>',
+  yt: '<rect x="1.5" y="4.5" width="21" height="15" rx="4.5" fill="#ff0033" stroke="none"/><polygon points="10 8.8 15.6 12 10 15.2" fill="#fff" stroke="none"/>',
+  star: '<polygon points="12 2.5 15 8.6 21.7 9.6 16.8 14.3 18 21 12 17.8 6 21 7.2 14.3 2.3 9.6 9 8.6 12 2.5"/>',
+});
+const CATS = [
+  ["tech", "Công nghệ", "cpu", "#0284c7"], ["ai", "AI", "bot", "#6366f1"], ["news", "Tin tức", "news", "#dc2626"],
+  ["biz", "Kinh doanh", "briefcase", "#0d9488"], ["film", "Phim ảnh", "film", "#9333ea"], ["edu", "Giáo dục", "grad", "#ca8a04"],
+  ["culture", "Văn hóa", "landmark", "#16a34a"], ["sales", "Bán hàng", "cart", "#ea580c"], ["daily", "Giao tiếp hằng ngày", "chat", "#db2777"],
+  ["other", "Khác", "spark", "#64748b"],
+];
+const catOf = l => CATS.find(c => c[0] === (l.cat || "other")) || CATS[CATS.length - 1];
+const isShort = l => !!(l.src && (l.src.short || l.src.tall || l.src.type === "tiktok" || l.src.type === "instagram"));
+const NAV_MAIN = [["home", "grid"], ["speak", "mic"], ["videos", "video"], ["cards", "book"]];
+const NAV_SUB = [["progress", "chart"], ["settings", "gear"]];
+const VIEWS = ["home", "speak", "videos", "lesson", "cards", "progress", "settings"];
+const navActive = v => v === "lesson" ? "videos" : v;
+
+function weekStars() {
+  const now = new Date(); now.setHours(0, 0, 0, 0);
+  const mon = new Date(now); mon.setDate(now.getDate() - ((now.getDay() + 6) % 7));
+  const names = t("days").split(",");
+  let html = "";
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(mon); d.setDate(mon.getDate() + i);
+    const x = DB.stats.days[dayKey(d)] || {};
+    const on = (x.r || 0) + (x.s || 0) + (x.l || 0) + (x.w || 0) > 0;
+    const today = d.getTime() === now.getTime();
+    html += `<div class="day ${on ? "on" : ""} ${today ? "today" : ""}">${ic("star")}<span>${esc(names[i] || "")}</span></div>`;
+  }
+  return html;
 }
+function renderNav() {
+  const av = navActive(cur.view);
+  const due = dueCards().length;
+  const st = streak();
+  const item = ([v, i], sub) => `<button class="sb-item ${sub ? "sub" : ""} ${av === v ? "active" : ""}" data-nav="${v}" title="${esc(t("nav_" + v))}">${ic(i)}<span>${esc(t("nav_" + v))}</span>${v === "cards" && due ? `<em class="sb-badge">${due}</em>` : ""}</button>`;
+  $("#sidebar").innerHTML = `
+    <div class="sb-top">
+      <div class="sb-brand" data-go="welcome" title="${esc(t("nav_welcome"))}"><span class="logo">한</span><span class="sb-name">coxanh<b>hoctienghan</b></span></div>
+      <button class="sb-collapse" data-act="sb-collapse" title="Thu gọn / mở rộng">${ic(DB.settings.sbCollapsed ? "right" : "left")}</button>
+    </div>
+    <div class="sb-streak" data-nav="progress" title="${esc(t("nav_progress"))}">
+      <div class="sb-label">${esc(t("streak"))} <span class="sb-fire">${ic("flame")}${st}</span></div>
+      <div class="week">${weekStars()}</div>
+    </div>
+    <nav class="sb-nav">${NAV_MAIN.map(x => item(x)).join("")}</nav>
+    <div class="sb-foot">${NAV_SUB.map(x => item(x, true)).join("")}</div>`;
+  $("#appbar").innerHTML = `
+    <button class="icon-btn menu-btn" data-act="sb-open" title="Menu">${ic("menu")}</button>
+    <label class="gsearch">${ic("search")}<input id="gSearch" placeholder="${esc(t("search"))}" value="${esc(cur.search || "")}" autocomplete="off"></label>
+    <span class="grow"></span>
+    <button class="btn add-video" data-act="add-video">${ic("yt")}<span>${esc(t("add_video"))}</span></button>
+    <button class="icon-btn fire-btn ${st ? "hot" : ""}" data-nav="progress" title="${esc(t("streak"))}: ${st}">${ic("flame")}<b>${st}</b></button>
+    ${langButton()}
+    <button class="icon-btn" id="themeBtn" data-act="theme-toggle" title="Sáng / tối"></button>
+    <button class="mascot-btn" data-nav="settings" title="${esc(t("nav_settings"))}">${MASCOT}</button>`;
+  $("#bottomnav").innerHTML = NAV_MAIN.concat([NAV_SUB[0]]).map(([v, i]) => `<button data-nav="${v}" class="${av === v ? "active" : ""}">${ic(i)}<span>${esc(t("nav_" + v + "_s") === "nav_" + v + "_s" ? t("nav_" + v) : t("nav_" + v + "_s"))}</span></button>`).join("");
+  document.body.classList.toggle("sb-collapsed", !!DB.settings.sbCollapsed);
+  applyTheme();
+  const gs = $("#gSearch");
+  gs.addEventListener("keydown", e => { if (e.key === "Enter") { cur.search = gs.value.trim(); go("videos"); } });
+  gs.addEventListener("input", () => { cur.search = gs.value.trim(); if (cur.view === "videos") { renderVideos(); } });
+}
+ACT["sb-collapse"] = () => { if (innerWidth <= 720) { document.body.classList.remove("sb-open"); return; } DB.settings.sbCollapsed = !DB.settings.sbCollapsed; save(); renderNav(); };
+ACT["sb-open"] = () => document.body.classList.add("sb-open");
+ACT["add-video"] = () => {
+  const focus = () => { const u = $("#fUrl"); if (u) { u.scrollIntoView({ behavior: "smooth", block: "center" }); setTimeout(() => u.focus(), 300); } };
+  if (cur.view === "home") focus(); else { go("home"); setTimeout(focus, 150); }
+};
+ACT["theme-toggle"] = () => {
+  const dark = DB.settings.theme === "dark" || (DB.settings.theme === "auto" && matchMedia("(prefers-color-scheme: dark)").matches);
+  DB.settings.theme = dark ? "light" : "dark"; applyTheme(); save();
+  if (cur.view === "settings") renderSettings();
+};
+
+/* ---------- Thẻ bài học ---------- */
 function lessonCard(l) {
   const n = l.sentences.length, d = l.sentences.filter(s => s.done).length;
   const pct = n ? Math.round(d / n * 100) : 0;
-  return `<div class="card lesson-card">
-    ${l.thumb ? `<img src="${esc(l.thumb)}" alt="" loading="lazy" style="width:100%;aspect-ratio:16/9;object-fit:cover;border-radius:10px;background:var(--surface-2)" onerror="this.remove()">` : ""}
-    <div class="row between" style="flex-wrap:nowrap;align-items:flex-start">
-      <h3>${esc(l.title)}</h3>
-      <button class="btn ghost sm" data-act="del-lesson" data-id="${l.id}" title="Xoá bài học">${ic("trash")}</button>
+  const [, cname, cic, ccol] = catOf(l);
+  return `<div class="vcard" style="--c:${ccol}">
+    <div class="vthumb" data-go="lesson/${l.id}/script">
+      ${l.thumb ? `<img src="${esc(l.thumb)}" alt="" loading="lazy" onerror="this.remove()">` : `<div class="vthumb-ph">${ic(cic)}</div>`}
+      <span class="vplay">${ic("play")}</span>
+      ${isShort(l) ? `<span class="vtag">Shorts</span>` : ""}
+      <span class="vcount">${n} câu</span>
     </div>
-    <div class="row small muted" style="gap:8px">
-      <span class="badge ${l.src.type === "youtube" ? "red" : l.src.type === "none" ? "" : "blue"}">${ic(SRC_ICON[l.src.type] || "video")} ${esc(l.src.label || l.src.type)}</span>
-      <span>${n} câu · ${d} đã luyện</span>
-    </div>
-    <div class="progress"><span style="width:${pct}%"></span></div>
-    <div class="row">
-      <button class="btn primary sm grow" data-go="lesson/${l.id}/script">${ic("play")} Học</button>
-      <button class="btn sm grow" data-go="lesson/${l.id}/listen">${ic("ear")} Luyện nghe</button>
+    <div class="vbody">
+      <div class="row" style="gap:6px;flex-wrap:nowrap;justify-content:space-between">
+        <span class="cat-badge">${ic(cic)} ${esc(cname)}</span>
+        <button class="btn ghost sm" data-act="del-lesson" data-id="${l.id}" title="Xoá bài học">${ic("trash")}</button>
+      </div>
+      <h3 data-go="lesson/${l.id}/script">${esc(l.title)}</h3>
+      <div class="progress"><span style="width:${pct}%"></span></div>
+      <div class="row small muted between"><span>${d}/${n} câu đã luyện</span><span>${esc(l.src.label || "")}</span></div>
     </div>
   </div>`;
 }
+function catChips(active, act) {
+  const counts = {}; DB.lessons.forEach(l => { const c = l.cat || "other"; counts[c] = (counts[c] || 0) + 1; });
+  return `<div class="cat-chips">
+    <button class="cat-chip all ${active === "all" ? "active" : ""}" data-act="${act}" data-c="all">${ic("grid")} Toàn bộ</button>
+    ${CATS.map(([k, n, i, c]) => `<button class="cat-chip ${active === k ? "active" : ""}" style="--c:${c}" data-act="${act}" data-c="${k}">${ic(i)} ${esc(n)}${counts[k] ? ` <em>${counts[k]}</em>` : ""}</button>`).join("")}
+  </div>`;
+}
+function filterLessons(cat, kind, q) {
+  q = (q || "").toLowerCase();
+  return DB.lessons.filter(l => (cat === "all" || (l.cat || "other") === cat) && (kind === "all" || (kind === "shorts" ? isShort(l) : !isShort(l)))
+    && (!q || l.title.toLowerCase().includes(q) || l.sentences.some(s => s.ko.includes(q) || (s.vi || "").toLowerCase().includes(q))))
+    .sort((a, b) => (b.opened || b.created) - (a.opened || a.created));
+}
+function kindSeg(kind, act) {
+  return `<div class="seg">${[["all", "Tất cả"], ["video", "Video"], ["shorts", "Shorts"]].map(([k, n]) => `<button class="${kind === k ? "active" : ""}" data-act="${act}" data-k="${k}">${n}</button>`).join("")}</div>`;
+}
+
+/* ---------- Trang chủ: Học qua video ---------- */
+cur.homeCat = "all"; cur.homeKind = "all"; cur.addTab = "link";
+function renderHome() {
+  const subMode = DB.settings.subMode || (DB.settings.aiKey ? "ai" : "manual");
+  const list = filterLessons(cur.homeCat, cur.homeKind, "");
+  $("#view-home").innerHTML = `
+  <div class="page-head"><h1>Học qua video</h1></div>
+  <section class="add-hero">
+    <div class="add-main">
+      <h2>Biến mọi video yêu thích thành bài học tiếng Hàn.</h2>
+      <div class="add-tabs">
+        <button class="${cur.addTab === "link" ? "active" : ""}" data-act="add-tab" data-t="link">${ic("yt")} YouTube / Link</button>
+        <button class="${cur.addTab === "upload" ? "active" : ""}" data-act="add-tab" data-t="upload">${ic("upload")} Tải lên</button>
+      </div>
+      <div class="add-box">
+        <div class="${cur.addTab === "link" ? "" : "hidden"}" id="addLink">
+          <label class="lbl" for="fUrl">Link video</label>
+          <input class="input" id="fUrl" placeholder="Dán link YouTube, TikTok, Facebook, Instagram…" autocomplete="off">
+        </div>
+        <div class="${cur.addTab === "upload" ? "" : "hidden"}" id="addUpload">
+          <button class="dropzone" data-act="pick-file">${ic("upload")}<b>Chọn video hoặc file âm thanh trong máy</b><small>mp4, mov, mp3, m4a… — dưới 19MB thì AI tự chép được phụ đề</small></button>
+        </div>
+        <div class="src-detect small" id="srcDetect" style="margin-top:8px"></div>
+        <div id="srcPreview"></div>
+        <div class="add-row">
+          <div><label class="lbl" for="fCat">Chủ đề</label><select class="select input" id="fCat">${CATS.map(([k, n]) => `<option value="${k}" ${k === (DB.settings.lastCat || "daily") ? "selected" : ""}>${esc(n)}</option>`).join("")}</select></div>
+          <div><label class="lbl" for="fSub">Phụ đề tiếng Hàn</label><select class="select input" id="fSub"><option value="ai" ${subMode === "ai" ? "selected" : ""}>Tự động bằng AI</option><option value="manual" ${subMode === "manual" ? "selected" : ""}>Tự dán phụ đề</option></select></div>
+          <button class="btn primary lg add-go" data-act="create-lesson">${ic("plus")} Tạo bài học</button>
+        </div>
+        ${subMode === "ai" && !DB.settings.aiKey ? `<div class="note info" style="margin-top:12px">${ic("spark")} Để AI tự lấy phụ đề tiếng Hàn cần <b>mã AI miễn phí</b> (nhập 1 lần, mất 2 phút). <button class="btn sm primary" data-go="settings">Nhập mã AI</button></div>` : ""}
+        <div id="autoStatus" style="margin-top:12px"></div>
+        <div class="field" style="margin:12px 0 0"><label class="lbl" for="fTitle">Tên bài học <span class="faint" style="font-weight:400">(tự điền theo tên video, sửa được)</span></label><input class="input" id="fTitle" placeholder="VD: Vlog đi chợ ở Seoul"></div>
+        <div id="manualBox" class="${subMode === "manual" ? "" : "hidden"}" style="margin-top:12px">
+          <div class="row between"><label class="lbl" for="fText" style="margin:0">Phụ đề tiếng Hàn <span class="faint" style="font-weight:400">(mỗi câu 1 dòng, có thể kèm giờ và bản dịch sau dấu |)</span></label>
+            <button class="btn ghost sm" data-act="ai-transcribe-form" id="btnAiForm">${ic("spark")} AI lấy lại</button></div>
+          <textarea class="input" id="fText" rows="6" style="margin-top:6px" placeholder="0:05 안녕하세요 여러분\n0:09 오늘은 시장에 가 볼 거예요 | Hôm nay mình sẽ đi chợ thử"></textarea>
+          <details class="guide" style="margin-top:8px"><summary>Lấy phụ đề ở đâu?</summary><ol>
+            <li><b>YouTube trên máy tính:</b> mở video → <b>…Xem thêm</b> ở phần mô tả → <b>Hiện bản chép lời</b> → chọn tiếng Hàn → bôi đen → Copy → dán vào đây.</li>
+            <li><b>TikTok / Facebook:</b> tải video về máy rồi dùng tab <b>Tải lên</b> để AI nghe giúp.</li>
+            <li>Kèm bản dịch: viết sau dấu <b>|</b>, ví dụ <span class="ko">감사합니다 | Cảm ơn</span>.</li></ol></details>
+        </div>
+      </div>
+    </div>
+    <div class="add-art" aria-hidden="true"><div class="art-screen">${ic("yt")}<span class="ko">안녕하세요!</span></div>${MASCOT}</div>
+  </section>
+  ${catChips(cur.homeCat, "home-cat")}
+  <div class="row between" style="margin:22px 0 14px"><h2 class="sec-title">Video của tôi <span class="faint">(${list.length})</span></h2>${kindSeg(cur.homeKind, "home-kind")}</div>
+  ${list.length ? `<div class="vgrid">${list.map(lessonCard).join("")}</div>` : `<div class="card empty"><div class="big">🎬</div>${DB.lessons.length ? "Chưa có video nào trong mục này." : "Chưa có bài học nào. Dán link video ở trên để bắt đầu nhé!"}</div>`}`;
+  const u = $("#fUrl"); let tmr;
+  u.addEventListener("input", () => { updateDetect(); clearTimeout(tmr); tmr = setTimeout(onUrlChange, 500); });
+  $("#fTitle").addEventListener("input", () => { cur.form.titleTouched = true; });
+  $("#fSub").onchange = e => { DB.settings.subMode = e.target.value; save(); $("#manualBox").classList.toggle("hidden", e.target.value !== "ai" ? false : !$("#fText").value.trim()); if (e.target.value === "ai") { cur.form.lastUrl = ""; onUrlChange(); if (cur.formFile) autoTranscribeForm(true); } else { cur.form.job++; setFormBusy(false); setAutoStatus(""); } };
+  $("#fCat").onchange = e => { DB.settings.lastCat = e.target.value; save(); };
+  cur.form = { job: (cur.form.job || 0) + 1, titleTouched: false, meta: null, src: null, running: false, lastUrl: "" };
+  updateDetect();
+}
+const subModeAI = () => ($("#fSub") ? $("#fSub").value : DB.settings.subMode) === "ai";
+ACT["add-tab"] = el => {
+  cur.addTab = el.dataset.t;
+  $$(".add-tabs button").forEach(b => b.classList.toggle("active", b === el));
+  $("#addLink").classList.toggle("hidden", cur.addTab !== "link");
+  $("#addUpload").classList.toggle("hidden", cur.addTab !== "upload");
+  if (cur.addTab === "link" && cur.formFile) ACT["clear-file"]();
+};
+ACT["home-cat"] = el => { cur.homeCat = el.dataset.c; renderHome(); };
+ACT["home-kind"] = el => { cur.homeKind = el.dataset.k; renderHome(); };
+
+/* ---------- Video của tôi ---------- */
+cur.vidCat = "all"; cur.vidKind = "all";
+function renderVideos() {
+  const list = filterLessons(cur.vidCat, cur.vidKind, cur.search);
+  const v = $("#view-videos");
+  const grid = list.length ? `<div class="vgrid">${list.map(lessonCard).join("")}</div>` : `<div class="card empty"><div class="big">🔍</div>${cur.search ? `Không tìm thấy video nào có “${esc(cur.search)}”.` : "Chưa có video nào trong mục này."}</div>`;
+  if (v.dataset.ready === "1" && $("#vidGrid", v)) { $("#vidGrid", v).innerHTML = grid; $("#vidCount", v).textContent = `(${list.length})`; return; }
+  v.innerHTML = `
+    <div class="page-head"><h1>Video của tôi <span class="faint" id="vidCount">(${list.length})</span></h1>
+      <div class="row"><button class="btn primary" data-act="add-video">${ic("plus")} Thêm video</button></div></div>
+    ${cur.search ? `<div class="note info" style="margin-bottom:12px">Đang tìm: <b>${esc(cur.search)}</b> <button class="btn ghost sm" data-act="clear-search">${ic("x")} Bỏ tìm</button></div>` : ""}
+    ${catChips(cur.vidCat, "vid-cat")}
+    <div class="row between" style="margin:18px 0 14px"><span class="muted small">Bấm vào video để học</span>${kindSeg(cur.vidKind, "vid-kind")}</div>
+    <div id="vidGrid">${grid}</div>`;
+  v.dataset.ready = "1";
+}
+ACT["vid-cat"] = el => { cur.vidCat = el.dataset.c; $("#view-videos").dataset.ready = ""; renderVideos(); };
+ACT["vid-kind"] = el => { cur.vidKind = el.dataset.k; $("#view-videos").dataset.ready = ""; renderVideos(); };
+ACT["clear-search"] = () => { cur.search = ""; const g = $("#gSearch"); if (g) g.value = ""; $("#view-videos").dataset.ready = ""; renderVideos(); };
+
+/* ---------- Luyện nói ---------- */
+const SPEAK_MODES = [
+  ["shadow", "repeat", "Shadowing", "Nghe câu mẫu rồi nói đuổi theo ngay — luyện ngữ điệu và tốc độ tự nhiên.", "script"],
+  ["pron", "mic", "Phát âm", "Ghi âm giọng bạn và so sánh với giọng mẫu từng câu.", "script"],
+  ["listen", "ear", "Luyện nghe", "Nghe rồi chọn từ còn thiếu hoặc chép chính tả.", "listen"],
+];
+cur.speakMode = "shadow";
+function renderSpeak() {
+  const m = SPEAK_MODES.find(x => x[0] === cur.speakMode) || SPEAK_MODES[0];
+  const list = filterLessons("all", "all", "").filter(l => l.sentences.length);
+  $("#view-speak").innerHTML = `
+    <div class="page-head"><h1>Luyện nói</h1></div>
+    <div class="speak-modes">${SPEAK_MODES.map(([k, i, n, d]) => `<button class="speak-mode ${k === m[0] ? "active" : ""}" data-act="speak-mode" data-m="${k}">${ic(i)}<b>${n}</b><span>${d}</span></button>`).join("")}</div>
+    <div class="note" style="margin:16px 0">${m[0] === "pron" ? "Cách luyện: bấm <b>Nghe câu</b> → bấm <b>Ghi âm</b> và đọc theo → bấm <b>So sánh</b> để nghe mẫu rồi nghe giọng bạn. Lặp lại tới khi giống." : m[0] === "shadow" ? "Cách luyện: bật <b>Lặp</b> cho câu, nghe và nói đuổi theo cùng lúc với video; khi trôi chảy thì chuyển câu tiếp theo." : "Cách luyện: bấm <b>Nghe</b>, rồi chọn từ đúng hoặc gõ lại câu. Trang chấm điểm ngay."}</div>
+    <h2 class="sec-title" style="margin-bottom:14px">Chọn video để ${esc(m[2].toLowerCase())}</h2>
+    ${list.length ? `<div class="vgrid">${list.map(l => lessonCard(l).replace(/data-go="lesson\/([^/]+)\/script"/g, `data-go="lesson/$1/${m[4]}" data-speak="${m[0]}"`)).join("")}</div>` : `<div class="card empty"><div class="big">🎙️</div>Chưa có video nào có phụ đề. <button class="btn primary sm" data-act="add-video">Thêm video</button></div>`}`;
+}
+ACT["speak-mode"] = el => { cur.speakMode = el.dataset.m; history.replaceState(null, "", "#speak/" + cur.speakMode); renderSpeak(); };
+document.addEventListener("click", e => { const s = e.target.closest("[data-speak]"); if (s && s.dataset.speak === "pron") setTimeout(() => toast("Bấm “Ghi âm” để nói theo, rồi “So sánh” với giọng mẫu nhé!"), 500); }, true);
+
+/* ---------- Đóng menu trên điện thoại khi chuyển trang ---------- */
+document.addEventListener("click", e => {
+  if (e.target.id === "drawerBg" || (e.target.closest("#sidebar [data-nav], #sidebar [data-go]") && innerWidth <= 720)) document.body.classList.remove("sb-open");
+});
+
 function updateDetect() {
   const el = $("#srcDetect"); if (!el) return;
   if (cur.formFile) { el.innerHTML = `<span class="badge green">${ic("check")} File: ${esc(cur.formFile.name)}</span> <button class="btn ghost sm" data-act="clear-file">Bỏ file</button>`; return; }
@@ -2197,11 +2481,12 @@ async function onUrlChange() {
     : (s.type === "facebook" ? `<div class="hint" style="margin-top:6px">Facebook không cho lấy tên video tự động — bạn tự đặt tên ở ô bên dưới nhé.</div>` : "");
   const eff = cur.form.src || s;
   if (eff.type === "youtube") autoTranscribeForm(false);
-  else if (["tiktok", "tiktok-short", "facebook", "instagram"].includes(eff.type) && !$("#fText").value.trim())
-    setAutoStatus(`${esc(s.label.replace(/ \(.*\)/, ""))} không cho trang web khác tải âm thanh, nên AI không tự nghe được từ link. <b>Cách nhanh:</b> trong app ${esc(s.label.replace(/ \(.*\)/, ""))} bấm <b>Chia sẻ → Lưu video</b> về máy, rồi bấm nút <b>File</b> ở trên chọn video đó — AI sẽ tự chép phụ đề. Video vẫn được nhúng để xem bình thường.`);
+  else if (["tiktok", "tiktok-short", "facebook", "instagram"].includes(eff.type) && !$("#fText").value.trim() && subModeAI())
+    setAutoStatus(`${esc(s.label.replace(/ \(.*\)/, ""))} không cho trang web khác tải âm thanh, nên AI không tự nghe được từ link. <b>Cách nhanh:</b> trong app ${esc(s.label.replace(/ \(.*\)/, ""))} bấm <b>Chia sẻ → Lưu video</b> về máy, rồi dùng tab <b>Tải lên</b> ở trên chọn video đó — AI sẽ tự chép phụ đề. Video vẫn được nhúng để xem bình thường.`);
 }
-async function autoTranscribeForm(fromFile) {
+async function autoTranscribeForm(fromFile, force) {
   if (cur.view !== "home" || !$("#fText")) return;
+  if (!force && !subModeAI()) return;
   if ($("#fText").value.trim() && !fromFile) { setAutoStatus(`Đã có phụ đề trong ô bên dưới. Muốn AI lấy lại thì bấm <b>AI lấy lại phụ đề</b>.`); return; }
   if (!DB.settings.aiKey) {
     setAutoStatus(`${ic("spark")} Để tự lấy phụ đề tiếng Hàn từ video cần <b>mã AI miễn phí</b> (nhập 1 lần). <a href="#settings">Vào Cài đặt để nhập mã</a> — hoặc tự dán phụ đề vào ô bên dưới.`);
@@ -2216,7 +2501,7 @@ async function autoTranscribeForm(fromFile) {
   try {
     const out = await aiTranscribe({ file: cur.formFile, src });
     if (job !== cur.form.job) return;
-    $("#fText").value = serializeTranscript(out);
+    $("#fText").value = serializeTranscript(out); $("#manualBox").classList.remove("hidden");
     setAutoStatus(`${ic("check")} <b>Đã lấy ${out.length} câu phụ đề tiếng Hàn</b> kèm bản dịch${out.partial ? " (video dài nên AI chép được phần đầu)" : ""}. Bấm <b>Tạo bài học</b> để bắt đầu học.`);
   } catch (e) {
     if (job !== cur.form.job) return;
@@ -2232,8 +2517,9 @@ ACT["create-lesson"] = () => {
   if (src.type === "invalid") { toast("Link video chưa đúng (phải bắt đầu bằng https://)", "err"); return; }
   const sentences = parseTranscript(text).map(s => ({ ...s, done: false }));
   if (!sentences.length && src.type === "none") { toast("Hãy dán link video hoặc lời thoại tiếng Hàn nhé.", "err"); return; }
+  if (!sentences.length && subModeAI() && DB.settings.aiKey && (src.type === "youtube" || src.type === "file")) { autoTranscribeForm(true, true); toast("AI đang lấy phụ đề, xong sẽ hiện ở dưới — bấm Tạo bài học lần nữa nhé."); return; }
   const d = new Date();
-  const l = { id: uid(), title: $("#fTitle").value.trim() || `Bài học ${d.getDate()}/${d.getMonth() + 1} – ${src.label}`, url, src, fileName: cur.formFile ? cur.formFile.name : "", sentences, thumb: (cur.form.meta && cur.form.meta.thumb) || "", created: Date.now(), opened: Date.now(), idx: 0 };
+  const l = { id: uid(), title: $("#fTitle").value.trim() || `Bài học ${d.getDate()}/${d.getMonth() + 1} – ${src.label}`, url, src, fileName: cur.formFile ? cur.formFile.name : "", sentences, cat: ($("#fCat") && $("#fCat").value) || "other", thumb: (cur.form.meta && cur.form.meta.thumb) || "", created: Date.now(), opened: Date.now(), idx: 0 };
   cur.form.job++;
   if (cur.formFile) SESSION_FILES[l.id] = URL.createObjectURL(cur.formFile);
   DB.lessons.push(l); cur.formFile = null; save();
@@ -2246,7 +2532,7 @@ ACT["del-lesson"] = el => {
     DB.lessons = DB.lessons.filter(x => x.id !== l.id);
     if (DB.lastLesson === l.id) DB.lastLesson = null;
     if (cur.lessonId === l.id) { destroyPlayer(); cur.lessonId = null; }
-    save(); renderHome(); renderNav(); toast("Đã xoá bài học");
+    save(); route(); toast("Đã xoá bài học");
   }, "Xoá");
 };
 
@@ -2476,10 +2762,10 @@ function openLesson(id, tab) {
   if (changed) {
     $("#view-lesson").innerHTML = `
     <div class="lesson-head">
-      <button class="btn ghost sm" data-go="home" title="Về danh sách bài học">${ic("left")} Bài học</button>
+      <button class="btn ghost sm" data-go="videos" title="Về Video của tôi">${ic("left")} Video của tôi</button>
       <h1 id="lessonTitle">${esc(l.title)}</h1>
       <div class="row">
-        <button class="btn sm" data-act="rename-lesson">${ic("edit")} Đổi tên</button>
+        <button class="btn sm" data-act="rename-lesson">${ic("edit")} Tên & chủ đề</button>
         <button class="btn sm" data-act="edit-script">${ic("list")} Sửa lời thoại</button>
       </div>
     </div>
@@ -2916,9 +3202,11 @@ ACT["edit-script"] = () => {
 };
 ACT["rename-lesson"] = () => {
   const l = curLesson();
-  openModal("Đổi tên bài học", `<input class="input" id="rnIn" value="${esc(l.title)}">`, `<button class="btn" data-act="modal-close">Huỷ</button><button class="btn primary" id="rnSave">Lưu</button>`);
+  openModal("Tên & chủ đề bài học", `<div class="field"><label class="lbl">Tên bài học</label><input class="input" id="rnIn" value="${esc(l.title)}"></div>
+    <div class="field"><label class="lbl">Chủ đề</label><select class="select input" id="rnCat">${CATS.map(([k, n]) => `<option value="${k}" ${k === (l.cat || "other") ? "selected" : ""}>${esc(n)}</option>`).join("")}</select></div>`,
+    `<button class="btn" data-act="modal-close">Huỷ</button><button class="btn primary" id="rnSave">Lưu</button>`);
   $("#rnIn").focus();
-  $("#rnSave").onclick = () => { const v = $("#rnIn").value.trim(); if (v) { l.title = v; save(); $("#lessonTitle").textContent = v; } closeModal(); };
+  $("#rnSave").onclick = () => { const v = $("#rnIn").value.trim(); if (v) l.title = v; l.cat = $("#rnCat").value; save(); $("#lessonTitle").textContent = l.title; closeModal(); toast("Đã lưu", "ok"); };
 };
 
 /* =========================================================
@@ -3039,7 +3327,7 @@ ACT["ai-transcribe-form"] = () => {
   if (!DB.settings.aiKey) { toast("Hãy thêm mã AI trong Cài đặt trước (miễn phí) nhé", "err"); return; }
   const src = cur.formFile ? { type: "file" } : (cur.form.src || detectSource($("#fUrl").value));
   if (!cur.formFile && (!src || src.type !== "youtube")) { toast("AI chỉ nghe được link YouTube hoặc file video trong máy (nút File).", "err"); return; }
-  autoTranscribeForm(true);
+  autoTranscribeForm(true, true);
 };
 ACT["ai-transcribe-lesson"] = async el => {
   const l = curLesson();
@@ -3140,7 +3428,7 @@ function renderCards() {
   const q = CS.search.trim().toLowerCase();
   const list = DB.cards.filter(c => deckFilter(c, CS.deck) && (!q || c.front.toLowerCase().includes(q) || (c.back || "").toLowerCase().includes(q))).sort((a, b) => b.created - a.created);
   v.innerHTML = `
-    <div class="row between" style="margin-bottom:14px"><h1>Flashcard</h1>
+    <div class="row between" style="margin-bottom:14px"><h1>Từ vựng · Flashcard</h1>
       <button class="btn" data-act="card-new">${ic("plus")} Tự thêm thẻ</button></div>
     <div class="tiles" style="margin-bottom:16px">
       <div class="card stat accent"><span class="num">${due.length}</span><span class="lab">thẻ cần học hôm nay</span></div>
@@ -3399,6 +3687,7 @@ document.addEventListener("keydown", e => {
 
 /* ---------- Khởi động ---------- */
 seedSample();
+DB.lessons.forEach(l => { if (!l.cat) l.cat = l.id === "sample" ? "daily" : "other"; });
 applyTheme();
 $("[data-act='modal-close']", $("#modal")).innerHTML = ic("x");
 window.addEventListener("hashchange", route);
@@ -3458,6 +3747,14 @@ const I18N = {
   },
 };
 const LANGS = ["vi", "en", "ko", "ja", "zh"];
+const SHELL_I18N = {
+  vi: { nav_home: "Trang chủ", nav_speak: "Luyện nói", nav_videos: "Video của tôi", nav_videos_s: "Video", nav_cards: "Từ vựng", nav_progress: "Tiến độ", nav_settings: "Cài đặt", streak: "Chuỗi ngày", search: "Nhập từ khoá để tìm kiếm", add_video: "Thêm video", days: "Th2,Th3,Th4,Th5,Th6,Th7,CN" },
+  en: { nav_home: "Home", nav_speak: "Speaking", nav_videos: "My videos", nav_videos_s: "Videos", nav_cards: "Vocabulary", nav_progress: "Progress", nav_settings: "Settings", streak: "Streak", search: "Search keywords", add_video: "Add video", days: "Mo,Tu,We,Th,Fr,Sa,Su" },
+  ko: { nav_home: "홈", nav_speak: "말하기 연습", nav_videos: "내 영상", nav_videos_s: "영상", nav_cards: "단어", nav_progress: "진도", nav_settings: "설정", streak: "연속 학습", search: "검색어를 입력하세요", add_video: "영상 추가", days: "월,화,수,목,금,토,일" },
+  ja: { nav_home: "ホーム", nav_speak: "スピーキング", nav_videos: "マイ動画", nav_videos_s: "動画", nav_cards: "単語", nav_progress: "進捗", nav_settings: "設定", streak: "連続記録", search: "キーワードで検索", add_video: "動画を追加", days: "月,火,水,木,金,土,日" },
+  zh: { nav_home: "首页", nav_speak: "口语练习", nav_videos: "我的视频", nav_videos_s: "视频", nav_cards: "词汇", nav_progress: "进度", nav_settings: "设置", streak: "连续学习", search: "输入关键词搜索", add_video: "添加视频", days: "一,二,三,四,五,六,日" },
+};
+for (const k in SHELL_I18N) Object.assign(I18N[k], SHELL_I18N[k]);
 const HTML_LANG = { vi: "vi", en: "en", ko: "ko", ja: "ja", zh: "zh-CN" };
 function t(k) { const L = I18N[DB.settings.lang] || I18N.vi; return L[k] ?? I18N.vi[k] ?? k; }
 const FLAGS = {
@@ -3483,7 +3780,7 @@ const LAND_FEATS = [["listen", "ear", "#2563eb"], ["shadow", "repeat", "#16a34a"
 function langButton() {
   const l = DB.settings.lang || "vi";
   return `<div class="lang-wrap"><button class="lang-btn" data-act="lang-toggle" title="${t("lang")}">${flag(l)}<svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg></button>
-    <div class="lang-menu" id="langMenu"><div class="lang-title">${t("lang")}</div><div class="lang-grid">${LANGS.map(k => `<button class="${k === l ? "active" : ""}" data-act="lang-set" data-l="${k}">${flag(k)}<span>${I18N[k].name}</span></button>`).join("")}</div></div></div>`;
+    <div class="lang-menu"><div class="lang-title">${t("lang")}</div><div class="lang-grid">${LANGS.map(k => `<button class="${k === l ? "active" : ""}" data-act="lang-set" data-l="${k}">${flag(k)}<span>${I18N[k].name}</span></button>`).join("")}</div></div></div>`;
 }
 function renderLanding() {
   const v = $("#view-welcome");
@@ -3510,19 +3807,16 @@ function renderLanding() {
 function landGo(k) {
   const lid = lessonById(DB.lastLesson) ? DB.lastLesson : (DB.lessons[0] && DB.lessons[0].id);
   if (k === "review") return go("cards");
-  if (!lid) return go("home");
-  if (k === "listen") return go("lesson/" + lid + "/listen");
-  go("lesson/" + lid + "/script");
-  if (k === "pron") setTimeout(() => toast(t("pron_hint")), 400);
+  go("speak/" + k);
 }
 document.addEventListener("click", e => {
   const b = e.target.closest("[data-land]"); if (b) { landGo(b.dataset.land); return; }
-  const m = $("#langMenu"); if (m && m.classList.contains("open") && !e.target.closest(".lang-wrap")) m.classList.remove("open");
+  if (!e.target.closest(".lang-wrap")) $$(".lang-menu.open").forEach(m => m.classList.remove("open"));
 });
-ACT["lang-toggle"] = () => $("#langMenu").classList.toggle("open");
+ACT["lang-toggle"] = el => el.closest(".lang-wrap").querySelector(".lang-menu").classList.toggle("open");
 ACT["lang-set"] = el => {
   DB.settings.lang = el.dataset.l; save(); applyLang();
-  if (cur.view === "welcome") renderLanding(); renderNav();
+  renderLanding(); renderNav();
   if (el.dataset.l !== "vi") toast(t("partial"));
 };
 function applyLang() { document.documentElement.lang = HTML_LANG[DB.settings.lang] || "vi"; }
