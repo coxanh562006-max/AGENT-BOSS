@@ -634,6 +634,10 @@ body.wd-open .wd-bg{display:block;position:fixed;inset:0;background:rgba(10,15,2
 .modal-box.wide{max-width:min(1200px,96vw)}
 @media (max-width:720px){ .mode-btn{padding:8px 12px;font-size:13.5px} .pron-ko{font-size:21px} .rv-word{font-size:28px} .pron-result,.trans-res{flex-direction:column;align-items:center;text-align:center} }
 
+.lesson-sum{display:flex;gap:10px;align-items:flex-start;margin:-6px 0 14px;padding:10px 14px;border-radius:14px;background:color-mix(in srgb,var(--lb) 6%,var(--surface));border:1px solid color-mix(in srgb,var(--lb) 15%,var(--border));font-size:14.5px;line-height:1.55;color:var(--text)}
+.lesson-sum>svg{color:var(--lb);margin-top:2px}
+.lesson-sum-add{margin:-8px 0 10px;color:var(--lb)}
+.vsum{margin:0;font-size:13px;color:var(--muted);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 /* Responsive */
 @media (max-width:1080px){
   .topnav button span{display:none}
@@ -2391,6 +2395,7 @@ function lessonCard(l) {
         <button class="btn ghost sm" data-act="del-lesson" data-id="${l.id}" title="Xoá bài học">${ic("trash")}</button>
       </div>
       <h3 data-go="lesson/${l.id}/script">${esc(l.title)}</h3>
+      ${l.summary ? `<p class="vsum">${esc(l.summary)}</p>` : ""}
       <div class="progress"><span style="width:${pct}%"></span></div>
       <div class="row small muted between"><span>${d}/${n} câu đã luyện</span><span>${esc(l.src.label || "")}</span></div>
     </div>
@@ -2445,6 +2450,8 @@ function renderHome() {
         ${subMode === "ai" && !DB.settings.aiKey ? `<div class="note info" style="margin-top:12px">${ic("spark")} Để AI tự lấy phụ đề tiếng Hàn cần <b>mã AI miễn phí</b> (nhập 1 lần, mất 2 phút). <button class="btn sm primary" data-go="settings">Nhập mã AI</button></div>` : ""}
         <div id="autoStatus" style="margin-top:12px"></div>
         <div class="field" style="margin:12px 0 0"><label class="lbl" for="fTitle">Tên bài học <span class="faint" style="font-weight:400">(tự điền theo tên video, sửa được)</span></label><input class="input" id="fTitle" placeholder="VD: Vlog đi chợ ở Seoul"></div>
+        <div class="field" style="margin:12px 0 0"><label class="lbl" for="fSum">Tóm tắt nội dung / tình huống video <span class="faint" style="font-weight:400">(tự ghi, không bắt buộc)</span></label>
+          <textarea class="input" id="fSum" rows="3" style="min-height:80px;font-family:var(--font)" placeholder="VD: Hai người bạn gặp nhau ở quán cà phê, hỏi thăm nhau rồi rủ cuối tuần đi Seoul chơi…"></textarea></div>
         <div id="manualBox" class="${subMode === "manual" ? "" : "hidden"}" style="margin-top:12px">
           <div class="row between"><label class="lbl" for="fText" style="margin:0">Phụ đề tiếng Hàn <span class="faint" style="font-weight:400">(mỗi câu 1 dòng, có thể kèm giờ và bản dịch sau dấu |)</span></label>
             <button class="btn ghost sm" data-act="ai-transcribe-form" id="btnAiForm">${ic("spark")} AI lấy lại</button></div>
@@ -2618,7 +2625,7 @@ async function autoTranscribeForm(fromFile, force) {
   const tick = () => { if (job !== cur.form.job || !cur.form.running) return; setAutoStatus(`<span class="spinner"></span> AI đang nghe video và chép phụ đề tiếng Hàn kèm bản dịch… (${Math.round((Date.now() - t0) / 1000)} giây — video dài có thể mất vài phút) <button class="btn ghost sm" data-act="auto-cancel">Huỷ</button>`); setTimeout(tick, 1000); };
   tick();
   try {
-    const out = await aiTranscribe({ file: cur.formFile, src });
+    const out = await aiTranscribe({ file: cur.formFile, src, summary: ($("#fSum") && $("#fSum").value.trim()) || "" });
     if (job !== cur.form.job) return;
     $("#fText").value = serializeTranscript(out); $("#manualBox").classList.remove("hidden");
     setAutoStatus(`${ic("check")} <b>Đã lấy ${out.length} câu phụ đề tiếng Hàn</b> kèm bản dịch${out.partial ? " (video dài nên AI chép được phần đầu)" : ""}. Bấm <b>Tạo bài học</b> để bắt đầu học.`);
@@ -2638,7 +2645,7 @@ ACT["create-lesson"] = () => {
   if (!sentences.length && src.type === "none") { toast("Hãy dán link video hoặc lời thoại tiếng Hàn nhé.", "err"); return; }
   if (!sentences.length && subModeAI() && DB.settings.aiKey && (src.type === "youtube" || src.type === "file")) { autoTranscribeForm(true, true); toast("AI đang lấy phụ đề, xong sẽ hiện ở dưới — bấm Tạo bài học lần nữa nhé."); return; }
   const d = new Date();
-  const l = { id: uid(), title: $("#fTitle").value.trim() || `Bài học ${d.getDate()}/${d.getMonth() + 1} – ${src.label}`, url, src, fileName: cur.formFile ? cur.formFile.name : "", sentences, cat: ($("#fCat") && $("#fCat").value) || "other", thumb: (cur.form.meta && cur.form.meta.thumb) || "", created: Date.now(), opened: Date.now(), idx: 0 };
+  const l = { id: uid(), title: $("#fTitle").value.trim() || `Bài học ${d.getDate()}/${d.getMonth() + 1} – ${src.label}`, url, src, fileName: cur.formFile ? cur.formFile.name : "", sentences, summary: ($("#fSum") && $("#fSum").value.trim()) || "", cat: ($("#fCat") && $("#fCat").value) || "other", thumb: (cur.form.meta && cur.form.meta.thumb) || "", created: Date.now(), opened: Date.now(), idx: 0 };
   cur.form.job++;
   if (cur.formFile) SESSION_FILES[l.id] = URL.createObjectURL(cur.formFile);
   DB.lessons.push(l); cur.formFile = null; save();
@@ -2876,10 +2883,11 @@ function openLesson(id, tab) {
       <button class="btn ghost sm" data-go="videos" title="Về Video của tôi">${ic("left")} Video của tôi</button>
       <h1 id="lessonTitle">${esc(l.title)}</h1>
       <div class="row">
-        <button class="btn sm" data-act="rename-lesson">${ic("edit")} Tên & chủ đề</button>
+        <button class="btn sm" data-act="rename-lesson">${ic("edit")} Thông tin bài</button>
         <button class="btn sm" data-act="edit-script">${ic("list")} Sửa lời thoại</button>
       </div>
     </div>
+    <div id="lessonSum"></div>
     <div class="mode-bar" id="modeBar"></div>
     <div class="lesson-grid">
       <div class="col-left">
@@ -2900,7 +2908,7 @@ function openLesson(id, tab) {
     $("#lessonTitle").textContent = l.title;
     if (!PL || PL.lessonId !== id) buildPlayer(l);
   }
-  applyPanel(); closeWordPop();
+  applyPanel(); closeWordPop(); renderLessonSum();
   renderTabs(); renderShadow(); renderTab();
 }
 const TABS = [["script", "list", "Lời thoại"], ["analysis", "search", "Phân tích câu"], ["vocab", "book", "Từ vựng"], ["grammar", "spark", "Ngữ pháp"], ["listen", "ear", "Luyện nghe"]];
@@ -3232,13 +3240,20 @@ ACT["edit-script"] = () => {
     save(); closeModal(); renderTab(); renderShadow(); toast(`Đã lưu ${l.sentences.length} câu`, "ok");
   };
 };
+function renderLessonSum() {
+  const el = $("#lessonSum"), l = curLesson(); if (!el || !l) return;
+  el.innerHTML = l.summary
+    ? `<div class="lesson-sum">${ic("book")}<div class="grow"><b>Tình huống:</b> ${esc(l.summary)}</div><button class="btn ghost sm" data-act="rename-lesson" title="Sửa tóm tắt">${ic("edit")}</button></div>`
+    : `<button class="btn ghost sm lesson-sum-add" data-act="rename-lesson">${ic("plus")} Thêm tóm tắt nội dung / tình huống video</button>`;
+}
 ACT["rename-lesson"] = () => {
   const l = curLesson();
-  openModal("Tên & chủ đề bài học", `<div class="field"><label class="lbl">Tên bài học</label><input class="input" id="rnIn" value="${esc(l.title)}"></div>
+  openModal("Thông tin bài học", `<div class="field"><label class="lbl">Tên bài học</label><input class="input" id="rnIn" value="${esc(l.title)}"></div>
+    <div class="field"><label class="lbl">Tóm tắt nội dung / tình huống video</label><textarea class="input" id="rnSum" rows="4" style="min-height:96px;font-family:var(--font)" placeholder="VD: Hai người bạn gặp nhau ở quán cà phê…">${esc(l.summary || "")}</textarea></div>
     <div class="field"><label class="lbl">Chủ đề</label><select class="select input" id="rnCat">${CATS.map(([k, n]) => `<option value="${k}" ${k === (l.cat || "other") ? "selected" : ""}>${esc(n)}</option>`).join("")}</select></div>`,
     `<button class="btn" data-act="modal-close">Huỷ</button><button class="btn primary" id="rnSave">Lưu</button>`);
   $("#rnIn").focus();
-  $("#rnSave").onclick = () => { const v = $("#rnIn").value.trim(); if (v) l.title = v; l.cat = $("#rnCat").value; save(); $("#lessonTitle").textContent = l.title; closeModal(); toast("Đã lưu", "ok"); };
+  $("#rnSave").onclick = () => { const v = $("#rnIn").value.trim(); if (v) l.title = v; l.cat = $("#rnCat").value; l.summary = $("#rnSum").value.trim(); save(); $("#lessonTitle").textContent = l.title; renderLessonSum(); closeModal(); toast("Đã lưu", "ok"); };
 };
 
 /* =========================================================
@@ -3306,6 +3321,7 @@ ACT["ai-explain"] = async (el) => {
   const prompt = `Bạn là giáo viên tiếng Hàn dạy người Việt trình độ sơ cấp (TOPIK 1-2), mục tiêu giao tiếp hằng ngày. Phân tích câu tiếng Hàn sau một cách dễ hiểu bằng tiếng Việt.
 Câu: «${s.ko}»
 ${ctx ? "Ngữ cảnh (câu trước/sau): " + ctx : ""}
+${sumCtx(l)}
 Trả về JSON đúng cấu trúc:
 {"vi":"bản dịch tiếng Việt tự nhiên","words":[{"word":"từ như xuất hiện trong câu","base":"dạng từ điển","meaning":"nghĩa tiếng Việt","hanviet":"âm Hán Việt nếu có, không có thì để rỗng","note":"giải thích ngắn tiểu từ/đuôi gắn vào, nếu có"}],"grammar":[{"pattern":"cấu trúc, vd -고 싶다","name":"tên ngắn","meaning":"nghĩa","explain":"giải thích 1-3 câu dễ hiểu cho người mới","example":"một câu ví dụ tiếng Hàn khác","exampleVi":"dịch ví dụ"}],"tip":"mẹo giao tiếp/văn hoá/phát âm ngắn gọn (có thể rỗng)"}`;
   try {
@@ -3337,10 +3353,12 @@ ACT["ai-translate-all"] = async el => {
 async function fileToBase64(file) {
   return new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(String(r.result).split(",")[1]); r.onerror = rej; r.readAsDataURL(file); });
 }
-const TRANSCRIBE_PROMPT = `Hãy nghe kỹ toàn bộ âm thanh và chép lại CHÍNH XÁC lời thoại tiếng Hàn. Chia thành từng câu ngắn (mỗi câu tối đa khoảng 15 từ) theo đúng thứ tự thời gian. Với mỗi câu ghi thời điểm bắt đầu và kết thúc tính bằng giây (số thập phân) và bản dịch tiếng Việt tự nhiên.
+const sumCtx = l => l && l.summary ? `Tình huống / nội dung video (người học tự mô tả): ${l.summary}` : "";
+const TRANSCRIBE_BASE = `Hãy nghe kỹ toàn bộ âm thanh và chép lại CHÍNH XÁC lời thoại tiếng Hàn. Chia thành từng câu ngắn (mỗi câu tối đa khoảng 15 từ) theo đúng thứ tự thời gian. Với mỗi câu ghi thời điểm bắt đầu và kết thúc tính bằng giây (số thập phân) và bản dịch tiếng Việt tự nhiên.
 Chỉ trả về JSON dạng mảng: [{"start": 1.2, "end": 3.4, "ko": "câu tiếng Hàn", "vi": "dịch tiếng Việt"}]. Nếu không có tiếng Hàn, trả về [].`;
-async function aiTranscribe({ url, file, src }) {
+async function aiTranscribe({ url, file, src, summary }) {
   let parts;
+  const TRANSCRIBE_PROMPT = summary ? TRANSCRIBE_BASE + "\nGợi ý ngữ cảnh do người học mô tả (chỉ để hiểu tình huống, vẫn chép đúng lời nghe được): " + summary : TRANSCRIBE_BASE;
   if (file) {
     if (file.size > 19 * 1024 * 1024) throw new Error("File lớn hơn 19MB nên AI không nhận được. Hãy cắt ngắn video hoặc dùng file âm thanh (mp3/m4a).");
     parts = [{ inlineData: { mimeType: file.type || "video/mp4", data: await fileToBase64(file) } }, { text: TRANSCRIBE_PROMPT }];
@@ -3371,7 +3389,7 @@ ACT["ai-transcribe-lesson"] = async el => {
   }
   busy(el, true, "AI đang nghe video…");
   try {
-    const out = await aiTranscribe({ file, src: l.src });
+    const out = await aiTranscribe({ file, src: l.src, summary: l.summary });
     l.sentences = out.map(s => ({ ...s, done: false })); cur.idx = 0; cur.listen = null; save();
     if ($("#modal").classList.contains("open")) closeModal();
     renderTab(); renderShadow(); toast(`AI đã chép ${out.length} câu`, "ok");
@@ -4089,7 +4107,7 @@ function openWordDrawer(t, forceAI) {
 async function fetchWordInfo(t) {
   const s = curLesson().sentences[cur.idx];
   const prompt = `Bạn là giáo viên tiếng Hàn dạy người Việt trình độ sơ cấp, mục tiêu giao tiếp. Giải thích chi tiết từ tiếng Hàn sau.
-Từ trong câu: «${t.clean}» — dạng từ điển: «${t.base}». Câu gốc: «${s.ko}»${s.vi ? " (" + s.vi + ")" : ""}.
+Từ trong câu: «${t.clean}» — dạng từ điển: «${t.base}». Câu gốc: «${s.ko}»${s.vi ? " (" + s.vi + ")" : ""}.${curLesson().summary ? " " + sumCtx(curLesson()) + "." : ""}
 Trả về JSON đúng cấu trúc:
 {"meaning":"nghĩa tiếng Việt ngắn gọn theo ngữ cảnh câu","hanviet":"âm Hán Việt nếu là từ Hán Hàn, nếu không để rỗng","level":"TOPIK1 hoặc TOPIK2 ... TOPIK6","pos":"loại từ bằng tiếng Việt","explainKo":"1-2 câu giải thích bằng tiếng Hàn dễ hiểu","explainVi":"1-2 câu giải thích bằng tiếng Việt","usage":"cách dùng: khi nào dùng, kính ngữ/thân mật, sắc thái","examples":[{"ko":"câu ví dụ ngắn đời thường","vi":"dịch"}],"similar":[{"a":"${t.base}","b":"từ gần nghĩa","note":"khác nhau thế nào"}],"mistakes":[{"wrong":"cách dùng sai hay gặp","right":"cách đúng","note":"giải thích"}],"phrases":[{"ko":"cụm từ thường gặp","vi":"nghĩa","ex":"câu ví dụ"}]}
 Mỗi danh sách 2-3 mục.`;
@@ -4584,7 +4602,7 @@ function transcriptText(l, max = 7000) { let t = ""; for (const s of l.sentences
 ACT["qz-ai"] = async () => {
   const l = curLesson(); const Q = cur.qz; Q.busy = true; renderTab();
   try {
-    const r = await gemini([{ text: `Đây là lời thoại một video tiếng Hàn (kèm bản dịch nếu có), tên video: «${l.title}».\n${transcriptText(l)}\nHãy soạn 8 câu hỏi trắc nghiệm bằng tiếng Việt cho người học sơ cấp: khoảng 5 câu hỏi về NỘI DUNG video (ai, làm gì, ở đâu, vì sao…) và 3 câu về từ vựng/ngữ pháp xuất hiện trong video. Mỗi câu có 4 lựa chọn, chỉ 1 đáp án đúng. Trả về JSON {"questions":[{"q":"câu hỏi","options":["A","B","C","D"],"answer":0,"explain":"giải thích ngắn vì sao đúng"}]}` }]);
+    const r = await gemini([{ text: `Đây là lời thoại một video tiếng Hàn (kèm bản dịch nếu có), tên video: «${l.title}».\n${sumCtx(l) ? sumCtx(l) + "\n" : ""}${transcriptText(l)}\nHãy soạn 8 câu hỏi trắc nghiệm bằng tiếng Việt cho người học sơ cấp: khoảng 5 câu hỏi về NỘI DUNG video (ai, làm gì, ở đâu, vì sao…) và 3 câu về từ vựng/ngữ pháp xuất hiện trong video. Mỗi câu có 4 lựa chọn, chỉ 1 đáp án đúng. Trả về JSON {"questions":[{"q":"câu hỏi","options":["A","B","C","D"],"answer":0,"explain":"giải thích ngắn vì sao đúng"}]}` }]);
     const qs = (r.questions || r).filter(q => q && q.q && Array.isArray(q.options) && q.options.length >= 2).map(q => ({ q: q.q, options: q.options.slice(0, 4), answer: Math.max(0, Math.min(3, +q.answer || 0)), explain: q.explain || "" }));
     if (!qs.length) throw new Error("AI chưa tạo được câu hỏi, thử lại nhé.");
     l.quiz = { questions: qs, created: Date.now() }; save();
