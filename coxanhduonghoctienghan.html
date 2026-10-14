@@ -518,6 +518,87 @@ body.sb-collapsed .sb-streak{padding:10px 4px}
 }
 @media (max-width:420px){ .vgrid{grid-template-columns:1fr 1fr} .vbody h3{font-size:14px} .lang-btn .flag{width:24px;height:16px} }
 
+
+/* ===== Phụ đề dưới video, ô giải thích từ, thanh công cụ ===== */
+.col-left{position:sticky}
+.subbox{display:flex;flex-direction:column;align-items:center;gap:10px;padding:4px 0 2px;text-align:center}
+.sub-line{display:inline-flex;flex-wrap:wrap;justify-content:center;gap:4px 6px;padding:10px 12px;border-radius:14px;background:#3b3d44;max-width:100%;box-shadow:0 6px 18px rgba(15,23,42,.18)}
+.sw{display:flex;flex-direction:column;align-items:center;gap:0;border:0;background:none;cursor:pointer;padding:2px 4px 4px;border-radius:8px;color:#fff;border-bottom:3px solid var(--k);--k:#4ade80;transition:background .1s}
+.sw:hover{background:rgba(255,255,255,.12)}
+.sw.sel{background:color-mix(in srgb,var(--k) 30%,transparent)}
+.sw .sr{font-size:12.5px;color:#e5e7eb;font-family:var(--font);line-height:1.2}
+.sw .sk{font-family:var(--font-ko);font-size:24px;font-weight:500;line-height:1.35}
+.sw.k-v{--k:#4ade80}.sw.k-n{--k:#60a5fa}.sw.k-a{--k:#fb923c}.sw.k-adv{--k:#c4b5fd}.sw.k-x{--k:#f472b6}.sw.k-u{--k:#9ca3af}
+.sz-s .sk{font-size:19px}.sz-l .sk{font-size:30px}
+.sub-vi{font-size:20px;font-weight:700;color:var(--text);line-height:1.4;max-width:100%}
+.sub-vi.sz-s{font-size:16px}.sub-vi.sz-l{font-size:24px}
+.sub-hide{color:var(--muted);font-size:14px;padding:10px;display:flex;gap:8px;align-items:center}
+.lesson-bar{display:flex;align-items:center;gap:6px;padding:8px;flex-wrap:wrap;border-radius:16px}
+.tchip{display:inline-flex;align-items:center;gap:6px;padding:8px 12px;border-radius:12px;border:1px solid var(--border);background:var(--surface);cursor:pointer;font-weight:500;font-size:14px;color:var(--muted)}
+.tchip.on{background:color-mix(in srgb,var(--lg) 14%,var(--surface));border-color:color-mix(in srgb,var(--lg) 40%,transparent);color:color-mix(in srgb,var(--lg) 70%,var(--text))}
+.tbtn{width:40px;height:40px;border-radius:12px;border:1px solid var(--border);background:var(--surface);display:grid;place-items:center;cursor:pointer;color:var(--muted)}
+.tbtn:hover{color:var(--lb);border-color:var(--lb)}
+.tbtn.main{background:var(--lb);border-color:var(--lb);color:#fff}
+.tbtn.on{color:var(--lb);background:color-mix(in srgb,var(--lb) 10%,var(--surface))}
+.lesson-bar .sep{width:1px;height:26px;background:var(--border);margin:0 2px}
+.tinfo{font-size:13px;color:var(--muted);margin-left:4px;font-variant-numeric:tabular-nums}
+.tabs{align-items:center}
+.tabs-close{margin-left:auto;flex:none;width:34px;height:34px;padding:0!important;justify-content:center;border-radius:50%!important;color:var(--faint)!important}
+.tabs-close:hover{background:var(--danger-soft)!important;color:var(--danger)!important}
+.lesson-grid.panel-hidden{grid-template-columns:minmax(0,1fr)}
+.lesson-grid.panel-hidden .col-right{display:none}
+.lesson-grid.panel-hidden .col-left{position:relative;top:0;max-width:1000px;width:100%;margin:0 auto}
+.player-wrap.video-hidden{aspect-ratio:auto!important;height:0!important;min-height:0;border:0;opacity:0}
+.word-pop{position:absolute;z-index:40;background:var(--surface);border:1px solid var(--border);border-radius:18px;box-shadow:0 20px 50px rgba(15,23,42,.22);padding:14px 16px;display:none;text-align:left}
+.word-pop.open{display:block;animation:fade .15s ease}
+.wp-head{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.wp-ic{width:36px;height:36px;border-radius:10px;border:0;cursor:pointer;display:grid;place-items:center;font-size:17px;font-weight:700}
+.wp-ic svg.i{width:18px;height:18px}
+.wp-ic.f{background:#fce7f3;color:#db2777}.wp-ic.m{background:#dbeafe;color:#2563eb}.wp-ic.ai{background:#d1fae5;color:#059669}
+.wp-ic.add{background:#dcfce7;color:#16a34a}.wp-ic.x{background:#fee2e2;color:#dc2626}
+.wp-lemma{font-size:26px;font-weight:700;line-height:1.25}
+.wp-sub{font-size:13px;color:var(--faint);margin-top:2px}
+.wp-rom{font-size:14.5px;color:var(--muted);margin:2px 0 10px}
+.wp-mean{background:var(--surface-2);border-radius:12px;padding:12px 14px;color:var(--success);font-size:17px;font-weight:500}
+.wp-exp{font-size:14px;color:var(--muted);margin-top:10px;line-height:1.6}
+.wp-foot{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:8px}
+.wp-more{display:inline-flex;align-items:center;gap:4px;border:0;background:none;color:var(--muted);cursor:pointer;font-size:14px;padding:6px 0}
+.wp-more:hover{color:var(--lb)}
+.ls-row{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:13px 0;border-bottom:1px solid var(--border);cursor:pointer}
+.ls-row:last-child{border-bottom:0}
+.ls-row>span:first-child{display:flex;flex-direction:column;gap:2px}
+.ls-row small{color:var(--muted);font-size:13px;font-weight:400}
+.wd-bg{display:none}
+.word-drawer{position:fixed;top:0;right:0;bottom:0;width:min(560px,100vw);background:var(--surface);z-index:120;box-shadow:-20px 0 50px rgba(15,23,42,.2);transform:translateX(105%);transition:transform .25s ease;display:flex;flex-direction:column}
+body.wd-open .word-drawer{transform:none}
+body.wd-open .wd-bg{display:block;position:fixed;inset:0;background:rgba(10,15,25,.4);z-index:110}
+.wd-top{padding:18px 22px 10px;border-bottom:1px solid var(--border)}
+.wd-scroll{padding:16px 22px 30px;overflow-y:auto;flex:1}
+.wd-scroll p{margin:10px 0;line-height:1.6}
+.wd-ko{font-size:15px}
+.wd-tabs{border-bottom:1px solid var(--border);margin:8px 0 14px}
+.wd-tabs span{display:inline-block;padding:10px 4px;color:var(--success);font-weight:600;border-bottom:2px solid var(--success)}
+.wd-meta{display:flex;gap:30px;flex-wrap:wrap;margin-bottom:14px;font-size:14.5px;align-items:center}
+.wd-sec{border:1px solid var(--border);border-radius:14px;padding:14px 16px;margin-bottom:12px}
+.wd-sec h4{font-size:15px;margin-bottom:8px}
+.wd-sec p{margin:6px 0}
+.wd-box{background:var(--surface-2);border-radius:12px;padding:10px 12px;margin-top:8px}
+.wd-tag{display:inline-block;background:color-mix(in srgb,var(--c-adv) 14%,transparent);color:var(--c-adv);padding:3px 10px;border-radius:8px;font-weight:600}
+.wd-wrong{color:var(--danger)}.wd-right{color:var(--success);font-weight:600}
+.wd-ex{display:flex;gap:6px;align-items:flex-start;padding:6px 0;border-top:1px dashed var(--border)}
+.wd-ex:first-of-type{border-top:0}
+@media (max-width:900px){ .col-left{position:relative} }
+@media (max-width:720px){
+  .word-pop{position:fixed;left:0!important;right:0;bottom:0!important;top:auto!important;width:auto!important;border-radius:20px 20px 0 0;z-index:115;padding-bottom:calc(16px + env(safe-area-inset-bottom))}
+  .sw .sk{font-size:20px} .sub-vi{font-size:17px}
+  .tchip span{display:none}
+  .tinfo{display:none}
+  .lesson-bar{gap:4px;padding:6px;flex-wrap:nowrap}
+  .tbtn{width:36px;height:36px;flex:none} .tchip{padding:7px 9px;flex:none}
+  .lesson-bar .sep{display:none}
+  .lesson-bar .badge{display:none}
+}
+
 /* Responsive */
 @media (max-width:1080px){
   .topnav button span{display:none}
@@ -585,6 +666,8 @@ body.sb-collapsed .sb-streak{padding:10px 4px}
   <div class="modal-foot" id="modalFoot"></div>
 </div></div>
 <input type="file" id="hiddenFile" class="hidden">
+<div class="wd-bg" id="wdBg"></div>
+<aside class="word-drawer" id="wordDrawer"></aside>
 <script>
 "use strict";
 /* =========================================================
@@ -2072,7 +2155,8 @@ function speak(text, opt = {}) {
   speechSynthesis.cancel();
   const u = new SpeechSynthesisUtterance(text);
   u.lang = "ko-KR";
-  const v = VOICES.find(v => v.name === DB.settings.voice) || VOICES[0];
+  const v = (opt.voice != null && VOICES.length > 1 ? VOICES[opt.voice % VOICES.length] : null) || VOICES.find(v => v.name === DB.settings.voice) || VOICES[0];
+  if (opt.pitch) u.pitch = opt.pitch;
   if (v) u.voice = v; else if (!voiceWarned) { voiceWarned = true; toast("Máy chưa có giọng đọc tiếng Hàn – âm thanh có thể không chuẩn. Xem Cài đặt → Giọng đọc.", "err"); }
   u.rate = opt.rate || DB.settings.ttsRate || 0.9;
   let done = false; const fin = () => { if (done) return; done = true; opt.onend && opt.onend(); };
@@ -2677,25 +2761,6 @@ function startPoll() {
   }, 150);
 }
 function renderPlayIcon() { const b = $("#pplay"); if (b && PL && PL.ctrl) b.innerHTML = ic(PL.playing && PL.playing() ? "pause" : "play"); }
-function renderPlayerBar() {
-  const bar = $("#playerBar"); if (!bar) return;
-  if (!PL || !PL.ctrl) { bar.classList.add("hidden"); return; }
-  bar.classList.remove("hidden");
-  const loopLbl = cur.loop === 0 ? "Lặp: tắt" : cur.loop === Infinity ? "Lặp: mãi" : `Lặp ×${cur.loop + 1}`;
-  bar.innerHTML = `
-    <button class="btn sm" data-act="prev-sent" title="Câu trước (←)">${ic("prev")}</button>
-    <button class="btn sm primary" id="pplay" data-act="toggle-play" title="Phát / dừng video">${ic(PL.playing && PL.playing() ? "pause" : "play")}</button>
-    <button class="btn sm" data-act="next-sent" title="Câu sau (→)">${ic("next")}</button>
-    <span class="sep"></span>
-    <button class="btn sm ${cur.loop ? "on" : ""}" data-act="cycle-loop" title="Lặp lại câu khi bấm Nghe câu">${ic("repeat")} ${loopLbl}</button>
-    <select class="select btn sm" id="rateSel" style="width:auto;padding:6px 8px" title="Tốc độ phát">
-      ${[0.5, 0.75, 0.85, 1, 1.25].map(r => `<option value="${r}" ${r === cur.rate ? "selected" : ""}>${r}x</option>`).join("")}
-    </select>
-    <label class="switch small" title="Tự dừng video khi hết mỗi câu"><input type="checkbox" id="apSw" ${cur.autopause ? "checked" : ""}> Dừng sau mỗi câu</label>
-    <span class="time" id="ptime">0:00</span>`;
-  $("#rateSel").onchange = e => { cur.rate = parseFloat(e.target.value); PL.setRate(cur.rate); };
-  $("#apSw").onchange = e => { cur.autopause = e.target.checked; lastAutoPause = -1; };
-}
 ACT["toggle-play"] = () => { if (!PL || !PL.ctrl) return; SEG.on = false; PL.playing() ? PL.pause() : PL.play(); setTimeout(renderPlayIcon, 200); };
 ACT["cycle-loop"] = () => { const seq = [0, 1, 2, Infinity]; cur.loop = seq[(seq.indexOf(cur.loop) + 1) % seq.length]; renderPlayerBar(); };
 
@@ -2783,8 +2848,10 @@ function openLesson(id, tab) {
       <div class="col-left">
         <div class="player-wrap" id="playerWrap"></div>
         <div id="playerNote"></div>
-        <div class="card player-bar hidden" id="playerBar"></div>
+        <div class="subbox" id="subBox"></div>
+        <div class="lesson-bar card" id="lessonBar"></div>
         <div class="card shadow-card" id="shadowCard"></div>
+        <div class="word-pop" id="wordPop"></div>
       </div>
       <div class="card col-right">
         <div class="tabs" id="lessonTabs"></div>
@@ -2796,10 +2863,11 @@ function openLesson(id, tab) {
     $("#lessonTitle").textContent = l.title;
     if (!PL || PL.lessonId !== id) buildPlayer(l);
   }
+  applyPanel(); closeWordPop();
   renderTabs(); renderShadow(); renderTab();
 }
 const TABS = [["script", "list", "Lời thoại"], ["analysis", "search", "Phân tích câu"], ["vocab", "book", "Từ vựng"], ["grammar", "spark", "Ngữ pháp"], ["listen", "ear", "Luyện nghe"]];
-function renderTabs() { $("#lessonTabs").innerHTML = TABS.map(([k, i, n]) => `<button data-act="tab" data-tab="${k}" class="${cur.tab === k ? "active" : ""}">${ic(i)}${n}</button>`).join(""); }
+function renderTabs() { $("#lessonTabs").innerHTML = TABS.map(([k, i, n]) => `<button data-act="tab" data-tab="${k}" class="${cur.tab === k ? "active" : ""}">${ic(i)}${n}</button>`).join("") + `<button class="tabs-close" data-act="tog-panel" title="Ẩn bảng này (video sẽ rộng hơn)">${ic("x")}</button>`; }
 ACT.tab = el => { cur.tab = el.dataset.tab; history.replaceState(null, "", "#lesson/" + cur.lessonId + "/" + cur.tab); renderTabs(); renderTab(); renderShadow(); };
 function renderTab() {
   const l = curLesson(); if (!l) return;
@@ -2810,9 +2878,10 @@ function renderTab() {
 function setIdx(i, opt = {}) {
   const l = curLesson(); if (!l || i < 0 || i >= l.sentences.length) return;
   const prev = cur.idx; cur.idx = i; l.idx = i; cur.word = null; save();
+  if (prev !== i) closeWordPop();
   if (cur.tab === "script") {
     refreshSentenceRow(prev); refreshSentenceRow(i);
-    if (DB.settings.follow || !opt.fromVideo) { const row = $(`.sent[data-i="${i}"]`); if (row) row.scrollIntoView({ block: "nearest", behavior: "smooth" }); }
+    if (DB.settings.follow || !opt.fromVideo) scrollRowInList($(`.sent[data-i="${i}"]`), true);
   } else if (cur.tab === "analysis") renderTab();
   renderShadow();
 }
@@ -2825,6 +2894,7 @@ function wordSpans(text) {
 }
 function renderShadow() {
   const box = $("#shadowCard"); const l = curLesson(); if (!box || !l) return;
+  renderSubBox(); renderPlayerBar();
   if (!l.sentences.length) { box.innerHTML = `<div class="empty" style="padding:12px">Chưa có lời thoại. Bấm <b>Sửa lời thoại</b> để dán câu tiếng Hàn${DB.settings.aiKey && ["youtube", "file"].includes(l.src.type) ? " hoặc dùng AI" : ""}.</div>`; return; }
   const s = l.sentences[cur.idx];
   const key = l.id + ":" + cur.idx, hasRec = !!RECS[key];
@@ -2833,16 +2903,13 @@ function renderShadow() {
   const vid = canPlayVideo(l, cur.idx);
   box.innerHTML = `
     <div class="shadow-top">
-      <div class="row" style="gap:6px"><span class="badge blue">Câu ${cur.idx + 1}/${l.sentences.length}</span>${s.done ? `<span class="badge green">${ic("check")} Đã luyện</span>` : ""}${s.start != null ? `<span class="badge">${fmtTime(s.start)}</span>` : ""}</div>
+      <div class="row" style="gap:6px"><b style="font-size:15px">Luyện nói câu ${cur.idx + 1}</b>${s.done ? `<span class="badge green">${ic("check")} Đã luyện</span>` : ""}${s.start != null ? `<span class="badge">${fmtTime(s.start)}</span>` : ""}</div>
       <div class="row" style="gap:4px">
         <button class="btn sm ghost" data-act="prev-sent" ${cur.idx === 0 ? "disabled" : ""} title="Câu trước">${ic("left")}</button>
         <button class="btn sm ghost" data-act="next-sent" ${cur.idx >= l.sentences.length - 1 ? "disabled" : ""} title="Câu sau">${ic("right")}</button>
       </div>
     </div>
-    ${listening ? `<div class="note info">${ic("ear")} Đang luyện nghe — chữ được ẩn để bạn tập nghe.</div>` : `
-    <div class="shadow-ko">${wordSpans(s.ko)}</div>
-    ${DB.settings.showRom ? `<div class="shadow-rom">${esc(Rom.text(s.ko))}</div>` : ""}
-    <div class="shadow-vi">${s.vi ? esc(s.vi) : `<span class="faint">Chưa có bản dịch.</span> <a href="https://translate.google.com/?sl=ko&tl=vi&op=translate&text=${encodeURIComponent(s.ko)}" target="_blank" rel="noopener">Google Dịch</a>${DB.settings.aiKey ? ` · <a href="#" data-act="ai-explain">AI dịch & giải thích</a>` : ""}`}</div>`}
+    <div class="hint" style="margin-bottom:2px">${listening ? "Đang luyện nghe — phụ đề được ẩn." : "Bấm vào từng từ trong phụ đề để xem nghĩa. Luyện nói:"}</div>
     <div class="shadow-actions">
       <button class="btn primary" data-act="play-sent">${ic("play")} <span class="lbl">Nghe câu${vid ? " (video)" : ""}</span></button>
       ${vid ? `<button class="btn" data-act="tts-sent" title="Giọng máy đọc">${ic("vol")} <span class="lbl">Giọng máy</span></button>` : `<button class="btn" data-act="tts-slow" title="Đọc chậm">${ic("slow")} <span class="lbl">Đọc chậm</span></button>`}
@@ -2883,6 +2950,11 @@ ACT["word-from-shadow"] = el => {
 };
 
 /* ---------- Tab: lời thoại ---------- */
+function scrollRowInList(row, smooth) {
+  const list = $("#sentList"); if (!row || !list || list.scrollHeight <= list.clientHeight + 4) return;
+  const top = row.offsetTop - list.offsetTop - list.clientHeight / 3;
+  list.scrollTo({ top: Math.max(0, top), behavior: smooth ? "smooth" : "auto" });
+}
 function sentRow(l, s, i) {
   return `<div class="sent ${i === cur.idx ? "active" : ""} ${s.done ? "done" : ""}" data-act="sent" data-i="${i}">
     <span class="num">${s.done ? "✓" : i + 1}</span>
@@ -2916,7 +2988,7 @@ function renderScriptTab(l, body) {
     ${PL && PL.ctrl && untimed === l.sentences.length ? `<div class="note" style="margin-bottom:10px">Lời thoại chưa có giờ nên chưa tự nhảy theo video. Bạn có thể tua video tới đầu câu rồi bấm <b>Gắn giờ</b> ở khung bên trái, hoặc dán bản chép lời có giờ của YouTube.</div>` : ""}
     <div class="sent-list" id="sentList">${l.sentences.map((s, i) => sentRow(l, s, i)).join("")}</div>`;
   $$("[data-set]", body).forEach(cb => cb.onchange = () => { DB.settings[cb.dataset.set] = cb.checked; save(); renderTab(); renderShadow(); });
-  const row = $(`.sent[data-i="${cur.idx}"]`); if (row) setTimeout(() => row.scrollIntoView({ block: "nearest" }), 50);
+  setTimeout(() => scrollRowInList($(`.sent[data-i="${cur.idx}"]`)), 50);
 }
 ACT.sent = (el, e) => { if (e.target.closest("[data-act='sent-analyze']")) return; const i = +el.dataset.i; const l = curLesson(); if (canPlayVideo(l, i)) playSentence(i); else setIdx(i); };
 ACT["sent-analyze"] = el => { cur.tab = "analysis"; renderTabs(); setIdx(+el.dataset.i); renderTab(); history.replaceState(null, "", "#lesson/" + cur.lessonId + "/analysis"); };
@@ -3832,6 +3904,251 @@ ACT["lang-set"] = el => {
 function applyLang() { document.documentElement.lang = HTML_LANG[DB.settings.lang] || "vi"; }
 
 applyLang();
+</script>
+<script>
+"use strict";
+/* =========================================================
+   PHỤ ĐỀ DƯỚI VIDEO + Ô GIẢI THÍCH TỪ + THANH CÔNG CỤ
+   ========================================================= */
+Object.assign(ICONS, {
+  cc: '<rect x="2" y="5" width="20" height="14" rx="3"/><path d="M10.5 10.2a2.2 2.2 0 1 0 0 3.6M17 10.2a2.2 2.2 0 1 0 0 3.6"/>',
+  translate: '<path d="M3 5h9M7.5 3v2M5 5c.5 3.5 3 6.5 6.5 8M10 5c-1 4-3.5 7-7 8.5"/><path d="M12.5 21l4.5-10 4.5 10M14 17.5h6"/>',
+  panel: '<rect x="3" y="4" width="18" height="16" rx="2"/><line x1="15" y1="4" x2="15" y2="20"/>',
+  chevd: '<polyline points="6 9 12 15 18 9"/>', chevu: '<polyline points="18 15 12 9 6 15"/>',
+});
+if (DB.settings.showSub === undefined) DB.settings.showSub = true;
+if (!DB.settings.subSize) DB.settings.subSize = "m";
+DB.wordInfo = DB.wordInfo || {};
+
+/* ---------- Khung phụ đề ---------- */
+function subTokens(s) { return analyze(s.ko).tokens; }
+function renderSubBox() {
+  const box = $("#subBox"); const l = curLesson(); if (!box || !l) return;
+  const st = DB.settings;
+  if (!l.sentences.length) { box.innerHTML = ""; box.classList.add("hidden"); return; }
+  box.classList.remove("hidden");
+  const s = l.sentences[cur.idx];
+  if (cur.tab === "listen") { box.innerHTML = `<div class="sub-hide">${ic("ear")} Đang luyện nghe — phụ đề được ẩn</div>`; return; }
+  const toks = subTokens(s);
+  const words = st.showSub ? `<div class="sub-line sz-${st.subSize}">${toks.map((t, i) => `<button class="sw k-${KIND_CLASS[t.pos] || "u"} ${cur.subWord === i ? "sel" : ""}" data-act="sub-word" data-i="${i}">${st.showRom ? `<span class="sr">${esc(Rom.text(t.clean))}</span>` : ""}<span class="sk">${esc(t.surface)}</span></button>`).join("")}</div>` : "";
+  const vi = st.showVi ? `<div class="sub-vi sz-${st.subSize}">${s.vi ? esc(s.vi) : `<span class="faint" style="font-weight:400">Chưa có bản dịch${st.aiKey ? ` · <a href="#" data-act="ai-explain">AI dịch</a>` : ""}</span>`}</div>` : "";
+  box.innerHTML = words || vi ? words + vi : `<div class="sub-hide">Phụ đề và bản dịch đang tắt</div>`;
+}
+
+/* ---------- Thanh công cụ dưới video ---------- */
+function renderPlayerBar() {
+  const bar = $("#lessonBar"); const l = curLesson(); if (!bar || !l) return;
+  const st = DB.settings, ctrl = PL && PL.ctrl;
+  bar.innerHTML = `
+    <button class="tchip ${st.showSub ? "on" : ""}" data-act="tog-sub" title="Bật / tắt phụ đề tiếng Hàn">${ic("cc")}<span>Phụ đề</span></button>
+    <button class="tchip ${st.showVi ? "on" : ""}" data-act="tog-vi" title="Bật / tắt bản dịch">${ic("translate")}<span>Bản dịch</span></button>
+    <span class="sep"></span>
+    <button class="tbtn" data-act="prev-sent" title="Câu trước (←)">${ic("prev")}</button>
+    ${ctrl ? `<button class="tbtn main" id="pplay" data-act="toggle-play" title="Phát / dừng video">${ic(PL.playing && PL.playing() ? "pause" : "play")}</button>` : `<button class="tbtn main" data-act="play-sent" title="Nghe câu (giọng máy)">${ic("vol")}</button>`}
+    <button class="tbtn" data-act="next-sent" title="Câu sau (→)">${ic("next")}</button>
+    <span class="tinfo">${l.sentences.length ? `Câu ${cur.idx + 1}/${l.sentences.length}` : ""}${ctrl ? ` · <span id="ptime">0:00</span>` : ""}</span>
+    <span class="grow"></span>
+    ${cur.loop ? `<span class="badge blue" title="Đang lặp câu">${ic("repeat")} ${cur.loop === Infinity ? "∞" : "×" + (cur.loop + 1)}</span>` : ""}
+    ${cur.rate !== 1 ? `<span class="badge">${cur.rate}x</span>` : ""}
+    <button class="tbtn" data-act="lesson-settings" title="Cài đặt">${ic("gear")}</button>
+    <button class="tbtn ${st.panelHidden ? "" : "on"}" data-act="tog-panel" title="${st.panelHidden ? "Hiện" : "Ẩn"} bảng lời thoại bên phải">${ic("panel")}</button>`;
+}
+function rerenderLessonBits() { renderSubBox(); renderPlayerBar(); }
+ACT["tog-sub"] = () => { DB.settings.showSub = !DB.settings.showSub; save(); rerenderLessonBits(); };
+ACT["tog-vi"] = () => { DB.settings.showVi = !DB.settings.showVi; save(); rerenderLessonBits(); if (cur.tab === "script") renderTab(); };
+ACT["tog-panel"] = () => { DB.settings.panelHidden = !DB.settings.panelHidden; save(); applyPanel(); renderPlayerBar(); };
+function applyPanel() {
+  const g = $(".lesson-grid"); if (!g) return;
+  g.classList.toggle("panel-hidden", !!DB.settings.panelHidden);
+  $("#playerWrap") && $("#playerWrap").classList.toggle("video-hidden", !!DB.settings.hideVideo);
+}
+
+/* ---------- Cài đặt bài học (mở / đóng) ---------- */
+let lsTab = "general";
+ACT["lesson-settings"] = () => { openModal("Cài đặt", `<div id="lsBody"></div>`, `<button class="btn primary" data-act="modal-close">Xác nhận</button>`); renderLessonSettings(); };
+function renderLessonSettings() {
+  const b = $("#lsBody"); if (!b) return; const st = DB.settings;
+  const sw = (k, label, hint) => `<label class="ls-row"><span><b>${label}</b>${hint ? `<small>${hint}</small>` : ""}</span><span class="switch"><input type="checkbox" data-ls="${k}" ${st[k] ? "checked" : ""}></span></label>`;
+  const body = {
+    general: sw("showVi", "Bản dịch tiếng Việt", "Hiện nghĩa của câu dưới phụ đề") + sw("hideVideo", "Ẩn video", "Chỉ nghe tiếng, không xem hình — luyện nghe tập trung") + sw("autoSpeak", "Tự động phát âm thanh", "Đọc to từ khi bấm vào từ") + sw("panelHidden", "Ẩn bảng bên phải", "Cho video rộng hơn"),
+    sub: sw("showSub", "Phụ đề tiếng Hàn", "Hiện câu tiếng Hàn dưới video") + sw("showRom", "Phiên âm trên mỗi từ", "Hiện cách đọc La-tinh phía trên chữ Hàn") +
+      `<div class="ls-row"><span><b>Cỡ chữ phụ đề</b></span><div class="seg">${[["s", "Nhỏ"], ["m", "Vừa"], ["l", "Lớn"]].map(([k, n]) => `<button class="${st.subSize === k ? "active" : ""}" data-act="ls-size" data-s="${k}">${n}</button>`).join("")}</div></div>`,
+    play: `<div class="ls-row"><span><b>Tốc độ phát</b></span><div class="seg">${[0.5, 0.75, 0.85, 1, 1.25].map(r => `<button class="${r === cur.rate ? "active" : ""}" data-act="ls-rate" data-r="${r}">${r}x</button>`).join("")}</div></div>
+      <div class="ls-row"><span><b>Lặp lại mỗi câu</b><small>Khi bấm Nghe câu / chọn câu</small></span><div class="seg">${[[0, "Tắt"], [1, "×2"], [2, "×3"], [Infinity, "∞"]].map(([k, n]) => `<button class="${cur.loop === k ? "active" : ""}" data-act="ls-loop" data-l="${k}">${n}</button>`).join("")}</div></div>
+      <label class="ls-row"><span><b>Dừng sau mỗi câu</b><small>Video tự dừng khi hết câu để bạn nói theo</small></span><span class="switch"><input type="checkbox" id="lsAuto" ${cur.autopause ? "checked" : ""}></span></label>` + sw("follow", "Tự cuộn lời thoại theo video", ""),
+  }[lsTab];
+  b.innerHTML = `<div class="seg" style="margin-bottom:14px">${[["general", "Cài đặt chung"], ["sub", "Phụ đề"], ["play", "Phát lại"]].map(([k, n]) => `<button class="${lsTab === k ? "active" : ""}" data-act="ls-tab" data-t="${k}">${n}</button>`).join("")}</div>${body}`;
+  $$("[data-ls]", b).forEach(cb => cb.onchange = () => { st[cb.dataset.ls] = cb.checked; save(); applyPanel(); rerenderLessonBits(); if (cur.tab === "script") renderTab(); });
+  const a = $("#lsAuto"); if (a) a.onchange = () => { cur.autopause = a.checked; lastAutoPause = -1; };
+}
+ACT["ls-tab"] = el => { lsTab = el.dataset.t; renderLessonSettings(); };
+ACT["ls-size"] = el => { DB.settings.subSize = el.dataset.s; save(); renderLessonSettings(); renderSubBox(); };
+ACT["ls-rate"] = el => { cur.rate = +el.dataset.r; if (PL && PL.setRate) PL.setRate(cur.rate); renderLessonSettings(); renderPlayerBar(); };
+ACT["ls-loop"] = el => { cur.loop = el.dataset.l === "Infinity" ? Infinity : +el.dataset.l; renderLessonSettings(); renderPlayerBar(); };
+
+/* ---------- Ô giải thích từ (bấm vào từ trong phụ đề) ---------- */
+function curSubToken() { const l = curLesson(); if (!l || cur.subWord == null) return null; return subTokens(l.sentences[cur.idx])[cur.subWord] || null; }
+function shortExplain(t) {
+  const tags = describeTags(t);
+  const parts = [];
+  if (t.pos && t.pos !== "u") parts.push(`<b>${esc(POS_VI[t.pos] || t.pos)}</b>`);
+  if (t.base !== t.clean && (t.pos === "v" || t.pos === "a")) parts.push(`dạng gốc <span class="ko">${esc(t.base)}</span>`);
+  const g = tags.filter(x => x.id !== "dict").map(x => `<span class="ko">${esc(x.p)}</span> (${esc(x.m)})`);
+  if (g.length) parts.push("gắn " + g.join(" + "));
+  return parts.join(" · ");
+}
+function wordPopHTML(t) {
+  const info = DB.wordInfo[t.base];
+  const mean = t.meaning || (info && info.meaning) || "";
+  return `<div class="wp-head">
+      <button class="wp-ic f" data-act="wp-voice" data-v="f" title="Giọng nữ">♀</button>
+      <button class="wp-ic m" data-act="wp-voice" data-v="m" title="Giọng nam">♂</button>
+      <button class="wp-ic ai" data-act="wp-more" data-ai="1" title="AI giải thích chi tiết">${ic("spark")}</button>
+      <span class="grow"></span>
+      <button class="wp-ic add" data-act="wp-card" title="Thêm vào flashcard">${ic("plus")}</button>
+      <button class="wp-ic x" data-act="wp-close" title="Đóng">${ic("x")}</button>
+    </div>
+    <div class="wp-lemma ko">${esc(t.base)}</div>
+    ${t.base !== t.clean ? `<div class="wp-sub">Bạn đã tra: <span class="ko">${esc(t.clean)}</span></div>` : ""}
+    <div class="wp-rom">${esc(romCap(t.base))}</div>
+    <div class="wp-mean">${mean ? esc(mean) : `<span class="muted">Chưa có trong từ điển có sẵn</span>`}</div>
+    <div class="wp-exp">${(info && info.explainVi) ? esc(info.explainVi) : shortExplain(t) || ""}</div>
+    <div class="wp-foot"><button class="wp-more" data-act="wp-more">Xem thêm ${ic("chevd")}</button>
+      ${mean ? "" : `<button class="btn ghost sm" data-act="wp-edit">${ic("edit")} Thêm nghĩa</button>`}</div>`;
+}
+const romCap = s => { const r = Rom.text(s); return r.charAt(0).toUpperCase() + r.slice(1); };
+ACT["sub-word"] = el => {
+  const i = +el.dataset.i;
+  if (cur.subWord === i && $("#wordPop").classList.contains("open")) { closeWordPop(); return; }
+  cur.subWord = i; const t = curSubToken(); if (!t) return;
+  if (PL && PL.ctrl && PL.playing && PL.playing()) { PL.pause(); SEG.on = false; }
+  $$("#subBox .sw").forEach(b => b.classList.toggle("sel", b === el));
+  const pop = $("#wordPop"); pop.innerHTML = wordPopHTML(t); pop.classList.add("open");
+  placeWordPop(el);
+  if (DB.settings.autoSpeak) speak(t.clean);
+};
+function placeWordPop(anchor) {
+  const pop = $("#wordPop"), col = $(".col-left"); if (!pop || !col) return;
+  if (innerWidth <= 720) { pop.style.left = pop.style.bottom = pop.style.top = ""; return; }
+  const cr = col.getBoundingClientRect(), ar = anchor.getBoundingClientRect(), sb = $("#subBox").getBoundingClientRect();
+  const w = Math.min(360, cr.width - 8);
+  pop.style.width = w + "px";
+  let left = ar.left - cr.left + ar.width / 2 - w / 2;
+  left = Math.max(4, Math.min(cr.width - w - 4, left));
+  pop.style.left = left + "px"; pop.style.top = "";
+  pop.style.bottom = (cr.bottom - sb.top + 8) + "px";
+  const ph = pop.offsetHeight, appbarH = ($("#appbar") ? $("#appbar").getBoundingClientRect().bottom : 70);
+  if (sb.top - ph - 8 < appbarH) { pop.style.bottom = ""; pop.style.top = (sb.bottom - cr.top + 8) + "px"; }
+}
+function closeWordPop() { const p = $("#wordPop"); if (p) p.classList.remove("open"); cur.subWord = null; $$("#subBox .sw.sel").forEach(b => b.classList.remove("sel")); }
+ACT["wp-close"] = () => closeWordPop();
+ACT["wp-voice"] = el => { const t = curSubToken(); if (t) speak(t.base.endsWith("다") && t.base !== t.clean ? t.clean : t.clean, { pitch: el.dataset.v === "f" ? 1.25 : 0.75, voice: el.dataset.v === "f" ? 0 : 1 }); };
+ACT["wp-card"] = () => {
+  const t = curSubToken(); if (!t) return; const l = curLesson(), s = l.sentences[cur.idx];
+  const info = DB.wordInfo[t.base]; const mean = t.meaning || (info && info.meaning);
+  if (!mean) { toast("Từ này chưa có nghĩa — bấm “Xem thêm” để AI giải thích hoặc “Thêm nghĩa” trước nhé", "err"); return; }
+  if (addCard({ type: "word", front: t.base, back: mean, pos: t.pos, ex: s.ko, exVi: s.vi || "", lessonId: l.id })) { save(); toast("Đã thêm “" + t.base + "” vào flashcard", "ok"); renderNav(); } else toast("Từ này đã có trong flashcard");
+};
+ACT["wp-edit"] = () => {
+  const t = curSubToken(); if (!t) return;
+  cur.word = analyze(curLesson().sentences[cur.idx].ko).tokens.indexOf(t);
+  closeWordPop(); ACT["edit-meaning"]();
+};
+document.addEventListener("click", e => {
+  const p = $("#wordPop");
+  if (p && p.classList.contains("open") && !e.target.closest("#wordPop, #subBox .sw, #wordDrawer, #modal")) closeWordPop();
+});
+window.addEventListener("resize", () => { const a = $("#subBox .sw.sel"); if (a && $("#wordPop").classList.contains("open")) placeWordPop(a); });
+
+/* ---------- Bảng "Xem thêm" chi tiết về từ ---------- */
+ACT["wp-more"] = el => {
+  const t = curSubToken(); if (!t) return;
+  openWordDrawer(t, el && el.dataset.ai === "1");
+};
+function lessonExamples(t) {
+  const out = []; const l = curLesson();
+  for (const lx of [l].concat(DB.lessons.filter(x => x !== l))) {
+    for (const s of lx.sentences) {
+      if (out.length >= 4) return out;
+      if (s.ko === l.sentences[cur.idx].ko) continue;
+      if (analyze(s.ko).tokens.some(x => x.base === t.base)) out.push(s);
+    }
+  }
+  return out;
+}
+function drawerHTML(t, state) {
+  const info = DB.wordInfo[t.base]; const s = curLesson().sentences[cur.idx];
+  const mean = t.meaning || (info && info.meaning) || "";
+  const sec = (title, inner) => inner ? `<div class="wd-sec"><h4>${title}</h4>${inner}</div>` : "";
+  const exs = (info && info.examples && info.examples.length) ? info.examples : lessonExamples(t).map(x => ({ ko: x.ko, vi: x.vi }));
+  const grammar = describeTags(t).filter(x => G[x.id]).map(x => grammarCardHTML(x.id, [t.clean])).join("");
+  return `<div class="wd-top">
+      <div class="wp-head">
+        <button class="wp-ic f" data-act="wp-voice" data-v="f" title="Giọng nữ">♀</button>
+        <button class="wp-ic m" data-act="wp-voice" data-v="m" title="Giọng nam">♂</button>
+        <button class="wp-ic ai" data-act="wd-ai" title="Hỏi AI lại">${ic("spark")}</button>
+        <span class="grow"></span>
+        <button class="wp-ic add" data-act="wp-card" title="Thêm vào flashcard">${ic("plus")}</button>
+        <button class="wp-ic x" data-act="wd-close" title="Đóng">${ic("x")}</button>
+      </div>
+      <div class="wp-lemma ko">${esc(t.base)}</div>
+      ${t.base !== t.clean ? `<div class="wp-sub">Bạn đã tra: <span class="ko">${esc(t.clean)}</span></div>` : ""}
+      <div class="wp-rom">${esc(romCap(t.base))}${info && info.hanviet ? ` · Hán Việt: <b>${esc(info.hanviet)}</b>` : ""}</div>
+    </div>
+    <div class="wd-scroll">
+      <div class="wp-mean">${mean ? esc(mean) : `<span class="muted">Chưa có nghĩa trong từ điển có sẵn</span>`}</div>
+      ${info && info.explainKo ? `<p class="ko wd-ko">${esc(info.explainKo)}</p>` : ""}
+      ${info && info.explainVi ? `<p class="muted">${esc(info.explainVi)}</p>` : `<p class="muted">${shortExplain(t)}</p>`}
+      <button class="wp-more" data-act="wd-close">Thu gọn ${ic("chevu")}</button>
+      <div class="wd-tabs"><span>Chi tiết</span></div>
+      <div class="wd-meta"><div><b>Cấp độ:</b> ${info && info.level ? `<span class="badge blue">${esc(info.level)}</span>` : `<span class="faint">${state === "loading" ? "đang hỏi AI…" : "—"}</span>`}</div><div><b>Loại từ:</b> ${esc((info && info.pos) || POS_VI[t.pos] || "—")}</div></div>
+      ${state === "loading" ? `<div class="note info"><span class="spinner"></span> AI đang soạn giải thích chi tiết (cách dùng, ví dụ, lỗi sai phổ biến…)</div>` : ""}
+      ${state === "error" ? `<div class="note warn">${esc(cur.wdErr || "AI chưa trả lời được.")} <button class="btn sm" data-act="wd-ai">Thử lại</button></div>` : ""}
+      ${sec("Cách dùng", info && info.usage ? `<p>${esc(info.usage)}</p>` : "")}
+      ${sec("Ví dụ", exs.length ? exs.map(x => `<div class="wd-ex"><button class="btn ghost sm" data-act="say" data-text="${esc(x.ko)}" style="padding:2px 6px">${ic("vol")}</button><div><div class="ko">${esc(x.ko)}</div><div class="muted small">${esc(x.vi || "")}</div></div></div>`).join("") : `<p class="faint small">Chưa có ví dụ khác trong các bài của bạn.</p>`)}
+      ${sec("So sánh với từ gần nghĩa", info && info.similar && info.similar.length ? info.similar.map(x => `<div class="wd-box"><div class="row" style="gap:8px"><span class="wd-tag ko">${esc(x.a || t.base)}</span>≈<span class="wd-tag ko">${esc(x.b)}</span></div><p class="small">${esc(x.note || "")}</p></div>`).join("") : "")}
+      ${sec("Lỗi sai phổ biến", info && info.mistakes && info.mistakes.length ? info.mistakes.map(x => `<div class="wd-box"><div class="wd-wrong ko">✕ <s>${esc(x.wrong)}</s></div><div class="wd-right ko">✓ ${esc(x.right)}</div><p class="small muted">${esc(x.note || "")}</p></div>`).join("") : "")}
+      ${sec("Cụm từ thường gặp", info && info.phrases && info.phrases.length ? info.phrases.map(x => `<div class="wd-box"><div><span class="wd-tag ko">${esc(x.ko)}</span> <span class="small">${esc(x.vi || "")}</span></div>${x.ex ? `<p class="small muted ko">${esc(x.ex)}</p>` : ""}</div>`).join("") : "")}
+      ${sec("Ngữ pháp gắn trong từ", grammar)}
+      ${!DB.settings.aiKey ? `<div class="note info">${ic("spark")} Thêm <b>mã AI miễn phí</b> trong <a href="#settings" data-act="wd-close">Cài đặt</a> để có thêm: cấp độ TOPIK, cách dùng, từ gần nghĩa, lỗi sai phổ biến, cụm từ thường gặp.</div>` : ""}
+      <div class="row" style="margin-top:12px">
+        <a class="btn sm ghost" href="https://korean.dict.naver.com/kovidict/#/search?query=${encodeURIComponent(t.base)}" target="_blank" rel="noopener">${ic("ext")} Từ điển Naver</a>
+        <a class="btn sm ghost" href="https://translate.google.com/?sl=ko&tl=vi&op=translate&text=${encodeURIComponent(t.clean)}" target="_blank" rel="noopener">${ic("ext")} Google Dịch</a>
+      </div>
+    </div>`;
+}
+let wdToken = null;
+function openWordDrawer(t, forceAI) {
+  wdToken = t;
+  const d = $("#wordDrawer");
+  const need = DB.settings.aiKey && (forceAI || !DB.wordInfo[t.base]);
+  d.innerHTML = drawerHTML(t, need ? "loading" : "");
+  document.body.classList.add("wd-open");
+  if (need) fetchWordInfo(t);
+}
+async function fetchWordInfo(t) {
+  const s = curLesson().sentences[cur.idx];
+  const prompt = `Bạn là giáo viên tiếng Hàn dạy người Việt trình độ sơ cấp, mục tiêu giao tiếp. Giải thích chi tiết từ tiếng Hàn sau.
+Từ trong câu: «${t.clean}» — dạng từ điển: «${t.base}». Câu gốc: «${s.ko}»${s.vi ? " (" + s.vi + ")" : ""}.
+Trả về JSON đúng cấu trúc:
+{"meaning":"nghĩa tiếng Việt ngắn gọn theo ngữ cảnh câu","hanviet":"âm Hán Việt nếu là từ Hán Hàn, nếu không để rỗng","level":"TOPIK1 hoặc TOPIK2 ... TOPIK6","pos":"loại từ bằng tiếng Việt","explainKo":"1-2 câu giải thích bằng tiếng Hàn dễ hiểu","explainVi":"1-2 câu giải thích bằng tiếng Việt","usage":"cách dùng: khi nào dùng, kính ngữ/thân mật, sắc thái","examples":[{"ko":"câu ví dụ ngắn đời thường","vi":"dịch"}],"similar":[{"a":"${t.base}","b":"từ gần nghĩa","note":"khác nhau thế nào"}],"mistakes":[{"wrong":"cách dùng sai hay gặp","right":"cách đúng","note":"giải thích"}],"phrases":[{"ko":"cụm từ thường gặp","vi":"nghĩa","ex":"câu ví dụ"}]}
+Mỗi danh sách 2-3 mục.`;
+  try {
+    const r = await gemini([{ text: prompt }]);
+    DB.wordInfo[t.base] = { meaning: r.meaning || "", hanviet: r.hanviet || "", level: r.level || "", pos: r.pos || "", explainKo: r.explainKo || "", explainVi: r.explainVi || "", usage: r.usage || "",
+      examples: Array.isArray(r.examples) ? r.examples.slice(0, 4) : [], similar: Array.isArray(r.similar) ? r.similar.slice(0, 3) : [], mistakes: Array.isArray(r.mistakes) ? r.mistakes.slice(0, 3) : [], phrases: Array.isArray(r.phrases) ? r.phrases.slice(0, 4) : [] };
+    save();
+    if (wdToken === t && document.body.classList.contains("wd-open")) $("#wordDrawer").innerHTML = drawerHTML(t, "");
+    const p = $("#wordPop"); if (p && p.classList.contains("open") && curSubToken() === t) p.innerHTML = wordPopHTML(t);
+  } catch (e) {
+    cur.wdErr = e.message;
+    if (wdToken === t && document.body.classList.contains("wd-open")) $("#wordDrawer").innerHTML = drawerHTML(t, "error");
+  }
+}
+ACT["wd-ai"] = () => { if (!wdToken) return; if (!DB.settings.aiKey) { toast("Hãy thêm mã AI trong Cài đặt trước nhé", "err"); return; } $("#wordDrawer").innerHTML = drawerHTML(wdToken, "loading"); fetchWordInfo(wdToken); };
+ACT["wd-close"] = () => document.body.classList.remove("wd-open");
+$("#wdBg").addEventListener("click", () => document.body.classList.remove("wd-open"));
+document.addEventListener("keydown", e => { if (e.key === "Escape") { if (document.body.classList.contains("wd-open")) document.body.classList.remove("wd-open"); else closeWordPop(); } });
 </script>
 </body>
 </html>
