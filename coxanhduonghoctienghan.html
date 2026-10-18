@@ -507,6 +507,8 @@ body.sb-collapsed .sb-streak{padding:10px 4px}
   .add-hero{padding:16px;border-radius:22px}
   .add-row{grid-template-columns:1fr 1fr}
   .add-go{grid-column:1/-1}
+  .add-row.add-row:has(.add-lang){grid-template-columns:1fr 1fr}
+  .add-row .add-lang{grid-column:1/-1}
   .add-tabs button{padding:10px 14px;font-size:14px}
   .add-box{padding:14px}
   .speak-modes{grid-template-columns:1fr}
@@ -532,6 +534,16 @@ body.sb-collapsed .sb-streak{padding:10px 4px}
 .sz-s .sk{font-size:19px}.sz-l .sk{font-size:30px}
 .sub-vi{font-size:20px;font-weight:700;color:var(--text);line-height:1.4;max-width:100%}
 .sub-vi.sz-s{font-size:16px}.sub-vi.sz-l{font-size:24px}
+.lang-tag{display:inline-flex;align-items:center;justify-content:center;font:700 10px/1 var(--font);letter-spacing:.04em;padding:3px 5px;border-radius:6px;margin-right:6px;vertical-align:middle;color:#fff;flex:none;align-self:center}
+.lang-tag.lt-ko{background:#2563eb}.lang-tag.lt-vi{background:#db2777}
+.sub-spoken-vi .sv{color:#fff;font-size:22px;font-weight:700;line-height:1.35;text-align:center}
+.sub-spoken-vi.sz-s .sv{font-size:18px}.sub-spoken-vi.sz-l .sv{font-size:27px}
+.sub-line.alt{background:#4b4e57;margin-top:6px;transform:scale(.92)}
+.sent .vi-main{font-size:16.5px;line-height:1.5;font-weight:600}
+.sent .ko-sub{font-size:15px;color:var(--muted)}
+.sent .lang-tag{font-size:9px;padding:2px 4px}
+.add-row:has(.add-lang){grid-template-columns:1fr 1fr 1.3fr auto}
+.tr-dir{font-size:13px;font-weight:700;display:inline-flex;gap:6px;align-items:center}
 .sub-hide{color:var(--muted);font-size:14px;padding:10px;display:flex;gap:8px;align-items:center}
 .lesson-bar{display:flex;align-items:center;gap:6px;padding:8px;flex-wrap:nowrap;border-radius:16px;min-width:0}
 .lesson-bar>*{flex:none}
@@ -2052,7 +2064,7 @@ function splitSentences(line) {
   const parts = line.match(/[^.?!。？！]+[.?!。？！]+["'”’)]*|[^.?!。？！]+$/g) || [line];
   return parts.map(s => s.trim()).filter(Boolean);
 }
-function parseTranscript(text) {
+function parseTranscript(text, opt = {}) {
   text = (text || "").replace(/\r/g, "").replace(/^﻿/, "").replace(/^WEBVTT.*$/m, "");
   const out = [];
   if (/\d{1,2}:\d{2}(:\d{2})?[.,]\d{1,3}\s*-->/.test(text)) {
@@ -2065,6 +2077,7 @@ function parseTranscript(text) {
       const body = lines.slice(ti + 1).map(l => l.replace(/<[^>]+>/g, "").replace(/\{[^}]+\}/g, "")).filter(Boolean);
       const ko = body.filter(l => HG.isHangul(l)).join(" ");
       const vi = body.filter(l => !HG.isHangul(l)).join(" ");
+      if (!ko && opt.bi && vi) { out.push({ lang: "vi", ko: "", vi, start: parseTime(a), end: parseTime(z) }); continue; }
       if (!ko) continue;
       const prev = out[out.length - 1];
       if (prev && prev.ko === ko) { prev.end = parseTime(z); continue; }
@@ -2086,6 +2099,11 @@ function parseTranscript(text) {
     let ko = line, vi = "";
     const bar = line.split(/\s*\|\s*|\t+/);
     if (bar.length >= 2) { ko = bar[0]; vi = bar.slice(1).join(" "); }
+    if (!HG.isHangul(ko) && (HG.isHangul(vi) || (opt.bi && t !== null))) {
+      // Câu nói bằng tiếng Việt (bài Hàn–Việt xen kẽ): "[giờ] câu Việt | câu Hàn"
+      out.push({ lang: "vi", vi: ko.trim(), ko: HG.isHangul(vi) ? vi.trim() : "", start: t, end: null });
+      continue;
+    }
     if (!HG.isHangul(ko)) {
       const prev = out[out.length - 1];
       if (prev && !prev.vi) prev.vi = ko.trim();
@@ -2111,7 +2129,7 @@ function fmtTime(sec) {
 }
 function fmtTimeP(sec) { const m = Math.floor(sec / 60), s = sec - m * 60; return m + ":" + (s < 10 ? "0" : "") + (Math.round(s * 10) / 10).toFixed(1); }
 function serializeTranscript(sents) {
-  return sents.map(s => (s.start != null ? "[" + fmtTimeP(s.start) + "] " : "") + s.ko + (s.vi ? " | " + s.vi : "")).join("\n");
+  return sents.map(s => (s.start != null ? "[" + fmtTimeP(s.start) + "] " : "") + (s.lang === "vi" ? s.vi + (s.ko ? " | " + s.ko : "") : s.ko + (s.vi ? " | " + s.vi : ""))).join("\n");
 }
 </script>
 <script>
@@ -2241,7 +2259,12 @@ function speak(text, opt = {}) {
   if (!("speechSynthesis" in window)) { toast("Trình duyệt này không hỗ trợ giọng đọc máy.", "err"); opt.onend && opt.onend(); return; }
   speechSynthesis.cancel();
   const u = new SpeechSynthesisUtterance(text);
-  u.lang = "ko-KR";
+  u.lang = opt.lang === "vi" ? "vi-VN" : "ko-KR";
+  if (opt.lang === "vi") {
+    const vv = speechSynthesis.getVoices().find(x => /^vi/i.test(x.lang)); if (vv) u.voice = vv;
+    u.rate = opt.rate || 1; let done = false; const fin = () => { if (done) return; done = true; opt.onend && opt.onend(); };
+    u.onend = fin; u.onerror = fin; speechSynthesis.speak(u); return;
+  }
   const v = (opt.voice != null && VOICES.length > 1 ? VOICES[opt.voice % VOICES.length] : null) || VOICES.find(v => v.name === DB.settings.voice) || VOICES[0];
   if (opt.pitch) u.pitch = opt.pitch;
   if (v) u.voice = v; else if (!voiceWarned) { voiceWarned = true; toast("Máy chưa có giọng đọc tiếng Hàn – âm thanh có thể không chuẩn. Xem Cài đặt → Giọng đọc.", "err"); }
@@ -2527,6 +2550,7 @@ function renderHome() {
         <div class="add-row">
           <div><label class="lbl" for="fCat">Chủ đề</label><select class="select input" id="fCat">${CATS.map(([k, n]) => `<option value="${k}" ${k === (DB.settings.lastCat || "daily") ? "selected" : ""}>${esc(n)}</option>`).join("")}</select></div>
           <div><label class="lbl" for="fSub">Phụ đề tiếng Hàn</label><select class="select input" id="fSub"><option value="ai" ${subMode === "ai" ? "selected" : ""}>Tự động bằng AI</option><option value="manual" ${subMode === "manual" ? "selected" : ""}>Tự dán phụ đề</option></select></div>
+          <div class="add-lang"><label class="lbl" for="fLang">Ngôn ngữ âm thanh</label><select class="select input" id="fLang"><option value="ko" ${DB.settings.lastLang !== "bi" ? "selected" : ""}>Tiếng Hàn</option><option value="bi" ${DB.settings.lastLang === "bi" ? "selected" : ""}>Hàn + Việt xen kẽ (phiên dịch)</option></select></div>
           <button class="btn primary lg add-go" data-act="create-lesson">${ic("plus")} Tạo bài học</button>
         </div>
         ${subMode === "ai" && !DB.settings.aiKey ? `<div class="note info" style="margin-top:12px">${ic("spark")} Để AI tự lấy phụ đề tiếng Hàn cần <b>mã AI miễn phí</b> (nhập 1 lần, mất 2 phút). <button class="btn sm primary" data-go="settings">Nhập mã AI</button></div>` : ""}
@@ -2555,6 +2579,7 @@ function renderHome() {
   $("#fTitle").addEventListener("input", () => { cur.form.titleTouched = true; });
   $("#fSub").onchange = e => { DB.settings.subMode = e.target.value; save(); $("#manualBox").classList.toggle("hidden", e.target.value !== "ai" ? false : !$("#fText").value.trim()); if (e.target.value === "ai") { cur.form.lastUrl = ""; onUrlChange(); if (cur.formFile) autoTranscribeForm(true); } else { cur.form.job++; setFormBusy(false); setAutoStatus(""); } };
   $("#fCat").onchange = e => { DB.settings.lastCat = e.target.value; save(); };
+  $("#fLang").onchange = e => { DB.settings.lastLang = e.target.value; save(); if (subModeAI() && DB.settings.aiKey && (cur.formFile || (cur.form.src && cur.form.src.type === "youtube"))) { cur.form.lastUrl = ""; if (cur.formFile) autoTranscribeForm(true, true); else onUrlChange(); } };
   cur.form = { job: (cur.form.job || 0) + 1, titleTouched: false, meta: null, src: null, running: false, lastUrl: "" };
   updateDetect();
 }
@@ -2707,10 +2732,11 @@ async function autoTranscribeForm(fromFile, force) {
   const tick = () => { if (job !== cur.form.job || !cur.form.running) return; setAutoStatus(`<span class="spinner"></span> AI đang nghe video và chép phụ đề tiếng Hàn kèm bản dịch… (${Math.round((Date.now() - t0) / 1000)} giây — video dài có thể mất vài phút)${aiRetryNote ? `<br><span style="color:var(--warn)">${esc(aiRetryNote)}</span>` : ""} <button class="btn ghost sm" data-act="auto-cancel">Huỷ</button>`); setTimeout(tick, 1000); };
   tick();
   try {
-    const out = await aiTranscribe({ file: cur.formFile, src, summary: ($("#fSum") && $("#fSum").value.trim()) || "" });
+    const out = await aiTranscribe({ file: cur.formFile, src, summary: ($("#fSum") && $("#fSum").value.trim()) || "", bi: formBi() });
     if (job !== cur.form.job) return;
     $("#fText").value = serializeTranscript(out); $("#manualBox").classList.remove("hidden");
-    setAutoStatus(`${ic("check")} <b>Đã lấy ${out.length} câu phụ đề tiếng Hàn</b> kèm bản dịch${out.partial ? " (video dài nên AI chép được phần đầu)" : ""}. Bấm <b>Tạo bài học</b> để bắt đầu học.`);
+    const nVi = out.filter(s => s.lang === "vi").length;
+    setAutoStatus(`${ic("check")} <b>Đã lấy ${out.length} câu phụ đề${nVi ? ` (${out.length - nVi} câu nói tiếng Hàn, ${nVi} câu nói tiếng Việt)` : " tiếng Hàn"}</b> kèm bản dịch${out.partial ? " (video dài nên AI chép được phần đầu)" : ""}. Bấm <b>Tạo bài học</b> để bắt đầu học.`);
   } catch (e) {
     if (job !== cur.form.job) return;
     setAutoStatus(`<span style="color:var(--danger)">${esc(e.message)}</span><div class="row" style="margin-top:8px"><button class="btn sm primary" data-act="auto-retry">${ic("repeat")} Thử lại</button><span class="small muted">hoặc chọn “Tự dán phụ đề” để dán tay.</span></div>`);
@@ -2724,11 +2750,12 @@ ACT["create-lesson"] = () => {
   if (cur.form.running) { toast("AI đang lấy phụ đề, đợi chút nhé…"); return; }
   let src = cur.formFile ? { type: "file", label: "File trong máy" } : (cur.form.src || detectSource(url) || { type: "none", label: "Không có video" });
   if (src.type === "invalid") { toast("Link video chưa đúng (phải bắt đầu bằng https://)", "err"); return; }
-  const sentences = parseTranscript(text).map(s => ({ ...s, done: false }));
+  const bi = formBi();
+  const sentences = parseTranscript(text, { bi }).map(s => ({ ...s, done: false }));
   if (!sentences.length && src.type === "none") { toast("Hãy dán link video hoặc lời thoại tiếng Hàn nhé.", "err"); return; }
   if (!sentences.length && subModeAI() && DB.settings.aiKey && (src.type === "youtube" || src.type === "file")) { autoTranscribeForm(true, true); toast("AI đang lấy phụ đề, xong sẽ hiện ở dưới — bấm Tạo bài học lần nữa nhé."); return; }
   const d = new Date();
-  const l = { id: uid(), title: $("#fTitle").value.trim() || `Bài học ${d.getDate()}/${d.getMonth() + 1} – ${src.label}`, url, src, fileName: cur.formFile ? cur.formFile.name : "", sentences, summary: ($("#fSum") && $("#fSum").value.trim()) || "", cat: ($("#fCat") && $("#fCat").value) || "other", thumb: (cur.form.meta && cur.form.meta.thumb) || "", created: Date.now(), opened: Date.now(), idx: 0 };
+  const l = { id: uid(), title: $("#fTitle").value.trim() || `Bài học ${d.getDate()}/${d.getMonth() + 1} – ${src.label}`, url, src, fileName: cur.formFile ? cur.formFile.name : "", sentences, summary: ($("#fSum") && $("#fSum").value.trim()) || "", cat: ($("#fCat") && $("#fCat").value) || "other", thumb: (cur.form.meta && cur.form.meta.thumb) || "", created: Date.now(), opened: Date.now(), idx: 0, bi: bi || sentences.some(s => s.lang === "vi") };
   cur.form.job++;
   if (cur.formFile) { SESSION_FILES[l.id] = URL.createObjectURL(cur.formFile); storeLessonFile(l, cur.formFile); }
   DB.lessons.push(l); cur.formFile = null; save();
@@ -2905,7 +2932,7 @@ function playSentence(i, opt = {}) {
   const l = curLesson(); if (!l || !l.sentences[i]) return;
   if (!opt.keepIdx) setIdx(i);
   if ("speechSynthesis" in window) speechSynthesis.cancel();
-  if (!opt.tts && canPlayVideo(l, i)) {
+  if (!opt.tts && !opt.ko && canPlayVideo(l, i)) {
     const s = l.sentences[i];
     const base = cur.rate;
     if (opt.rate) PL.setRate(opt.rate); else PL.setRate(base);
@@ -2914,7 +2941,9 @@ function playSentence(i, opt = {}) {
     PL.seek(Math.max(0, s.start - 0.05)); PL.play();
   } else {
     let loops = opt.loops ?? (cur.loop === Infinity ? 2 : cur.loop);
-    const once = () => speak(l.sentences[i].ko, { rate: opt.rate, onend: () => { if (loops-- > 0) setTimeout(once, 500); else opt.after && opt.after(); } });
+    const s = l.sentences[i], viLine = s.lang === "vi" && !opt.ko;
+    if (!viLine && !s.ko) { opt.after && opt.after(); return; }
+    const once = () => speak(viLine ? s.vi : s.ko, { lang: viLine ? "vi" : "ko", rate: opt.rate, onend: () => { if (loops-- > 0) setTimeout(once, 500); else opt.after && opt.after(); } });
     once();
   }
 }
@@ -3051,7 +3080,7 @@ function renderShadow() {
     <div class="hint" style="margin-bottom:2px">${listening ? "Đang luyện nghe — phụ đề được ẩn." : "Bấm vào từng từ trong phụ đề để xem nghĩa. Luyện nói:"}</div>
     <div class="shadow-actions">
       <button class="btn primary" data-act="play-sent">${ic("play")} <span class="lbl">Nghe câu${vid ? " (video)" : ""}</span></button>
-      ${vid ? `<button class="btn" data-act="tts-sent" title="Giọng máy đọc">${ic("vol")} <span class="lbl">Giọng máy</span></button>` : `<button class="btn" data-act="tts-slow" title="Đọc chậm">${ic("slow")} <span class="lbl">Đọc chậm</span></button>`}
+      ${s.lang === "vi" ? (s.ko ? `<button class="btn" data-act="tts-ko" title="Giọng máy đọc câu tiếng Hàn tương ứng">${ic("vol")} <span class="lbl">Câu Hàn</span></button>` : "") : vid ? `<button class="btn" data-act="tts-sent" title="Giọng máy đọc">${ic("vol")} <span class="lbl">Giọng máy</span></button>` : `<button class="btn" data-act="tts-slow" title="Đọc chậm">${ic("slow")} <span class="lbl">Đọc chậm</span></button>`}
       <button class="btn ${recording ? "rec" : ""}" data-act="rec">${ic(recording ? "stop" : "mic")} <span class="lbl">${recording ? "Dừng ghi" : "Ghi âm"}</span></button>
     </div>
     <div class="rec-row">
@@ -3065,6 +3094,7 @@ function renderShadow() {
 }
 ACT["play-sent"] = () => playSentence(cur.idx);
 ACT["tts-sent"] = () => playSentence(cur.idx, { tts: true });
+ACT["tts-ko"] = () => playSentence(cur.idx, { ko: true, loops: 0 });
 ACT["tts-slow"] = () => playSentence(cur.idx, { tts: true, rate: 0.6, loops: 0 });
 ACT.rec = () => toggleRec();
 ACT["play-rec"] = () => playRec();
@@ -3103,7 +3133,8 @@ function scrollRowInList(row, smooth) {
 function sentRow(l, s, i) {
   return `<div class="sent ${i === cur.idx ? "active" : ""} ${s.done ? "done" : ""}" data-act="sent" data-i="${i}">
     <span class="num">${s.done ? "✓" : i + 1}</span>
-    <div><div class="ko">${esc(s.ko)}</div>${DB.settings.showRom ? `<div class="rom">${esc(Rom.text(s.ko))}</div>` : ""}${DB.settings.showVi && s.vi ? `<div class="vi">${esc(s.vi)}</div>` : ""}</div>
+    ${s.lang === "vi" ? `<div><div class="vi-main"><span class="lang-tag lt-vi">VI</span>${esc(s.vi)}</div>${s.ko ? `<div class="ko ko-sub">${esc(s.ko)}</div>${DB.settings.showRom ? `<div class="rom">${esc(Rom.text(s.ko))}</div>` : ""}` : `<div class="vi faint">Chưa có câu tiếng Hàn tương ứng</div>`}</div>`
+    : `<div><div class="ko">${l.bi ? `<span class="lang-tag lt-ko">KO</span>` : ""}${esc(s.ko)}</div>${DB.settings.showRom ? `<div class="rom">${esc(Rom.text(s.ko))}</div>` : ""}${(DB.settings.showVi || l.bi) && s.vi ? `<div class="vi">${esc(s.vi)}</div>` : ""}</div>`}
     <div class="meta">${s.start != null ? `<span class="t">${fmtTime(s.start)}</span>` : ""}<button class="btn ghost sm" data-act="sent-analyze" data-i="${i}" title="Phân tích câu này">${ic("search")}</button></div>
   </div>`;
 }
@@ -3120,7 +3151,7 @@ function renderScriptTab(l, body) {
       ${canAI ? "" : `<p class="hint" style="margin-top:12px">Video ${esc(l.src.label)}: hãy gõ/dán lời thoại tiếng Hàn vào. Muốn AI nghe giúp, tải video về máy rồi tạo bài mới bằng nút <b>File</b>.</p>`}</div>`;
     return;
   }
-  const missingVi = l.sentences.filter(s => !s.vi).length;
+  const missingVi = l.sentences.filter(s => s.lang === "vi" ? !s.ko : !s.vi).length;
   const untimed = l.sentences.filter(s => s.start == null).length;
   body.innerHTML = `
     <div class="script-tools">
@@ -3327,9 +3358,10 @@ ACT["edit-script"] = () => {
     <textarea class="input" id="scriptIn" rows="14" style="min-height:300px">${esc(serializeTranscript(l.sentences))}</textarea>`,
     `${canAI ? `<button class="btn soft" data-act="ai-transcribe-lesson" style="margin-right:auto">${ic("spark")} AI lấy lại lời thoại</button>` : ""}<button class="btn" data-act="modal-close">Huỷ</button><button class="btn primary" id="scriptSave">Lưu</button>`);
   $("#scriptSave").onclick = () => {
-    const ns = parseTranscript($("#scriptIn").value);
-    const old = new Map(l.sentences.map(s => [s.ko, s]));
-    l.sentences = ns.map(s => { const o = old.get(s.ko); return { ...s, vi: s.vi || (o ? o.vi : ""), done: o ? o.done : false, ai: o ? o.ai : undefined }; });
+    const ns = parseTranscript($("#scriptIn").value, { bi: l.bi });
+    const old = new Map(l.sentences.map(s => [s.lang === "vi" ? "vi:" + s.vi : s.ko, s]));
+    if (ns.some(s => s.lang === "vi")) l.bi = true;
+    l.sentences = ns.map(s => { const o = old.get(s.lang === "vi" ? "vi:" + s.vi : s.ko); return { ...s, vi: s.vi || (o ? o.vi : ""), done: o ? o.done : false, ai: o ? o.ai : undefined }; });
     cur.idx = Math.min(cur.idx, Math.max(0, l.sentences.length - 1)); cur.listen = null; cur.word = null;
     save(); closeModal(); renderTab(); renderShadow(); toast(`Đã lưu ${l.sentences.length} câu`, "ok");
   };
@@ -3443,9 +3475,17 @@ Trả về JSON đúng cấu trúc:
   }
 };
 ACT["ai-translate-all"] = async el => {
-  const l = curLesson(); const todo = l.sentences.map((s, i) => ({ s, i })).filter(x => !x.s.vi);
+  const l = curLesson(); const todo = l.sentences.map((s, i) => ({ s, i })).filter(x => !x.s.vi && x.s.lang !== "vi");
+  const todoKo = l.sentences.filter(s => s.lang === "vi" && !s.ko);
   busy(el, true, "AI đang dịch…");
   try {
+    for (let k = 0; k < todoKo.length; k += 30) {
+      const chunk = todoKo.slice(k, k + 30);
+      const res = await gemini([{ text: `Dịch từng câu tiếng Việt sau sang tiếng Hàn tự nhiên (văn nói, đuôi -아요/어요 hoặc đúng sắc thái câu gốc). Giữ nguyên thứ tự. Trả về JSON là mảng chuỗi có đúng ${chunk.length} phần tử.\n` + JSON.stringify(chunk.map(s => s.vi)) }]);
+      const arr = Array.isArray(res) ? res : (res.translations || res.items || []);
+      chunk.forEach((s, j) => { if (typeof arr[j] === "string") s.ko = arr[j]; });
+      save();
+    }
     for (let k = 0; k < todo.length; k += 30) {
       const chunk = todo.slice(k, k + 30);
       const res = await gemini([{ text: `Dịch từng câu tiếng Hàn sau sang tiếng Việt tự nhiên, dễ hiểu (văn nói hằng ngày). Giữ nguyên thứ tự. Trả về JSON là mảng chuỗi có đúng ${chunk.length} phần tử.\n` + JSON.stringify(chunk.map(x => x.s.ko)) }]);
@@ -3465,7 +3505,7 @@ const sumCtx = l => l && l.summary ? `Tình huống / nội dung video (người
    Lỗi hay gặp: AI viết 1:21 thành "121" → trang hiểu là 121 giây (2:01), cả đoạn sau bị lệch. */
 const TCHK = 1;
 function mmssAlt(t) { if (t == null || !isFinite(t) || t < 100) return null; const m = Math.floor(t / 100), r = t - m * 100; return r < 60 ? m * 60 + r : null; }
-function speechDur(s) { return Math.max(0.8, ((s.ko || "").match(/[가-힣]/g) || []).length * 0.17); }
+function speechDur(s) { return s.lang === "vi" ? Math.max(0.8, String(s.vi || "").split(/\s+/).length * 0.25) : Math.max(0.8, ((s.ko || "").match(/[가-힣]/g) || []).length * 0.17); }
 function fixMMSS(sents, dur) {
   const idx = sents.map((s, i) => i).filter(i => sents[i].start != null && isFinite(sents[i].start));
   if (idx.length < 2 || !idx.some(i => mmssAlt(sents[i].start) != null)) return false;
@@ -3547,10 +3587,10 @@ async function aiRetime(l) {
   parts.push({ text: `Dưới đây là lời thoại tiếng Hàn của video, mỗi câu có số thứ tự [i]. Hãy nghe kỹ video và ghi đúng thời điểm BẮT ĐẦU và KẾT THÚC của từng câu.
 Ghi thời gian dạng "phút:giây" (ví dụ "0:05.2", "1:21.0", "12:03.5") — KHÔNG được viết "121" thay cho 1:21. Không đổi nội dung câu.
 Chỉ trả về JSON mảng cho TẤT CẢ các câu: [{"i":0,"start":"0:01.2","end":"0:03.4"}]
-${l.sentences.map((s, i) => `[${i}] ${s.ko}`).join("\n")}` });
+${l.sentences.map((s, i) => `[${i}] ${s.lang === "vi" ? "(câu nói tiếng Việt) " + s.vi : s.ko}`).join("\n")}` });
   const res = await gemini(parts, { long: true });
   const arr = Array.isArray(res) ? res : (res.items || res.sentences || []);
-  const tmp = l.sentences.map(s => ({ ko: s.ko, start: null, end: null }));
+  const tmp = l.sentences.map(s => ({ ko: s.ko, vi: s.vi, lang: s.lang, start: null, end: null }));
   arr.forEach(x => { const i = +x.i; if (tmp[i]) { tmp[i].start = x.start != null ? parseTime(x.start) : null; tmp[i].end = x.end != null ? parseTime(x.end) : null; } });
   const got = tmp.filter(s => s.start != null).length;
   if (got < l.sentences.length * 0.6) throw new Error("AI chưa trả đủ mốc giờ, hãy thử lại.");
@@ -3573,9 +3613,16 @@ ACT["shift-all"] = el => {
 };
 const TRANSCRIBE_BASE = `Hãy nghe kỹ toàn bộ âm thanh và chép lại CHÍNH XÁC lời thoại tiếng Hàn. Chia thành từng câu ngắn (mỗi câu tối đa khoảng 15 từ) theo đúng thứ tự thời gian. Với mỗi câu ghi thời điểm bắt đầu và kết thúc theo dạng "phút:giây" (ví dụ "0:05.2", "1:21.0", "12:03.5" — KHÔNG được viết "121" thay cho 1:21) và bản dịch tiếng Việt tự nhiên. Mốc giờ phải khớp đúng lúc câu đó được nói trong video.
 Chỉ trả về JSON dạng mảng: [{"start": "0:01.2", "end": "0:03.4", "ko": "câu tiếng Hàn", "vi": "dịch tiếng Việt"}]. Nếu không có tiếng Hàn, trả về [].`;
-async function aiTranscribe({ url, file, src, summary, dur }) {
+const TRANSCRIBE_BI = `Âm thanh này có cả TIẾNG HÀN và TIẾNG VIỆT nói xen kẽ nhau (bài luyện phiên dịch). Hãy nghe kỹ và chép lại TẤT CẢ lời nói — cả câu tiếng Hàn lẫn câu tiếng Việt, không bỏ câu nào — theo đúng thứ tự thời gian. Chia thành từng câu ngắn (tối đa khoảng 15 từ).
+Mỗi câu ghi: "lang" = ngôn ngữ người nói dùng ("ko" hoặc "vi"); thời điểm bắt đầu/kết thúc dạng "phút:giây" (ví dụ "0:05.2", "1:21.0" — KHÔNG được viết "121" thay cho 1:21).
+- Nếu lang = "ko": "ko" = chép CHÍNH XÁC câu tiếng Hàn nghe được, "vi" = dịch tiếng Việt tự nhiên.
+- Nếu lang = "vi": "vi" = chép CHÍNH XÁC câu tiếng Việt nghe được, "ko" = câu tiếng Hàn tương ứng (nếu ngay trước/sau có câu tiếng Hàn cùng nghĩa thì dùng đúng câu đó, nếu không thì dịch sang tiếng Hàn tự nhiên).
+Chỉ trả về JSON dạng mảng: [{"lang":"ko","start":"0:01.2","end":"0:03.4","ko":"…","vi":"…"},{"lang":"vi","start":"0:04.0","end":"0:06.1","vi":"…","ko":"…"}]`;
+const formBi = () => ($("#fLang") ? $("#fLang").value : DB.settings.lastLang) === "bi";
+async function aiTranscribe({ url, file, src, summary, dur, bi }) {
   let parts;
-  const TRANSCRIBE_PROMPT = summary ? TRANSCRIBE_BASE + "\nGợi ý ngữ cảnh do người học mô tả (chỉ để hiểu tình huống, vẫn chép đúng lời nghe được): " + summary : TRANSCRIBE_BASE;
+  const BASE = bi ? TRANSCRIBE_BI : TRANSCRIBE_BASE;
+  const TRANSCRIBE_PROMPT = summary ? BASE + "\nGợi ý ngữ cảnh do người học mô tả (chỉ để hiểu tình huống, vẫn chép đúng lời nghe được): " + summary : BASE;
   if (file) {
     if (file.size > 19 * 1024 * 1024) throw new Error("File lớn hơn 19MB nên AI không nhận được. Hãy cắt ngắn video hoặc dùng file âm thanh (mp3/m4a).");
     parts = [{ inlineData: { mimeType: file.type || "video/mp4", data: await fileToBase64(file) } }, { text: TRANSCRIBE_PROMPT }];
@@ -3584,8 +3631,15 @@ async function aiTranscribe({ url, file, src, summary, dur }) {
   } else throw new Error("AI chỉ nghe được video YouTube công khai hoặc file trong máy. Với Facebook/TikTok hãy tải video về rồi chọn File.");
   const res = await gemini(parts, { long: true });
   const arr = Array.isArray(res) ? res : (res.sentences || res.items || []);
-  const out = arr.map(x => ({ ko: String(x.ko || x.text || "").trim(), vi: String(x.vi || "").trim(), start: x.start != null ? parseTime(x.start) : null, end: x.end != null ? parseTime(x.end) : null })).filter(x => x.ko && HG.isHangul(x.ko));
+  const out = arr.map(x => {
+    const ko = String(x.ko || x.text || "").trim(), vi = String(x.vi || "").trim();
+    const lang = bi && (x.lang === "vi" || (!HG.isHangul(ko) && vi)) ? "vi" : "ko";
+    const o = { ko: HG.isHangul(ko) ? ko : "", vi, start: x.start != null ? parseTime(x.start) : null, end: x.end != null ? parseTime(x.end) : null };
+    if (lang === "vi") o.lang = "vi";
+    return o;
+  }).filter(x => x.lang === "vi" ? x.vi : x.ko);
   if (!out.length) throw new Error("AI không nghe thấy lời thoại tiếng Hàn trong video này.");
+  if (bi && !out.some(s => s.lang === "vi")) out.noVi = true;
   fixMMSS(out, dur);
   out.sort((a, b) => (a.start ?? 0) - (b.start ?? 0));
   if (res && res._partial) out.partial = true;
@@ -3608,7 +3662,7 @@ ACT["ai-transcribe-lesson"] = async el => {
   }
   busy(el, true, "AI đang nghe video…");
   try {
-    const out = await aiTranscribe({ file, src: l.src, summary: l.summary, dur: l.dur });
+    const out = await aiTranscribe({ file, src: l.src, summary: l.summary, dur: l.dur, bi: l.bi });
     l.sentences = out.map(s => ({ ...s, done: false })); cur.idx = 0; cur.listen = null; save();
     if ($("#modal").classList.contains("open")) closeModal();
     renderTab(); renderShadow(); toast(`AI đã chép ${out.length} câu`, "ok");
@@ -4120,9 +4174,16 @@ function renderSubBox() {
   const s = l.sentences[cur.idx];
   if (cur.tab === "listen") { box.innerHTML = `<div class="sub-hide">${ic("ear")} Đang luyện nghe — phụ đề được ẩn</div>`; return; }
   if (cur.tab === "quiz" && cur.qz && cur.qz.items && cur.qz.i < cur.qz.items.length && cur.qz.picked == null) { box.innerHTML = `<div class="sub-hide">${ic("ear")} Đang làm quiz — nghe video để tìm đáp án, phụ đề hiện sau khi trả lời</div>`; return; }
-  const toks = subTokens(s);
-  const words = `<div class="sub-line sz-${st.subSize}">${toks.map((t, i) => `<button class="sw k-${KIND_CLASS[t.pos] || "u"} ${cur.subWord === i ? "sel" : ""}" data-act="sub-word" data-i="${i}">${st.showRom ? `<span class="sr">${esc(Rom.text(t.clean))}</span>` : ""}<span class="sk">${esc(t.surface)}</span></button>`).join("")}</div>`;
-  const vi = st.subVi ? `<div class="sub-vi sz-${st.subSize}">${s.vi ? esc(s.vi) : `<span class="faint" style="font-weight:400">Chưa có bản dịch${st.aiKey ? ` · <a href="#" data-act="ai-explain">AI dịch</a>` : ""}</span>`}</div>` : "";
+  const toks = s.ko ? subTokens(s) : [];
+  if (s.lang === "vi") {
+    // Câu nói tiếng Việt: hiện câu Việt (đang nói) + câu Hàn tương ứng (bấm từng từ được)
+    box.innerHTML = `<div class="sub-line sub-spoken-vi sz-${st.subSize}"><span class="lang-tag lt-vi">VI</span><span class="sv">${esc(s.vi)}</span></div>` +
+      (toks.length ? `<div class="sub-line alt sz-${st.subSize}"><span class="lang-tag lt-ko">KO</span>${toks.map((t, i) => `<button class="sw k-${KIND_CLASS[t.pos] || "u"} ${cur.subWord === i ? "sel" : ""}" data-act="sub-word" data-i="${i}">${st.showRom ? `<span class="sr">${esc(Rom.text(t.clean))}</span>` : ""}<span class="sk">${esc(t.surface)}</span></button>`).join("")}</div>`
+        : `<div class="sub-vi sz-${st.subSize}"><span class="faint" style="font-weight:400">Chưa có câu tiếng Hàn${st.aiKey ? ` · <a href="#" data-act="ai-translate-all">AI dịch</a>` : ""}</span></div>`);
+    return;
+  }
+  const words = `<div class="sub-line sz-${st.subSize}">${l.bi ? `<span class="lang-tag lt-ko">KO</span>` : ""}${toks.map((t, i) => `<button class="sw k-${KIND_CLASS[t.pos] || "u"} ${cur.subWord === i ? "sel" : ""}" data-act="sub-word" data-i="${i}">${st.showRom ? `<span class="sr">${esc(Rom.text(t.clean))}</span>` : ""}<span class="sk">${esc(t.surface)}</span></button>`).join("")}</div>`;
+  const vi = st.subVi || l.bi ? `<div class="sub-vi sz-${st.subSize}">${s.vi ? esc(s.vi) : `<span class="faint" style="font-weight:400">Chưa có bản dịch${st.aiKey ? ` · <a href="#" data-act="ai-explain">AI dịch</a>` : ""}</span>`}</div>` : "";
   box.innerHTML = words + vi;
 }
 
@@ -4385,7 +4446,7 @@ const scoreRing = (s, label) => `<div class="sring" style="--p:${s};--c:${scoreC
 /* ---------- Ghi âm + nhận dạng giọng nói ---------- */
 const SRec = window.SpeechRecognition || window.webkitSpeechRecognition;
 const CAP = { active: false, stop: null };
-async function captureSpeech({ wantAudio, maxMs = 12000 }) {
+async function captureSpeech({ wantAudio, maxMs = 12000, lang }) {
   let stream = null, mr = null; const chunks = [];
   if (wantAudio || !SRec) {
     try { stream = await navigator.mediaDevices.getUserMedia({ audio: true }); mr = new MediaRecorder(stream); mr.ondataavailable = e => e.data.size && chunks.push(e.data); mr.start(); }
@@ -4396,7 +4457,7 @@ async function captureSpeech({ wantAudio, maxMs = 12000 }) {
   if (SRec) {
     texts = await new Promise(res => {
       const rec = new SRec(); const out = [];
-      rec.lang = "ko-KR"; rec.interimResults = false; rec.maxAlternatives = 5; rec.continuous = false;
+      rec.lang = lang || "ko-KR"; rec.interimResults = false; rec.maxAlternatives = 5; rec.continuous = false;
       rec.onresult = e => { for (const r of e.results) for (const a of r) out.push(a.transcript); };
       rec.onerror = e => { error = e.error; };
       rec.onend = () => res(out);
@@ -4557,7 +4618,7 @@ function renderPronTab(l, body) {
 function pronRerender() { if (cur.view === "lesson" && cur.tab === "pron") renderTab(); }
 ACT["pr-go"] = el => { if (PR.state !== "idle") return; setIdx(+el.dataset.i); renderTab(); };
 ACT["pr-next"] = () => { const l = curLesson(); if (PR.state === "idle" && cur.idx < l.sentences.length - 1) { setIdx(cur.idx + 1); renderTab(); } };
-ACT["pr-model"] = () => { if (PR.state === "recording") return; playSentence(cur.idx, { loops: 0, keepIdx: true }); };
+ACT["pr-model"] = () => { if (PR.state === "recording") return; const s = curLesson().sentences[cur.idx]; playSentence(cur.idx, { loops: 0, keepIdx: true, ko: s && s.lang === "vi" }); };
 ACT["pr-tog"] = el => { const k = el.dataset.k; DB.settings[k] = !DB.settings[k]; save(); renderTab(); };
 ACT["pr-mine"] = () => { const l = curLesson(); const r = cur.pronRes[pronKey(l, cur.idx)]; if (r && r.blob) new Audio(URL.createObjectURL(r.blob)).play(); };
 ACT["pr-check"] = () => {
@@ -4643,11 +4704,19 @@ document.addEventListener("keydown", e => {
 }, true);
 
 /* ---------- Tab: LUYỆN NGHE (3 chế độ) ---------- */
-function newListen(l, mode) {
+function newListen(l, mode, dir = "all") {
   let idxs = l.sentences.map((_, i) => i);
-  if (mode === "trans" && !DB.settings.aiKey) idxs = idxs.filter(i => l.sentences[i].vi);
-  return { mode, order: shuffle(idxs), pos: 0, ok: 0, total: 0, answered: false, result: null, q: null, input: "" };
+  const S = i => l.sentences[i];
+  if (mode !== "trans") idxs = idxs.filter(i => S(i).lang !== "vi" && S(i).ko);
+  else {
+    if (dir === "kv") idxs = idxs.filter(i => S(i).lang !== "vi");
+    if (dir === "vk") idxs = idxs.filter(i => S(i).lang === "vi");
+    if (!DB.settings.aiKey) idxs = idxs.filter(i => S(i).lang === "vi" ? S(i).ko : S(i).vi);
+  }
+  // Bài Hàn–Việt xen kẽ: luyện phiên dịch theo đúng thứ tự hội thoại
+  return { mode, dir, order: l.bi && mode === "trans" ? idxs : shuffle(idxs), pos: 0, ok: 0, total: 0, answered: false, result: null, q: null, input: "" };
 }
+const transDir = s => (s.lang === "vi" ? "vk" : "kv");
 function prepareFill(l, i) {
   const toks = analyze(l.sentences[i].ko).tokens.filter(t => HG.isHangul(t.clean));
   if (!toks.length) return null;
@@ -4670,11 +4739,12 @@ function diffScore(input, target) {
 const viWords = s => String(s || "").toLowerCase().replace(/[.,!?;:"'“”…()\-]/g, " ").split(/\s+/).filter(w => w.length > 0);
 function renderListenTab(l, body) {
   if (needSentences(l, body)) return;
-  if (!cur.listen || cur.listen.lessonId !== l.id) { cur.listen = newListen(l, (cur.listen && cur.listen.mode) || "dict"); cur.listen.lessonId = l.id; }
+  if (!cur.listen || cur.listen.lessonId !== l.id) { cur.listen = newListen(l, (cur.listen && cur.listen.lessonId === l.id && cur.listen.mode) || (l.bi ? "trans" : "dict")); cur.listen.lessonId = l.id; }
   const L = cur.listen;
-  const modes = `<div class="seg wrap">${[["dict", "Chép chính tả"], ["fill", "Điền từ"], ["trans", "Luyện dịch"]].map(([k, n]) => `<button class="${L.mode === k ? "active" : ""}" data-act="listen-mode" data-m="${k}">${n}</button>`).join("")}</div>`;
-  const modesRow = `<div class="row between" style="gap:8px">${modes}${hideVideoBtn()}</div>`;
-  if (!L.order.length) { body.innerHTML = modesRow + `<div class="empty">Chưa có câu nào có bản dịch mẫu để luyện dịch. Hãy dùng <b>AI dịch cả bài</b> (tab Lời thoại) hoặc thêm mã AI để AI chấm bài dịch.</div>`; return; }
+  const modes = `<div class="seg wrap">${[["dict", "Chép chính tả"], ["fill", "Điền từ"], ["trans", l.bi ? "Phiên dịch" : "Luyện dịch"]].map(([k, n]) => `<button class="${L.mode === k ? "active" : ""}" data-act="listen-mode" data-m="${k}">${n}</button>`).join("")}</div>`;
+  const dirs = L.mode === "trans" && l.bi ? `<div class="seg" style="margin-top:8px">${[["all", "Cả hai chiều"], ["kv", "Hàn → Việt"], ["vk", "Việt → Hàn"]].map(([k, n]) => `<button class="${L.dir === k ? "active" : ""}" data-act="listen-dir" data-d="${k}">${n}</button>`).join("")}</div>` : "";
+  const modesRow = `<div class="row between" style="gap:8px">${modes}${hideVideoBtn()}</div>${dirs}`;
+  if (!L.order.length) { body.innerHTML = modesRow + `<div class="empty">${L.mode === "trans" ? `Chưa có câu nào có bản dịch mẫu để luyện dịch. Hãy dùng <b>AI dịch cả bài</b> (tab Lời thoại) hoặc thêm mã AI để AI chấm bài dịch.` : `Bài này chưa có câu nói tiếng Hàn để luyện ${L.mode === "dict" ? "chép chính tả" : "điền từ"}.`}</div>`; return; }
   if (L.pos >= L.order.length) {
     const pct = L.total ? Math.round(L.ok / L.total * 100) : 0;
     body.innerHTML = modesRow + `<div class="listen-box">${scoreRing(pct, "%")}<h2 style="margin-top:12px">Hoàn thành!</h2><p class="muted">Đúng ${L.ok}/${L.total} câu</p><button class="btn primary" data-act="listen-restart">${ic("repeat")} Luyện lại</button></div>`;
@@ -4697,16 +4767,19 @@ function renderListenTab(l, body) {
       <textarea class="input" id="dictIn" rows="2" style="min-height:70px;font-size:18px" placeholder="Gõ câu bạn nghe được…" ${L.answered ? "disabled" : ""}>${esc(L.input || "")}</textarea>
       ${L.answered && L.result ? `<div class="diff">${L.result.html}</div><p style="margin:8px 0 0"><b>Đúng ${L.result.pct}%</b> · <span class="muted">${esc(s.vi || "")}</span></p>` : ""}`;
   } else {
-    main = `<p class="muted small" style="margin:12px 0 6px">Nghe câu tiếng Hàn rồi viết nghĩa bằng tiếng Việt.</p>
-      <textarea class="input" id="dictIn" rows="2" style="min-height:70px;font-size:16px;font-family:var(--font)" placeholder="Viết nghĩa tiếng Việt…" ${L.answered ? "disabled" : ""}>${esc(L.input || "")}</textarea>
+    const vk = transDir(s) === "vk";
+    main = `<p class="small" style="margin:12px 0 6px"><span class="tr-dir">${vk ? `<span class="lang-tag lt-vi">VI</span>→<span class="lang-tag lt-ko">KO</span>` : `<span class="lang-tag lt-ko">KO</span>→<span class="lang-tag lt-vi">VI</span>`}</span> <span class="muted">${vk ? "Nghe câu tiếng Việt rồi nói hoặc viết lại bằng <b>tiếng Hàn</b>." : "Nghe câu tiếng Hàn rồi nói hoặc viết nghĩa bằng <b>tiếng Việt</b>."}</span></p>
+      <textarea class="input ${vk ? "ko" : ""}" id="dictIn" rows="2" style="min-height:70px;font-size:${vk ? 18 : 16}px;${vk ? "" : "font-family:var(--font)"}" placeholder="${vk ? "Viết câu tiếng Hàn…" : "Viết nghĩa tiếng Việt…"}" ${L.answered ? "disabled" : ""}>${esc(L.input || "")}</textarea>
+      ${!L.answered && SRec ? `<div class="row" style="margin-top:8px"><button class="btn sm ${L.mic ? "danger" : ""}" data-act="listen-mic">${ic("mic")} ${L.mic ? "Đang nghe… bấm để dừng" : `Nói câu dịch (${vk ? "tiếng Hàn" : "tiếng Việt"})`}</button></div>` : ""}
       ${L.busy ? `<div class="note info" style="margin-top:10px"><span class="spinner"></span> AI đang chấm bài dịch…</div>` : ""}
       ${L.answered && L.result ? `<div class="trans-res">
         ${scoreRing(L.result.pct, "%")}
         <div class="grow">
           <div><b>${esc(L.result.verdict || "")}</b></div>
           ${L.result.feedback ? `<p style="margin:6px 0">${esc(L.result.feedback)}</p>` : ""}
-          <div class="small muted" style="margin-top:6px">Câu gốc: <span class="ko">${esc(s.ko)}</span></div>
-          <div class="small">Bản dịch mẫu: <b>${esc(L.result.better || s.vi || "")}</b></div>
+          <div class="small muted" style="margin-top:6px">Câu gốc: ${vk ? esc(s.vi) : `<span class="ko">${esc(s.ko)}</span>`}</div>
+          <div class="small">Bản dịch mẫu: <b class="${vk ? "ko" : ""}">${esc(L.result.better || (vk ? s.ko : s.vi) || "")}</b>${vk && (L.result.better || s.ko) ? ` <button class="btn ghost sm" data-act="listen-say-ans" title="Nghe câu tiếng Hàn mẫu">${ic("vol")}</button>` : ""}</div>
+          ${vk && L.result.better && s.ko && L.result.better !== s.ko ? `<div class="small muted">Câu tiếng Hàn trong bài: <span class="ko">${esc(s.ko)}</span></div>` : ""}
           ${L.result.self ? `<div class="row" style="margin-top:8px"><span class="small muted">Bạn tự chấm:</span><button class="btn sm" data-act="trans-self" data-ok="1">${ic("check")} Mình hiểu đúng</button><button class="btn sm" data-act="trans-self" data-ok="0">Chưa đúng</button></div>` : ""}
         </div></div>` : ""}`;
   }
@@ -4728,7 +4801,22 @@ function renderListenTab(l, body) {
   const ta = $("#dictIn"); if (ta) ta.oninput = () => { L.input = ta.value; };
 }
 ACT["listen-mode"] = el => { cur.listen = newListen(curLesson(), el.dataset.m); cur.listen.lessonId = cur.lessonId; renderTab(); };
-ACT["listen-restart"] = () => { const m = cur.listen.mode; cur.listen = newListen(curLesson(), m); cur.listen.lessonId = cur.lessonId; renderTab(); };
+ACT["listen-dir"] = el => { cur.listen = newListen(curLesson(), "trans", el.dataset.d); cur.listen.lessonId = cur.lessonId; renderTab(); };
+ACT["listen-say-ans"] = () => { const L = cur.listen, s = curLesson().sentences[L.order[L.pos]]; speak((L.result && L.result.better) || s.ko); };
+ACT["listen-mic"] = async () => {
+  const L = cur.listen; if (!L) return;
+  if (L.mic) { CAP.stop && CAP.stop(); return; }
+  const s = curLesson().sentences[L.order[L.pos]], vk = transDir(s) === "vk";
+  if (PL && PL.pause) PL.pause();
+  L.mic = true; renderTab();
+  try {
+    const r = await captureSpeech({ lang: vk ? "ko-KR" : "vi-VN", maxMs: 20000 });
+    if (r.texts.length) { L.input = ((L.input || "").trim() ? L.input.trim() + " " : "") + r.texts[0]; }
+    else toast(r.error === "not-allowed" ? "Hãy cho phép trang dùng micro nhé" : "Chưa nghe rõ, bạn nói lại nhé", "err");
+  } catch (e) { toast(e.message, "err"); }
+  L.mic = false; if (cur.listen === L && cur.tab === "listen") renderTab();
+};
+ACT["listen-restart"] = () => { const m = cur.listen.mode; cur.listen = newListen(curLesson(), m, cur.listen.dir); cur.listen.lessonId = cur.lessonId; renderTab(); };
 ACT["listen-play"] = () => playSentence(cur.listen.order[cur.listen.pos], { keepIdx: true, loops: 0 });
 ACT["listen-tts"] = () => playSentence(cur.listen.order[cur.listen.pos], { keepIdx: true, loops: 0, tts: true });
 ACT["listen-slow"] = () => { const l = curLesson(), i = cur.listen.order[cur.listen.pos]; playSentence(i, { keepIdx: true, loops: 0, rate: canPlayVideo(l, i) ? 0.75 : 0.6 }); };
@@ -4736,8 +4824,23 @@ const listenScore = ok => { const L = cur.listen; L.total++; DB.stats.listenTota
 ACT["listen-pick"] = el => { const L = cur.listen; L.q.picked = el.dataset.c; L.answered = true; listenScore(L.q.picked === L.q.target); renderTab(); };
 ACT["listen-check"] = async () => {
   const L = cur.listen, l = curLesson(), s = l.sentences[L.order[L.pos]];
-  if (!(L.input || "").trim()) { toast(L.mode === "trans" ? "Hãy viết nghĩa tiếng Việt trước nhé" : "Hãy gõ câu bạn nghe được trước nhé", "err"); return; }
+  const vk = L.mode === "trans" && transDir(s) === "vk";
+  if (!(L.input || "").trim()) { toast(L.mode === "trans" ? (vk ? "Hãy nói hoặc viết câu tiếng Hàn trước nhé" : "Hãy viết nghĩa tiếng Việt trước nhé") : "Hãy gõ câu bạn nghe được trước nhé", "err"); return; }
   if (L.mode === "dict") { L.result = diffScore(L.input, s.ko); L.answered = true; listenScore(L.result.pct >= 80); renderTab(); return; }
+  if (vk) {
+    if (DB.settings.aiKey) {
+      L.busy = true; renderTab();
+      try {
+        const r = await gemini([{ text: `Câu tiếng Việt: «${s.vi}»${s.ko ? ` (câu tiếng Hàn tham khảo: «${s.ko}»)` : ""}. Người học tiếng Hàn trình độ sơ cấp luyện phiên dịch, dịch sang tiếng Hàn: «${L.input}». Chấm xem câu tiếng Hàn của người học có đúng ý, đúng ngữ pháp và tự nhiên không (không cần giống hệt câu tham khảo). Trả về JSON {"score":0-100,"verdict":"Đúng ý" hoặc "Gần đúng" hoặc "Chưa đúng","feedback":"nhận xét ngắn bằng tiếng Việt, chỉ rõ lỗi từ vựng/ngữ pháp/đuôi câu nếu có","better":"câu tiếng Hàn tự nhiên, đúng nhất"}` }]);
+        L.result = { pct: Math.max(0, Math.min(100, Math.round(+r.score || 0))), verdict: r.verdict, feedback: r.feedback, better: r.better };
+        listenScore(L.result.pct >= 70);
+      } catch (e) { toast(e.message, "err"); L.busy = false; renderTab(); return; }
+      L.busy = false; L.answered = true; renderTab(); return;
+    }
+    const d = diffScore(L.input, s.ko);
+    L.result = { pct: d.pct, verdict: d.pct >= 70 ? "Khá giống câu tiếng Hàn mẫu" : "Khác câu mẫu — hãy so sánh xem có đúng ý không", self: true };
+    L.answered = true; renderTab(); return;
+  }
   if (DB.settings.aiKey) {
     L.busy = true; renderTab();
     try {
@@ -4753,7 +4856,7 @@ ACT["listen-check"] = async () => {
   L.answered = true; renderTab();
 };
 ACT["trans-self"] = el => { const L = cur.listen; if (!L.result || !L.result.self) return; L.result.self = false; listenScore(el.dataset.ok === "1"); L.result.verdict = el.dataset.ok === "1" ? "Bạn đánh dấu: hiểu đúng ✓" : "Bạn đánh dấu: chưa đúng"; renderTab(); };
-ACT["listen-reveal"] = () => { const L = cur.listen, s = curLesson().sentences[L.order[L.pos]]; L.result = L.mode === "dict" ? diffScore(L.input || "", s.ko) : { pct: 0, verdict: "Đáp án", better: s.vi }; L.answered = true; listenScore(false); renderTab(); };
+ACT["listen-reveal"] = () => { const L = cur.listen, s = curLesson().sentences[L.order[L.pos]]; L.result = L.mode === "dict" ? diffScore(L.input || "", s.ko) : { pct: 0, verdict: "Đáp án", better: transDir(s) === "vk" ? s.ko : s.vi }; L.answered = true; listenScore(false); renderTab(); };
 ACT["listen-next"] = ACT["listen-skip"] = () => { const L = cur.listen; L.pos++; L.answered = false; L.q = null; L.input = ""; L.result = null; renderTab(); if (L.pos < L.order.length) setTimeout(() => ACT["listen-play"](), 250); };
 
 /* ---------- Tab: ÔN TẬP từ vựng của video ---------- */
