@@ -2799,7 +2799,7 @@ function buildPlayer(l) {
       const yt = new YT.Player("ytp", {
         videoId: s.id, playerVars: vars,
         events: {
-          onReady: () => { PL.ready = true; try { yt.setPlaybackRate(cur.rate); } catch (e) { } renderPlayerBar(); },
+          onReady: () => { PL.ready = true; try { yt.setPlaybackRate(cur.rate); } catch (e) { } try { noteDuration(l, yt.getDuration()); } catch (e) { } renderPlayerBar(); },
           onError: e => ytError(e.data, l),
           onStateChange: () => renderPlayIcon(),
         },
@@ -2830,6 +2830,7 @@ function buildPlayer(l) {
       const v = $("#vid");
       v.playbackRate = cur.rate;
       v.addEventListener("play", renderPlayIcon); v.addEventListener("pause", renderPlayIcon);
+      v.addEventListener("loadedmetadata", () => noteDuration(l, v.duration));
       v.addEventListener("error", () => { note.innerHTML = `<div class="note warn">Không phát được file này. Hãy thử file .mp4 khác hoặc kiểm tra link.</div>`; });
       Object.assign(PL, { ctrl: true, ready: true, play: () => v.play().catch(() => { }), pause: () => v.pause(), seek: t => { v.currentTime = t; }, time: () => v.currentTime || 0, setRate: r => { v.playbackRate = r; }, playing: () => !v.paused && !v.ended, destroy: () => { v.pause(); v.removeAttribute("src"); v.load(); } });
       startPoll();
@@ -3059,7 +3060,7 @@ function renderShadow() {
       <button class="btn sm ghost" data-act="toggle-done">${ic("check")} ${s.done ? "Bỏ đánh dấu" : "Đã luyện"}</button>
       ${s.vi ? `<button class="btn sm ghost" data-act="card-sentence" title="Lưu cả câu thành flashcard">${ic("plus")} Thẻ câu</button>` : ""}
     </div>
-    ${PL && PL.ctrl ? `<div class="rec-row"><button class="btn sm ghost" data-act="pin-time" title="Tua video đến chỗ bắt đầu câu rồi bấm">${ic("pin")} Gắn giờ bắt đầu câu = thời điểm video hiện tại</button></div>` : ""}
+    ${PL && PL.ctrl ? `<div class="rec-row"><button class="btn sm ghost" data-act="pin-time" title="Tua video đến chỗ bắt đầu câu rồi bấm">${ic("pin")} Gắn giờ câu này = lúc video đang phát</button><button class="btn sm ghost" data-act="pin-time" data-shift="1" title="Dùng khi từ câu này trở đi đều bị lệch">${ic("pin")} Căn câu này + các câu sau</button></div>` : ""}
   `;
 }
 ACT["play-sent"] = () => playSentence(cur.idx);
@@ -3069,13 +3070,19 @@ ACT.rec = () => toggleRec();
 ACT["play-rec"] = () => playRec();
 ACT.compare = () => playSentence(cur.idx, { loops: 0, after: () => playRec() });
 ACT["toggle-done"] = () => { const l = curLesson(), s = l.sentences[cur.idx]; s.done = !s.done; if (s.done) { DB.stats.shadow++; logAct("s"); } save(); renderShadow(); refreshSentenceRow(cur.idx); };
-ACT["pin-time"] = () => {
+ACT["pin-time"] = el => {
   const l = curLesson(); if (!PL || !PL.ctrl) return;
   const t = Math.max(0, PL.time() - 0.2), s = l.sentences[cur.idx];
+  if (el && el.dataset.shift && s.start != null) {
+    const d = Math.round((t - s.start) * 10) / 10;
+    l.sentences.slice(cur.idx + 1).forEach(x => { if (x.start != null) x.start = Math.max(0, Math.round((x.start + d) * 10) / 10); if (x.end != null) x.end = Math.max(0, Math.round((x.end + d) * 10) / 10); });
+    if (s.end != null && !s._autoEnd) s.end = Math.round((s.end + d) * 10) / 10;
+    toast(`Đã dời câu ${cur.idx + 1} và ${l.sentences.length - cur.idx - 1} câu sau ${d >= 0 ? "+" : ""}${d} giây`, "ok");
+  }
   s.start = Math.round(t * 10) / 10;
   const prev = l.sentences[cur.idx - 1]; if (prev && (prev.end == null || prev.end > s.start || prev._autoEnd)) { prev.end = s.start; prev._autoEnd = true; }
   if (s.end == null || s.end <= s.start) { s.end = s.start + 4; s._autoEnd = true; }
-  save(); toast(`Đã gắn câu ${cur.idx + 1} bắt đầu lúc ${fmtTime(s.start)}`, "ok");
+  save(); if (!(el && el.dataset.shift)) toast(`Đã gắn câu ${cur.idx + 1} bắt đầu lúc ${fmtTime(s.start)}`, "ok");
   renderShadow(); if (cur.tab === "script") renderTab();
 };
 ACT["word-from-shadow"] = el => {
@@ -3454,9 +3461,119 @@ async function fileToBase64(file) {
   return new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(String(r.result).split(",")[1]); r.onerror = rej; r.readAsDataURL(file); });
 }
 const sumCtx = l => l && l.summary ? `Tình huống / nội dung video (người học tự mô tả): ${l.summary}` : "";
-const TRANSCRIBE_BASE = `Hãy nghe kỹ toàn bộ âm thanh và chép lại CHÍNH XÁC lời thoại tiếng Hàn. Chia thành từng câu ngắn (mỗi câu tối đa khoảng 15 từ) theo đúng thứ tự thời gian. Với mỗi câu ghi thời điểm bắt đầu và kết thúc tính bằng giây (số thập phân) và bản dịch tiếng Việt tự nhiên.
-Chỉ trả về JSON dạng mảng: [{"start": 1.2, "end": 3.4, "ko": "câu tiếng Hàn", "vi": "dịch tiếng Việt"}]. Nếu không có tiếng Hàn, trả về [].`;
-async function aiTranscribe({ url, file, src, summary }) {
+/* ---------- Kiểm tra & sửa mốc giờ phụ đề ----------
+   Lỗi hay gặp: AI viết 1:21 thành "121" → trang hiểu là 121 giây (2:01), cả đoạn sau bị lệch. */
+const TCHK = 1;
+function mmssAlt(t) { if (t == null || !isFinite(t) || t < 100) return null; const m = Math.floor(t / 100), r = t - m * 100; return r < 60 ? m * 60 + r : null; }
+function speechDur(s) { return Math.max(0.8, ((s.ko || "").match(/[가-힣]/g) || []).length * 0.17); }
+function fixMMSS(sents, dur) {
+  const idx = sents.map((s, i) => i).filter(i => sents[i].start != null && isFinite(sents[i].start));
+  if (idx.length < 2 || !idx.some(i => mmssAlt(sents[i].start) != null)) return false;
+  const opts = idx.map(i => { const s = sents[i].start, a = mmssAlt(s); return a != null ? [s, a] : [s]; });
+  const node = v => (dur && v > dur + 2 ? 1e6 : 0);
+  const edge = (pv, pk, v, k, ps) => {
+    const g = v - pv; let c = g < -0.5 ? 1e5 : 0;
+    const ex = Math.max(0, g - speechDur(ps) - 4); c += ex * ex;
+    if (pk === 1 && k === 0) c += 5000; else if (pk !== k) c += 30;
+    return c;
+  };
+  let D = opts[0].map(v => ({ c: node(v), b: 0 })); const back = [D];
+  let orig = node(opts[0][0]);
+  for (let j = 1; j < idx.length; j++) {
+    const ps = sents[idx[j - 1]];
+    D = opts[j].map((v, k) => { let best = { c: Infinity, b: 0 }; opts[j - 1].forEach((pv, pk) => { const c = back[j - 1][pk].c + edge(pv, pk, v, k, ps) + node(v); if (c < best.c) best = { c, b: pk }; }); return best; });
+    back.push(D); orig += edge(opts[j - 1][0], 0, opts[j][0], 0, ps) + node(opts[j][0]);
+  }
+  let k = D.reduce((bi, x, i) => (x.c < D[bi].c ? i : bi), 0); const best = D[k].c;
+  const choice = [];
+  for (let j = idx.length - 1; j >= 0; j--) { choice[j] = k; k = back[j][k].b; }
+  if (!choice.includes(1) || orig - best < 200) return false;
+  choice.forEach((ch, j) => {
+    const s = sents[idx[j]];
+    if (ch === 1) { s.start = opts[j][1]; const a = mmssAlt(s.end); if (a != null && a > s.start) s.end = a; }
+    else if (s.end != null) { const a = mmssAlt(s.end); if (a != null && a > s.start && s.end - s.start > speechDur(s) * 3 + 8) s.end = a; }
+    if (s.end != null && s.end <= s.start) s.end = null;
+  });
+  return true;
+}
+function timeIssues(l, dur) {
+  const ss = l.sentences.filter(s => s.start != null); let n = 0;
+  for (let i = 1; i < ss.length; i++) { const g = ss[i].start - ss[i - 1].start; if (g < -0.5 || g - speechDur(ss[i - 1]) > 25) n++; }
+  if (dur) n += ss.filter(s => s.start > dur + 2).length;
+  return n;
+}
+function checkAllLessonTimes(force) {
+  const fixed = [], sus = []; let n = 0;
+  DB.lessons.forEach(l => {
+    if (!force && l.tchk === TCHK) return;
+    l.tchk = TCHK;
+    if (!l.sentences.some(s => s.start != null)) return;
+    n++;
+    if (fixMMSS(l.sentences, l.dur)) { l.sentences.sort((a, b) => (a.start ?? 0) - (b.start ?? 0)); fixed.push(l); }
+    else if (timeIssues(l, l.dur)) sus.push(l);
+  });
+  if (n) save();
+  return { n, fixed, sus };
+}
+function showTimeReport(r) {
+  const li = arr => `<ul style="margin:6px 0 12px;padding-left:20px">${arr.map(l => `<li><a href="#lesson/${l.id}/script" data-act="time-open" data-id="${l.id}">${esc(l.title)}</a></li>`).join("")}</ul>`;
+  openModal("Kiểm tra mốc giờ phụ đề", `<p style="margin-top:0">Đã kiểm tra <b>${r.n}</b> bài có mốc giờ.</p>
+    ${r.fixed.length ? `<p>✅ <b>Đã tự sửa ${r.fixed.length} bài</b> bị lệch (AI ghi nhầm kiểu “121” thay cho 1:21):</p>${li(r.fixed)}` : ""}
+    ${r.sus.length ? `<p>⚠️ <b>${r.sus.length} bài có khoảng trống/lệch lạ</b> — có thể do nhạc nền, cũng có thể AI ghi sai giờ. Mở bài → nút <b>Cài đặt</b> (⚙) → <b>Mốc giờ</b> → <b>AI căn lại giờ</b>:</p>${li(r.sus)}` : ""}
+    ${!r.fixed.length && !r.sus.length ? `<p>✅ Không thấy bài nào bị lệch giờ.</p>` : ""}
+    <p class="hint">Câu nào vẫn lệch: tua video tới đúng chỗ câu bắt đầu rồi bấm <b>Căn câu này + các câu sau</b> ở dưới phần luyện câu.</p>`,
+    `<button class="btn primary" data-act="modal-close">Đã hiểu</button>`);
+}
+ACT["time-open"] = el => { closeModal(); go("lesson/" + el.dataset.id + "/script"); };
+ACT["check-times"] = () => { const r = checkAllLessonTimes(true); showTimeReport(r); const l = curLesson(); if (l && r.fixed.includes(l) && cur.view === "lesson") { renderShadow(); if (cur.tab === "script") renderTab(); } };
+function noteDuration(l, d) {
+  if (!d || !isFinite(d) || d < 1) return;
+  const first = !l.dur; l.dur = d; if (PL) PL.dur = d;
+  if (first && l.sentences.some(s => s.start > d + 2) && fixMMSS(l.sentences, d)) {
+    l.sentences.sort((a, b) => (a.start ?? 0) - (b.start ?? 0)); save();
+    toast("Đã tự sửa mốc giờ phụ đề bị lệch cho bài này", "ok");
+    if (cur.lessonId === l.id) { renderShadow(); if (cur.tab === "script") renderTab(); }
+  } else if (first) save();
+}
+async function aiRetime(l) {
+  let parts;
+  if (l.src.type === "file") {
+    const u = await lessonFileURL(l); if (!u) throw new Error("Hãy chọn lại file video trước");
+    const file = await fetch(u).then(r => r.blob());
+    if (file.size > 19 * 1024 * 1024) throw new Error("File lớn hơn 19MB nên AI không nhận được.");
+    parts = [{ inlineData: { mimeType: file.type || "video/mp4", data: await fileToBase64(file) } }];
+  } else if (l.src.type === "youtube") parts = [{ fileData: { fileUri: "https://www.youtube.com/watch?v=" + l.src.id, mimeType: "video/*" } }];
+  else throw new Error("AI chỉ căn giờ được video YouTube hoặc file trong máy.");
+  parts.push({ text: `Dưới đây là lời thoại tiếng Hàn của video, mỗi câu có số thứ tự [i]. Hãy nghe kỹ video và ghi đúng thời điểm BẮT ĐẦU và KẾT THÚC của từng câu.
+Ghi thời gian dạng "phút:giây" (ví dụ "0:05.2", "1:21.0", "12:03.5") — KHÔNG được viết "121" thay cho 1:21. Không đổi nội dung câu.
+Chỉ trả về JSON mảng cho TẤT CẢ các câu: [{"i":0,"start":"0:01.2","end":"0:03.4"}]
+${l.sentences.map((s, i) => `[${i}] ${s.ko}`).join("\n")}` });
+  const res = await gemini(parts, { long: true });
+  const arr = Array.isArray(res) ? res : (res.items || res.sentences || []);
+  const tmp = l.sentences.map(s => ({ ko: s.ko, start: null, end: null }));
+  arr.forEach(x => { const i = +x.i; if (tmp[i]) { tmp[i].start = x.start != null ? parseTime(x.start) : null; tmp[i].end = x.end != null ? parseTime(x.end) : null; } });
+  const got = tmp.filter(s => s.start != null).length;
+  if (got < l.sentences.length * 0.6) throw new Error("AI chưa trả đủ mốc giờ, hãy thử lại.");
+  fixMMSS(tmp, l.dur);
+  tmp.forEach((t, i) => { if (t.start != null) { const s = l.sentences[i]; s.start = Math.round(t.start * 10) / 10; s.end = t.end != null && t.end > t.start ? Math.round(t.end * 10) / 10 : null; delete s._autoEnd; } });
+  l.sentences.sort((a, b) => (a.start ?? 0) - (b.start ?? 0));
+  save(); return got;
+}
+ACT["ai-retime"] = async el => {
+  const l = curLesson(); if (!l) return;
+  if (!DB.settings.aiKey) { toast("Hãy thêm mã AI trong Cài đặt trước nhé", "err"); return; }
+  busy(el, true, "AI đang nghe để căn giờ…");
+  try { const n = await aiRetime(l); busy(el, false); toast(`Đã căn lại giờ cho ${n} câu`, "ok"); renderShadow(); if (cur.tab === "script") renderTab(); }
+  catch (e) { busy(el, false); toast(e.message, "err"); }
+};
+ACT["shift-all"] = el => {
+  const l = curLesson(); if (!l) return; const d = +el.dataset.d;
+  l.sentences.forEach(s => { if (s.start != null) s.start = Math.max(0, Math.round((s.start + d) * 10) / 10); if (s.end != null) s.end = Math.max(0, Math.round((s.end + d) * 10) / 10); });
+  save(); toast(`Đã dời tất cả câu ${d > 0 ? "chậm lại" : "sớm lên"} ${Math.abs(d)} giây`, "ok"); renderShadow(); if (cur.tab === "script") renderTab();
+};
+const TRANSCRIBE_BASE = `Hãy nghe kỹ toàn bộ âm thanh và chép lại CHÍNH XÁC lời thoại tiếng Hàn. Chia thành từng câu ngắn (mỗi câu tối đa khoảng 15 từ) theo đúng thứ tự thời gian. Với mỗi câu ghi thời điểm bắt đầu và kết thúc theo dạng "phút:giây" (ví dụ "0:05.2", "1:21.0", "12:03.5" — KHÔNG được viết "121" thay cho 1:21) và bản dịch tiếng Việt tự nhiên. Mốc giờ phải khớp đúng lúc câu đó được nói trong video.
+Chỉ trả về JSON dạng mảng: [{"start": "0:01.2", "end": "0:03.4", "ko": "câu tiếng Hàn", "vi": "dịch tiếng Việt"}]. Nếu không có tiếng Hàn, trả về [].`;
+async function aiTranscribe({ url, file, src, summary, dur }) {
   let parts;
   const TRANSCRIBE_PROMPT = summary ? TRANSCRIBE_BASE + "\nGợi ý ngữ cảnh do người học mô tả (chỉ để hiểu tình huống, vẫn chép đúng lời nghe được): " + summary : TRANSCRIBE_BASE;
   if (file) {
@@ -3469,6 +3586,7 @@ async function aiTranscribe({ url, file, src, summary }) {
   const arr = Array.isArray(res) ? res : (res.sentences || res.items || []);
   const out = arr.map(x => ({ ko: String(x.ko || x.text || "").trim(), vi: String(x.vi || "").trim(), start: x.start != null ? parseTime(x.start) : null, end: x.end != null ? parseTime(x.end) : null })).filter(x => x.ko && HG.isHangul(x.ko));
   if (!out.length) throw new Error("AI không nghe thấy lời thoại tiếng Hàn trong video này.");
+  fixMMSS(out, dur);
   out.sort((a, b) => (a.start ?? 0) - (b.start ?? 0));
   if (res && res._partial) out.partial = true;
   return out;
@@ -3490,7 +3608,7 @@ ACT["ai-transcribe-lesson"] = async el => {
   }
   busy(el, true, "AI đang nghe video…");
   try {
-    const out = await aiTranscribe({ file, src: l.src, summary: l.summary });
+    const out = await aiTranscribe({ file, src: l.src, summary: l.summary, dur: l.dur });
     l.sentences = out.map(s => ({ ...s, done: false })); cur.idx = 0; cur.listen = null; save();
     if ($("#modal").classList.contains("open")) closeModal();
     renderTab(); renderShadow(); toast(`AI đã chép ${out.length} câu`, "ok");
@@ -3843,6 +3961,7 @@ applyTheme();
 $("[data-act='modal-close']", $("#modal")).innerHTML = ic("x");
 window.addEventListener("hashchange", route);
 document.addEventListener("DOMContentLoaded", route);
+{ const r = checkAllLessonTimes(); if (r.fixed.length || r.sus.length) setTimeout(() => showTimeReport(r), 700); }
 </script>
 
 <script>
@@ -4054,8 +4173,13 @@ function renderLessonSettings() {
     play: `<div class="ls-row"><span><b>Tốc độ phát</b></span><div class="seg">${[0.5, 0.75, 0.85, 1, 1.25].map(r => `<button class="${r === cur.rate ? "active" : ""}" data-act="ls-rate" data-r="${r}">${r}x</button>`).join("")}</div></div>
       <div class="ls-row"><span><b>Lặp lại mỗi câu</b><small>Khi bấm Nghe câu / chọn câu</small></span><div class="seg">${[[0, "Tắt"], [1, "×2"], [2, "×3"], [Infinity, "∞"]].map(([k, n]) => `<button class="${cur.loop === k ? "active" : ""}" data-act="ls-loop" data-l="${k}">${n}</button>`).join("")}</div></div>
       <label class="ls-row"><span><b>Dừng sau mỗi câu</b><small>Video tự dừng khi hết câu để bạn nói theo</small></span><span class="switch"><input type="checkbox" id="lsAuto" ${cur.autopause ? "checked" : ""}></span></label>` + sw("follow", "Tự cuộn lời thoại theo video", ""),
+    time: `<p class="hint" style="margin-top:0">Phụ đề hiện sớm/muộn hơn lời nói? Chọn cách sửa:</p>
+      <div class="ls-row"><span><b>AI căn lại giờ</b><small>AI nghe lại video và ghi đúng giờ cho từng câu (giữ nguyên lời thoại)</small></span>${DB.settings.aiKey && ["youtube", "file"].includes((curLesson() || {}).src?.type) ? `<button class="btn soft sm" data-act="ai-retime">${ic("spark")} Căn giờ</button>` : `<small class="muted">Cần mã AI + video YouTube/file</small>`}</div>
+      <div class="ls-row"><span><b>Dời tất cả câu</b><small>Khi cả bài lệch đều một khoảng</small></span><div class="seg">${[-1, -0.5, 0.5, 1].map(d => `<button data-act="shift-all" data-d="${d}">${d > 0 ? "+" : ""}${d}s</button>`).join("")}</div></div>
+      <div class="ls-row"><span><b>Kiểm tra tất cả bài</b><small>Tìm và tự sửa lỗi AI ghi nhầm giờ (vd “121” thay cho 1:21)</small></span><button class="btn sm" data-act="check-times">Kiểm tra</button></div>
+      <p class="hint">Sửa từng câu: tua video tới đúng lúc câu bắt đầu → bấm <b>Căn câu này + các câu sau</b> dưới phần luyện câu.</p>`,
   }[lsTab];
-  b.innerHTML = `<div class="seg" style="margin-bottom:14px">${[["general", "Cài đặt chung"], ["sub", "Phụ đề"], ["play", "Phát lại"]].map(([k, n]) => `<button class="${lsTab === k ? "active" : ""}" data-act="ls-tab" data-t="${k}">${n}</button>`).join("")}</div>${body}`;
+  b.innerHTML = `<div class="seg" style="margin-bottom:14px">${[["general", "Cài đặt chung"], ["sub", "Phụ đề"], ["play", "Phát lại"], ["time", "Mốc giờ"]].map(([k, n]) => `<button class="${lsTab === k ? "active" : ""}" data-act="ls-tab" data-t="${k}">${n}</button>`).join("")}</div>${body}`;
   $$("[data-ls]", b).forEach(cb => cb.onchange = () => { st[cb.dataset.ls] = cb.checked; save(); applyPanel(); rerenderLessonBits(); if (cur.tab === "script") renderTab(); });
   const a = $("#lsAuto"); if (a) a.onchange = () => { cur.autopause = a.checked; lastAutoPause = -1; };
 }
