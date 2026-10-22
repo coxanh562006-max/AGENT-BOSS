@@ -290,6 +290,11 @@ details.guide li{margin:4px 0}
 .modal-head{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--border)}
 .modal-body{padding:16px 18px;overflow:auto}
 .modal-foot{display:flex;justify-content:flex-end;gap:8px;padding:12px 18px;border-top:1px solid var(--border)}
+.toast-undo{display:flex;align-items:center;gap:12px;pointer-events:auto}
+.undo-btn{background:#fff;color:#166534;border:0;border-radius:8px;padding:5px 10px;font:700 13px var(--font);cursor:pointer;flex:none}
+.sent-del:hover{color:var(--danger)}
+.sent .sent-del{display:none}.sent.active .sent-del{display:inline-flex}
+@media (hover:hover){.sent:hover .sent-del{display:inline-flex}}
 #toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:200;display:flex;flex-direction:column;gap:8px;align-items:center;pointer-events:none;width:calc(100% - 32px);max-width:460px}
 .toast{background:#1b2638;color:#fff;padding:10px 16px;border-radius:12px;font-size:14px;box-shadow:0 8px 24px rgba(0,0,0,.25);animation:fade .2s ease;text-align:center}
 .toast.err{background:#a12424}
@@ -2229,6 +2234,12 @@ function toast(msg, type = "") {
   const t = document.createElement("div"); t.className = "toast " + type; t.textContent = msg;
   $("#toast").appendChild(t); setTimeout(() => t.remove(), type === "err" ? 5200 : 2800);
 }
+function toastUndo(msg, onUndo) {
+  const t = document.createElement("div"); t.className = "toast ok toast-undo"; t.innerHTML = `<span>${esc(msg)}</span>`;
+  const b = document.createElement("button"); b.className = "undo-btn"; b.textContent = "Hoàn tác";
+  b.onclick = () => { t.remove(); onUndo(); }; t.appendChild(b);
+  $("#toast").appendChild(t); setTimeout(() => t.remove(), 7000);
+}
 let modalOnClose = null;
 function openModal(title, body, foot, onClose) {
   $("#modalTitle").textContent = title; $("#modalBody").innerHTML = body; $("#modalFoot").innerHTML = foot || "";
@@ -3088,6 +3099,7 @@ function renderShadow() {
       ${hasRec ? `<button class="btn sm" data-act="play-rec">${ic("play")} Giọng tôi</button><button class="btn sm soft" data-act="compare">${ic("swap")} So sánh: mẫu → tôi</button>` : `<span class="hint">Mẹo: nghe mẫu → bấm Ghi âm và nói theo → So sánh.</span>`}
       <span class="grow"></span>
       <button class="btn sm ghost" data-act="toggle-done">${ic("check")} ${s.done ? "Bỏ đánh dấu" : "Đã luyện"}</button>
+      <button class="btn sm ghost sent-del" data-act="sent-del" title="Câu này không có trong video? Xoá đi">${ic("trash")} Xoá câu</button>
       ${s.vi ? `<button class="btn sm ghost" data-act="card-sentence" title="Lưu cả câu thành flashcard">${ic("plus")} Thẻ câu</button>` : ""}
     </div>
     ${PL && PL.ctrl ? `<div class="rec-row"><button class="btn sm ghost" data-act="pin-time" title="Tua video đến chỗ bắt đầu câu rồi bấm">${ic("pin")} Gắn giờ câu này = lúc video đang phát</button><button class="btn sm ghost" data-act="pin-time" data-shift="1" title="Dùng khi từ câu này trở đi đều bị lệch">${ic("pin")} Căn câu này + các câu sau</button></div>` : ""}
@@ -3137,7 +3149,7 @@ function sentRow(l, s, i) {
     <span class="num">${s.done ? "✓" : i + 1}</span>
     ${s.lang === "vi" ? `<div><div class="vi-main"><span class="lang-tag lt-vi">VI</span>${esc(s.vi)}</div>${s.ko ? `<div class="ko ko-sub">${esc(s.ko)}</div>${DB.settings.showRom ? `<div class="rom">${esc(Rom.text(s.ko))}</div>` : ""}` : `<div class="vi faint">Chưa có câu tiếng Hàn tương ứng</div>`}</div>`
     : `<div><div class="ko">${l.bi ? `<span class="lang-tag lt-ko">KO</span>` : ""}${esc(s.ko)}</div>${DB.settings.showRom ? `<div class="rom">${esc(Rom.text(s.ko))}</div>` : ""}${(DB.settings.showVi || l.bi) && s.vi ? `<div class="vi">${esc(s.vi)}</div>` : ""}</div>`}
-    <div class="meta">${s.start != null ? `<span class="t">${fmtTime(s.start)}</span>` : ""}<button class="btn ghost sm" data-act="sent-analyze" data-i="${i}" title="Phân tích câu này">${ic("search")}</button></div>
+    <div class="meta">${s.start != null ? `<span class="t">${fmtTime(s.start)}</span>` : ""}<button class="btn ghost sm" data-act="sent-analyze" data-i="${i}" title="Phân tích câu này">${ic("search")}</button><button class="btn ghost sm sent-del" data-act="sent-del" data-i="${i}" title="Xoá câu này (câu không có trong video)">${ic("trash")}</button></div>
   </div>`;
 }
 function refreshSentenceRow(i) {
@@ -3170,6 +3182,19 @@ function renderScriptTab(l, body) {
   setTimeout(() => scrollRowInList($(`.sent[data-i="${cur.idx}"]`)), 50);
 }
 ACT.sent = (el, e) => { if (e.target.closest("[data-act='sent-analyze']")) return; const i = +el.dataset.i; const l = curLesson(); if (canPlayVideo(l, i)) playSentence(i); else setIdx(i); };
+ACT["sent-del"] = el => {
+  const l = curLesson(); if (!l) return;
+  const i = el.dataset.i != null ? +el.dataset.i : cur.idx, s = l.sentences[i]; if (!s) return;
+  const backup = l.sentences.slice(), quiz = l.quiz, oldIdx = cur.idx;
+  l.sentences.splice(i, 1);
+  delete l.quiz; cur.listen = null; cur.qz = null; cur.word = null; cur.subWord = null;
+  cur.idx = Math.min(i, Math.max(0, l.sentences.length - 1)); l.idx = cur.idx;
+  save(); renderTab(); renderShadow();
+  toastUndo(`Đã xoá câu ${i + 1}: ${(s.lang === "vi" ? s.vi : s.ko).slice(0, 30)}`, () => {
+    l.sentences = backup; if (quiz) l.quiz = quiz; cur.idx = oldIdx; l.idx = oldIdx; cur.listen = null; cur.qz = null;
+    save(); if (cur.lessonId === l.id && cur.view === "lesson") { renderTab(); renderShadow(); } toast("Đã khôi phục câu", "ok");
+  });
+};
 ACT["sent-analyze"] = el => { cur.tab = "analysis"; renderTabs(); setIdx(+el.dataset.i); renderTab(); history.replaceState(null, "", "#lesson/" + cur.lessonId + "/analysis"); };
 
 /* ---------- Tab: phân tích câu ---------- */
