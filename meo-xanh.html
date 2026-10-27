@@ -1,0 +1,723 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#3f86c4">
+<title>Mèo xanh – Học tiếng Hàn</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<style>
+  :root{
+    --blue:#8ec5ef; --blue-d:#3f86c4; --blue-bg:#eef7fd;
+    --pink:#f5a7bd; --pink-bg:#fde9ef;
+    --ink:#1f3347; --muted:#6b8196; --line:#d9e8f4; --card:#ffffff;
+    --ok:#3f9d6c; --ok-bg:#e5f6ec; --bad:#d9525c; --bad-bg:#fde8ea;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --blue-bg:#0f1b26; --card:#172534; --ink:#e6f0f8; --muted:#8ea6ba; --line:#2a3f54;
+      --ok-bg:#16382a; --bad-bg:#3d1d22; --pink-bg:#3a2430;
+    }
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Malgun Gothic","Apple SD Gothic Neo",sans-serif;background:var(--blue-bg);color:var(--ink);line-height:1.5;min-height:100vh}
+  button{font:inherit;cursor:pointer;border:0;border-radius:12px;padding:10px 16px;min-height:44px;background:var(--blue-d);color:#fff;touch-action:manipulation}
+  button.ghost{background:var(--card);color:var(--blue-d);border:1px solid var(--line)}
+  button.pink{background:var(--pink);color:#6b1a33}
+  button:disabled{opacity:.4;cursor:default}
+  button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
+  input,select,textarea{font:inherit;border:1px solid var(--line);border-radius:12px;padding:10px 12px;min-height:44px;background:var(--card);color:var(--ink);width:100%}
+  textarea{resize:vertical}
+  .hidden{display:none!important}
+
+  header.top{position:sticky;top:0;z-index:10;background:var(--card);border-bottom:1px solid var(--line)}
+  .bar{max-width:960px;margin:auto;display:flex;align-items:center;gap:12px;padding:10px 16px}
+  .brand{display:flex;align-items:center;gap:8px;font-weight:800;font-size:18px;color:var(--blue-d);white-space:nowrap}
+  .logo{width:48px;height:38px;flex:none}
+  nav.menu{display:flex;gap:6px;margin-left:auto;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+  nav.menu::-webkit-scrollbar{display:none}
+  nav.menu button{background:transparent;color:var(--muted);padding:8px 14px;min-height:40px;white-space:nowrap}
+  nav.menu button.on{background:var(--blue);color:#fff}
+
+  main{max-width:960px;margin:auto;padding:16px}
+  .panel{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:16px}
+  h2{margin:0 0 12px;font-size:18px}
+  .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  .meta{color:var(--muted);font-size:14px}
+  .hint{color:var(--muted);font-size:13px;margin:6px 0 0}
+  .drop{border:2px dashed var(--blue);border-radius:16px;padding:22px 16px;text-align:center;background:var(--pink-bg);color:var(--ink);transition:background .2s}
+  .drop.over{background:var(--ok-bg);border-color:var(--ok)}
+  .folder-title{font-size:13px;color:var(--blue-d);font-weight:700;margin:16px 0 0;letter-spacing:.4px}
+  .lesson{display:grid;gap:8px;padding:12px 0;border-bottom:1px solid var(--line)}
+  .lesson:last-child{border-bottom:0}
+  .track{height:8px;background:var(--line);border-radius:8px;overflow:hidden}
+  .fill{height:100%;background:linear-gradient(90deg,var(--blue),var(--blue-d));border-radius:8px}
+  .pager{display:flex;align-items:center;justify-content:center;gap:12px;margin-top:14px;flex-wrap:wrap}
+  table.words{width:100%;border-collapse:collapse}
+  table.words th{text-align:left;font-size:13px;color:var(--muted);font-weight:600;padding:8px 6px;border-bottom:1px solid var(--line)}
+  table.words td{padding:10px 6px;border-bottom:1px solid var(--line);vertical-align:top}
+  .ko{font-weight:800;font-size:18px}
+  .vi-line{font-size:17px;margin:10px 0}
+
+  .flash{min-height:260px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;text-align:center;padding:24px;cursor:pointer;user-select:none;border:1px solid var(--line);border-radius:20px;background:linear-gradient(160deg,var(--card),var(--blue-bg));box-shadow:0 10px 28px rgba(63,134,196,.12)}
+  .flash .ko{font-size:clamp(36px,10vw,60px)}
+  .flash .vi{font-size:clamp(20px,5.5vw,30px);color:var(--blue-d);font-weight:700}
+
+  .opt{display:block;width:100%;text-align:left;background:var(--card);color:var(--ink);border:1px solid var(--line);margin-bottom:8px;font-size:16px}
+  .opt.right{background:var(--ok-bg);border-color:var(--ok)}
+  .opt.wrong{background:var(--bad-bg);border-color:var(--bad)}
+  .actions{justify-content:space-between;margin-top:14px}
+
+  #toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);background:var(--ink);color:var(--card);padding:10px 16px;border-radius:12px;opacity:0;transition:.25s;pointer-events:none;max-width:90vw;text-align:center;z-index:20}
+  #toast.show{opacity:1;transform:translateX(-50%)}
+
+  @media (max-width:600px){
+    .bar{flex-wrap:wrap;padding:10px 12px;gap:8px}
+    nav.menu{width:100%;margin-left:0}
+    nav.menu button{flex:1;padding:8px 6px;font-size:14px}
+    main{padding:12px}
+    .panel{padding:14px;border-radius:14px}
+    .actions button{flex:1 1 calc(50% - 8px)}
+    .actions button.ghost{flex-basis:100%}
+  }
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute;overflow:hidden" aria-hidden="true">
+  <symbol id="cat" viewBox="0 0 120 100">
+    <circle cx="22" cy="18" r="7" fill="none" stroke="#f7b8c8" stroke-width="2"/>
+    <circle cx="82" cy="20" r="3" fill="none" stroke="#a9d4f0" stroke-width="1.5"/>
+    <circle cx="100" cy="58" r="5" fill="none" stroke="#f7d6b0" stroke-width="1.5"/>
+    <path d="M30 60 C26 38 42 30 58 32 C80 34 92 46 90 62 C88 74 78 76 66 74 L60 82 C58 86 50 84 52 78 C42 80 32 72 30 60 Z" fill="#ffffff" stroke="#7a1f3a" stroke-width="3" stroke-linejoin="round"/>
+    <path d="M36 40 L40 26 L50 36 Z" fill="#bcdcf5" stroke="#7a1f3a" stroke-width="2.5" stroke-linejoin="round"/>
+    <path d="M60 36 L68 26 L72 40 Z" fill="#bcdcf5" stroke="#7a1f3a" stroke-width="2.5" stroke-linejoin="round"/>
+    <path d="M46 52 Q50 55 54 52" fill="none" stroke="#7a1f3a" stroke-width="2" stroke-linecap="round"/>
+    <path d="M60 52 Q64 55 68 52" fill="none" stroke="#7a1f3a" stroke-width="2" stroke-linecap="round"/>
+    <ellipse cx="42" cy="58" rx="4" ry="2.5" fill="#f7b8c8" opacity="0.7"/>
+    <ellipse cx="72" cy="58" rx="4" ry="2.5" fill="#f7b8c8" opacity="0.7"/>
+    <path d="M68 72 C74 80 66 92 58 90 C52 88 60 80 68 72 Z" fill="#bcdcf5" opacity="0.8"/>
+  </symbol>
+</svg>
+
+<header class="top">
+  <div class="bar">
+    <div class="brand">
+      <svg class="logo" viewBox="0 0 120 100" aria-hidden="true"><use href="#cat"/></svg>
+      Mèo xanh
+    </div>
+    <nav class="menu" id="menu">
+      <button data-go="library">Thư viện</button>
+      <button data-go="flash">Thẻ học</button>
+      <button data-go="quiz">Trắc nghiệm</button>
+      <button data-go="sent">Đặt câu</button>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <!-- THƯ VIỆN -->
+  <section id="v-library" class="view">
+    <div class="panel">
+      <h2>Tải file từ vựng lên</h2>
+      <div class="drop" id="drop">
+        Kéo file vào đây hoặc bấm <b>Chọn file</b>
+        <div class="hint">Hỗ trợ: .txt · .docx · .xlsx / .xls · .csv · .pdf · .pptx<br>Mỗi dòng là <b>từ tiếng Hàn – nghĩa</b> (Excel: 2 cột là đủ)</div>
+      </div>
+      <div class="row" style="margin-top:12px">
+        <input id="folderName" list="folderList" placeholder="Tên thư mục bài, ví dụ: Bài 1" style="flex:1;min-width:200px">
+        <datalist id="folderList"></datalist>
+        <button data-act="pickFile">Chọn file</button>
+      </div>
+      <p id="uploadMsg" class="hint"></p>
+      <input type="file" id="fileInput" multiple style="display:none"
+        accept=".txt,.md,.tsv,.csv,.xlsx,.xls,.xlsm,.ods,.docx,.pdf,.pptx">
+    </div>
+
+    <div class="panel">
+      <div class="row" style="justify-content:space-between">
+        <h2 style="margin:0">Thư viện</h2>
+        <span class="meta" id="libStats"></span>
+      </div>
+      <div id="libList"></div>
+    </div>
+  </section>
+
+  <!-- DANH SÁCH TỪ CỦA MỘT BÀI -->
+  <section id="v-words" class="view hidden"></section>
+
+  <!-- THẺ HỌC -->
+  <section id="v-flash" class="view hidden"></section>
+
+  <!-- TRẮC NGHIỆM -->
+  <section id="v-quiz" class="view hidden"></section>
+
+  <!-- ĐẶT CÂU -->
+  <section id="v-sent" class="view hidden"></section>
+</main>
+
+<div id="toast" role="status"></div>
+
+<script>
+/* ============ DỮ LIỆU ============
+   Lưu trên máy này (localStorage). Cấu trúc:
+   lessons: [{id, folder, name, words:[{id, ko, vi}]}]
+   progress: {wordId: {known, right, wrong, sentence}} */
+const KEY = 'meo-xanh-v1';
+const PAGE_LESSONS = 10;
+const PAGE_WORDS = 20;
+const HANGUL = /[ᄀ-ᇿ㄰-㆏가-힯]/;
+
+let state = load();
+const ui = {
+  view: 'library', libPage: 1, wordsLesson: null, wordsPage: 1,
+  flashLesson: null, flashOrder: null, flashIdx: 0, flipped: false,
+  quizLesson: null, quiz: null,
+  sentLesson: null, sentWord: null
+};
+
+function load(){
+  try{
+    const s = JSON.parse(localStorage.getItem(KEY));
+    if(s && Array.isArray(s.lessons)) return {lessons: s.lessons, progress: s.progress || {}};
+  }catch(e){}
+  return {lessons: [], progress: {}};
+}
+function save(){
+  try{ localStorage.setItem(KEY, JSON.stringify(state)); }
+  catch(e){ toast('Không lưu được tiến độ trên trình duyệt này'); }
+}
+
+/* ============ TIỆN ÍCH ============ */
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const shuffle = a => { a = [...a]; for(let i = a.length - 1; i > 0; i--){ const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+const findLesson = id => state.lessons.find(l => l.id === id);
+const currentLessonOr = id => findLesson(id) || state.lessons[0] || null;
+const prog = id => state.progress[id] || {known: false, right: 0, wrong: 0, sentence: ''};
+function setProg(id, patch){ state.progress[id] = {...prog(id), ...patch}; save(); }
+const pctKnown = l => l.words.length ? Math.round(100 * l.words.filter(w => prog(w.id).known).length / l.words.length) : 0;
+
+let toastTimer;
+function toast(msg){
+  const t = $('#toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+function pager(total, page, per, key){
+  const pages = Math.max(1, Math.ceil(total / per));
+  if(pages <= 1) return '';
+  return `<div class="pager">
+    <button class="ghost" data-pg="${key}" data-to="${page - 1}" ${page <= 1 ? 'disabled' : ''}>← Trước</button>
+    <span class="meta">Trang ${page} / ${pages}</span>
+    <button class="ghost" data-pg="${key}" data-to="${page + 1}" ${page >= pages ? 'disabled' : ''}>Sau →</button>
+  </div>`;
+}
+function clampPage(page, total, per){ return Math.min(Math.max(1, page), Math.max(1, Math.ceil(total / per))); }
+
+function emptyMsg(){
+  return `<div class="panel" style="text-align:center">
+    <p>Chưa có file từ vựng nào. Vào <b>Thư viện</b> để tải file lên trước nhé.</p>
+    <button data-act="back">Mở Thư viện</button>
+  </div>`;
+}
+function lessonSelect(kind, selId){
+  return `<select data-pick="${kind}" aria-label="Chọn bài">${state.lessons.map(l =>
+    `<option value="${l.id}" ${l.id === selId ? 'selected' : ''}>${esc(l.folder)} › ${esc(l.name)}</option>`).join('')}</select>`;
+}
+
+/* ============ ĐỌC FILE ============ */
+// Biến một dòng thành {ko, vi}. Chấp nhận: "사과 - táo", "사과: táo", "사과 | táo", tab (Excel), hoặc "사과 táo".
+function parseLine(raw){
+  let line = raw.replace(/ /g, ' ').trim().replace(/^\d+\s*[.)]\s+/, '');
+  if(!line) return null;
+  let ko, vi;
+  if(line.includes('\t')){
+    const cells = line.split('\t').map(s => s.trim()).filter(Boolean);
+    const i = cells.findIndex(c => HANGUL.test(c));
+    if(i < 0) return null;
+    ko = cells[i];
+    vi = cells.filter((_, j) => j !== i).join(' · ');
+  } else {
+    const m = line.match(/\s*(\||:|=|,| - | – | — )\s*/);
+    if(m){
+      ko = line.slice(0, m.index).trim();
+      vi = line.slice(m.index + m[0].length).trim();
+    } else {
+      const sp = line.search(/\s/);
+      ko = sp < 0 ? line : line.slice(0, sp);
+      vi = sp < 0 ? '' : line.slice(sp).trim();
+    }
+  }
+  if(!HANGUL.test(ko)){
+    if(HANGUL.test(vi)) [ko, vi] = [vi, ko];
+    else return null;
+  }
+  return {ko, vi};
+}
+
+function need(lib, name){ if(typeof lib === 'undefined') throw new Error(`thiếu thư viện đọc ${name} (kiểm tra kết nối mạng)`); }
+
+async function fileToLines(file){
+  const ext = file.name.split('.').pop().toLowerCase();
+  const buf = await file.arrayBuffer();
+
+  if(['txt', 'md', 'tsv'].includes(ext)){
+    return new TextDecoder('utf-8').decode(buf).split(/\r?\n/);
+  }
+  if(['csv', 'xlsx', 'xls', 'xlsm', 'ods'].includes(ext)){
+    need(window.XLSX, 'Excel/CSV');
+    const wb = XLSX.read(buf, {type: 'array'});
+    const lines = [];
+    wb.SheetNames.forEach(n => {
+      XLSX.utils.sheet_to_json(wb.Sheets[n], {header: 1, defval: '', blankrows: false})
+        .forEach(r => lines.push(r.map(c => String(c).trim()).join('\t')));
+    });
+    return lines;
+  }
+  if(ext === 'docx'){
+    need(window.mammoth, 'Word');
+    const {value} = await mammoth.convertToHtml({arrayBuffer: buf});
+    const doc = new DOMParser().parseFromString(value, 'text/html');
+    const lines = [];
+    doc.body.querySelectorAll('p, li, tr').forEach(el => {
+      if(el.tagName === 'TR') lines.push([...el.children].map(td => td.textContent.trim()).join('\t'));
+      else if(!el.closest('td, th')) lines.push(el.textContent);
+    });
+    return lines;
+  }
+  if(ext === 'pdf'){
+    need(window.pdfjsLib, 'PDF');
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    const pdf = await pdfjsLib.getDocument({data: new Uint8Array(buf)}).promise;
+    const lines = [];
+    for(let p = 1; p <= pdf.numPages; p++){
+      const tc = await (await pdf.getPage(p)).getTextContent();
+      let cur = '';
+      tc.items.forEach(it => {
+        if(it.hasEOL){ lines.push((cur + it.str).trim()); cur = ''; }
+        else cur += it.str + ' ';
+      });
+      if(cur.trim()) lines.push(cur.trim());
+    }
+    return lines;
+  }
+  if(ext === 'pptx'){
+    need(window.JSZip, 'PowerPoint');
+    const zip = await JSZip.loadAsync(buf);
+    const num = f => parseInt(f.match(/slide(\d+)\.xml$/)[1], 10);
+    const slides = Object.keys(zip.files)
+      .filter(f => /^ppt\/slides\/slide\d+\.xml$/.test(f))
+      .sort((a, b) => num(a) - num(b));
+    const paraText = el => [...el.getElementsByTagName('a:t')].map(t => t.textContent).join('');
+    const inTable = el => { for(let n = el.parentNode; n; n = n.parentNode) if(n.nodeName === 'a:tc') return true; return false; };
+    const lines = [];
+    for(const f of slides){
+      const xml = new DOMParser().parseFromString(await zip.file(f).async('string'), 'application/xml');
+      for(const tr of xml.getElementsByTagName('a:tr'))
+        lines.push([...tr.getElementsByTagName('a:tc')].map(paraText).join('\t'));
+      for(const p of xml.getElementsByTagName('a:p'))
+        if(!inTable(p)) lines.push(paraText(p));
+    }
+    return lines;
+  }
+  throw new Error('định dạng .' + ext + ' chưa hỗ trợ; với file .doc/.ppt cũ hãy lưu lại thành .docx/.pptx');
+}
+
+async function importFiles(files){
+  const folder = $('#folderName').value.trim() || 'Chưa xếp thư mục';
+  const msg = $('#uploadMsg');
+  let ok = 0;
+  const fails = [];
+  for(const f of files){
+    msg.textContent = `Đang đọc ${f.name}…`;
+    try{
+      const seen = new Set();
+      const words = [];
+      (await fileToLines(f)).forEach(l => {
+        const w = parseLine(l);
+        if(w && !seen.has(w.ko)){ seen.add(w.ko); words.push(w); }
+      });
+      if(!words.length){ fails.push(`${f.name} (không tìm thấy từ nào)`); continue; }
+      const id = 'L' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+      state.lessons.push({
+        id, folder,
+        name: f.name.replace(/\.[^.]+$/, ''),
+        words: words.map((w, i) => ({id: id + '_' + i, ko: w.ko, vi: w.vi}))
+      });
+      ok++;
+    }catch(e){
+      fails.push(`${f.name} (${e.message})`);
+    }
+  }
+  save();
+  msg.textContent = (ok ? `Đã thêm ${ok} bài vào "${folder}".` : '') + (fails.length ? ' Không đọc được: ' + fails.join('; ') : '');
+  if(ok) toast(`Đã thêm ${ok} bài`);
+  renderView();
+}
+
+/* ============ ĐIỀU HƯỚNG ============ */
+function go(view){
+  ui.view = view;
+  document.querySelectorAll('.view').forEach(v => v.classList.toggle('hidden', v.id !== 'v-' + view));
+  document.querySelectorAll('nav.menu button').forEach(b =>
+    b.classList.toggle('on', b.dataset.go === (view === 'words' ? 'library' : view)));
+  renderView();
+  window.scrollTo(0, 0);
+}
+function renderView(){
+  ({library: renderLibrary, words: renderWords, flash: renderFlash, quiz: renderQuiz, sent: renderSent})[ui.view]();
+}
+
+/* ============ THƯ VIỆN ============ */
+function renderLibrary(){
+  const folders = [...new Set(state.lessons.map(l => l.folder))];
+  $('#folderList').innerHTML = folders.map(f => `<option value="${esc(f)}">`).join('');
+  const total = state.lessons.reduce((n, l) => n + l.words.length, 0);
+  $('#libStats').textContent = `${state.lessons.length} bài · ${total} từ`;
+
+  ui.libPage = clampPage(ui.libPage, state.lessons.length, PAGE_LESSONS);
+  const sorted = [...state.lessons].sort((a, b) => a.folder.localeCompare(b.folder, 'vi'));
+  if(!sorted.length){
+    $('#libList').innerHTML = '<p class="hint">Chưa có bài nào. Hãy tải file đầu tiên lên ở phía trên.</p>';
+    return;
+  }
+  const items = sorted.slice((ui.libPage - 1) * PAGE_LESSONS, ui.libPage * PAGE_LESSONS);
+  let html = '', lastFolder = null;
+  items.forEach(l => {
+    if(l.folder !== lastFolder){ html += `<div class="folder-title">📁 ${esc(l.folder).toUpperCase()}</div>`; lastFolder = l.folder; }
+    const p = pctKnown(l);
+    html += `<div class="lesson">
+      <div class="row" style="justify-content:space-between">
+        <strong>${esc(l.name)}</strong>
+        <span class="meta">${l.words.length} từ · ${p}% đã thuộc</span>
+      </div>
+      <div class="track"><div class="fill" style="width:${p}%"></div></div>
+      <div class="row">
+        <button class="ghost" data-act="words" data-id="${l.id}">Xem từ</button>
+        <button data-act="flash" data-id="${l.id}">Thẻ học</button>
+        <button data-act="quiz" data-id="${l.id}">Trắc nghiệm</button>
+        <button data-act="sent" data-id="${l.id}">Đặt câu</button>
+        <button class="ghost" data-act="del" data-id="${l.id}" aria-label="Xóa bài">Xóa</button>
+      </div>
+    </div>`;
+  });
+  $('#libList').innerHTML = html + pager(sorted.length, ui.libPage, PAGE_LESSONS, 'libPage');
+}
+
+function deleteLesson(id){
+  const l = findLesson(id);
+  if(!l || !confirm(`Xóa bài "${l.name}" và tiến độ của bài này?`)) return;
+  state.lessons = state.lessons.filter(x => x.id !== id);
+  l.words.forEach(w => delete state.progress[w.id]);
+  save();
+  toast('Đã xóa bài');
+  renderView();
+}
+
+/* ============ DANH SÁCH TỪ ============ */
+function renderWords(){
+  const l = findLesson(ui.wordsLesson);
+  if(!l){ go('library'); return; }
+  ui.wordsPage = clampPage(ui.wordsPage, l.words.length, PAGE_WORDS);
+  const start = (ui.wordsPage - 1) * PAGE_WORDS;
+  const rows = l.words.slice(start, start + PAGE_WORDS).map((w, i) => {
+    const p = prog(w.id);
+    return `<tr>
+      <td class="meta">${start + i + 1}</td>
+      <td class="ko">${esc(w.ko)}</td>
+      <td>${w.vi ? esc(w.vi) : '<span class="meta">chưa có nghĩa trong file</span>'}</td>
+      <td>${p.known ? '✔' : ''}</td>
+    </tr>`;
+  }).join('');
+  $('#v-words').innerHTML = `
+    <div class="panel row" style="justify-content:space-between">
+      <button class="ghost" data-act="back">← Thư viện</button>
+      <strong>${esc(l.folder)} › ${esc(l.name)}</strong>
+      <span class="meta">${l.words.length} từ</span>
+    </div>
+    <div class="panel" style="overflow-x:auto">
+      <table class="words">
+        <thead><tr><th>#</th><th>Tiếng Hàn</th><th>Nghĩa</th><th>Thuộc</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+      ${pager(l.words.length, ui.wordsPage, PAGE_WORDS, 'wordsPage')}
+    </div>
+    <div class="row">
+      <button data-act="flash" data-id="${l.id}">Học bằng thẻ</button>
+      <button data-act="quiz" data-id="${l.id}">Trắc nghiệm</button>
+      <button data-act="sent" data-id="${l.id}">Đặt câu</button>
+    </div>`;
+}
+
+/* ============ THẺ HỌC ============ */
+function flashCur(){
+  const l = currentLessonOr(ui.flashLesson);
+  if(!l) return null;
+  ui.flashLesson = l.id;
+  if(!ui.flashOrder || ui.flashOrder.lesson !== l.id)
+    ui.flashOrder = {lesson: l.id, ids: l.words.map(w => w.id)};
+  return {l, ids: ui.flashOrder.ids};
+}
+function renderFlash(){
+  if(!state.lessons.length){ $('#v-flash').innerHTML = emptyMsg(); return; }
+  const {l, ids} = flashCur();
+  ui.flashIdx = (ui.flashIdx + ids.length) % ids.length;
+  const w = l.words.find(x => x.id === ids[ui.flashIdx]);
+  const p = prog(w.id);
+  $('#v-flash').innerHTML = `
+    <div class="panel">${lessonSelect('flash', l.id)}</div>
+    <div class="flash" data-act="flip" role="button" tabindex="0" aria-label="Lật thẻ">
+      <div class="meta">${ui.flashIdx + 1} / ${ids.length} · ${p.known ? '✔ Đã thuộc' : 'Chưa thuộc'}</div>
+      <div class="ko">${esc(w.ko)}</div>
+      ${ui.flipped ? `<div class="vi">${w.vi ? esc(w.vi) : '(chưa có nghĩa trong file)'}</div>` : ''}
+      <div class="hint">${ui.flipped ? 'Chạm để ẩn nghĩa' : 'Chạm để xem nghĩa'}</div>
+    </div>
+    <div class="row actions">
+      <button class="ghost" data-act="prev">← Trước</button>
+      <button class="pink" data-act="mark" data-v="0">Chưa thuộc</button>
+      <button data-act="mark" data-v="1">Đã thuộc</button>
+      <button class="ghost" data-act="next">Sau →</button>
+    </div>
+    <div class="row" style="justify-content:center;margin-top:10px">
+      <button class="ghost" data-act="shuffleFlash">Xáo trộn thẻ</button>
+    </div>
+    <p class="hint" style="text-align:center">Phím tắt: ← → chuyển thẻ · Space lật thẻ · 1 chưa thuộc · 2 đã thuộc</p>`;
+}
+function flashStep(d){
+  const c = flashCur(); if(!c) return;
+  ui.flashIdx = (ui.flashIdx + d + c.ids.length) % c.ids.length;
+  ui.flipped = false;
+  renderView();
+}
+function flashMark(known){
+  const c = flashCur(); if(!c) return;
+  setProg(c.ids[ui.flashIdx], {known});
+  flashStep(1);
+}
+
+/* ============ TRẮC NGHIỆM ============ */
+function allWordsWithMeaning(){ return state.lessons.flatMap(l => l.words).filter(w => w.vi); }
+
+function makeOptions(w, pool){
+  // Đáp án nhiễu: ưu tiên các từ khác trong cùng bài, rồi đến bài khác
+  const others = shuffle(pool.filter(x => x.id !== w.id)).concat(
+    shuffle(allWordsWithMeaning().filter(x => x.id !== w.id && !pool.includes(x))));
+  const opts = [w];
+  const seen = new Set([w.vi]);
+  for(const x of others){
+    if(opts.length >= 4) break;
+    if(!seen.has(x.vi)){ seen.add(x.vi); opts.push(x); }
+  }
+  return shuffle(opts);
+}
+
+function startQuiz(){
+  const l = currentLessonOr(ui.quizLesson);
+  if(!l) return;
+  const pool = l.words.filter(w => w.vi);
+  if(!pool.length || allWordsWithMeaning().length < 4){
+    toast('Cần ít nhất 4 từ có nghĩa để làm trắc nghiệm');
+    return;
+  }
+  ui.quizLesson = l.id;
+  const items = shuffle(pool);
+  ui.quiz = {items, i: 0, score: 0, answered: null, opts: makeOptions(items[0], pool), pool};
+  renderQuiz();
+}
+function renderQuiz(){
+  const q = ui.quiz;
+  let body;
+  if(!q){
+    body = `<div class="panel" style="text-align:center">
+      <p>Xem từ tiếng Hàn, chọn nghĩa đúng trong 4 đáp án A, B, C, D.</p>
+      <button data-act="quizStart">Bắt đầu</button>
+    </div>`;
+  } else if(q.i >= q.items.length){
+    body = `<div class="panel" style="text-align:center">
+      <h2>Xong rồi!</h2>
+      <p>Đúng ${q.score} / ${q.items.length} câu (${Math.round(100 * q.score / q.items.length)}%)</p>
+      <div class="row" style="justify-content:center">
+        <button data-act="quizStart">Làm lại</button>
+        <button class="ghost" data-act="back">Về thư viện</button>
+      </div>
+    </div>`;
+  } else {
+    const w = q.items[q.i];
+    const correct = q.opts.findIndex(o => o.id === w.id);
+    body = `<div class="panel">
+      <div class="row" style="justify-content:space-between">
+        ${lessonSelect('quiz', ui.quizLesson)}
+      </div>
+      <div class="meta" style="margin-top:12px">Câu ${q.i + 1} / ${q.items.length} · Đúng: ${q.score}</div>
+      <div class="ko" style="font-size:clamp(30px,8vw,46px);text-align:center;margin:18px 0">${esc(w.ko)}</div>
+      <p class="hint" style="text-align:center;margin-top:-8px">Chọn nghĩa đúng (phím 1–4)</p>
+      ${q.opts.map((o, i) => {
+        let cls = '';
+        if(q.answered !== null){
+          if(i === correct) cls = 'right';
+          else if(i === q.answered) cls = 'wrong';
+        }
+        return `<button class="opt ${cls}" data-act="quizPick" data-i="${i}">${'ABCD'[i]}. ${esc(o.vi)}</button>`;
+      }).join('')}
+      ${q.answered !== null ? `<div class="row" style="justify-content:flex-end;margin-top:8px">
+        <button data-act="quizNext">${q.i + 1 < q.items.length ? 'Câu tiếp →' : 'Xem kết quả'}</button>
+      </div>` : ''}
+    </div>`;
+  }
+  $('#v-quiz').innerHTML = state.lessons.length ? body : emptyMsg();
+}
+function answerQuiz(i){
+  const q = ui.quiz;
+  if(!q || q.i >= q.items.length || q.answered !== null || !q.opts[i]) return;
+  const w = q.items[q.i];
+  const ok = q.opts[i].id === w.id;
+  q.answered = i;
+  if(ok) q.score++;
+  const p = prog(w.id);
+  setProg(w.id, {right: p.right + (ok ? 1 : 0), wrong: p.wrong + (ok ? 0 : 1)});
+  renderQuiz();
+}
+function nextQuiz(){
+  const q = ui.quiz;
+  if(!q || q.answered === null) return;
+  q.i++;
+  if(q.i < q.items.length) q.opts = makeOptions(q.items[q.i], q.pool);
+  q.answered = null;
+  renderQuiz();
+}
+
+/* ============ ĐẶT CÂU ============ */
+function pickSentWord(l){
+  const pick = shuffle(l.words)[0];
+  ui.sentWord = pick.id;
+}
+function renderSent(){
+  if(!state.lessons.length){ $('#v-sent').innerHTML = emptyMsg(); return; }
+  const l = currentLessonOr(ui.sentLesson);
+  ui.sentLesson = l.id;
+  if(!l.words.some(w => w.id === ui.sentWord)) pickSentWord(l);
+  const w = l.words.find(x => x.id === ui.sentWord);
+  const p = prog(w.id);
+  $('#v-sent').innerHTML = `
+    <div class="panel">${lessonSelect('sent', l.id)}</div>
+    <div class="panel" style="text-align:center">
+      <div class="ko" style="font-size:clamp(30px,8vw,46px)">${esc(w.ko)}</div>
+      <p class="vi-line">Nghĩa: <b>${w.vi ? esc(w.vi) : 'chưa có nghĩa trong file'}</b></p>
+      <p class="hint">Viết một câu tiếng Hàn có dùng từ trên, rồi bấm Kiểm tra.</p>
+      <textarea id="sentText" rows="3" placeholder="Viết câu tiếng Hàn ở đây…" style="margin-top:10px">${esc(p.sentence || '')}</textarea>
+      <div id="sentResult" class="hint" style="min-height:24px;margin:10px 0"></div>
+      <div class="row actions">
+        <button class="ghost" data-act="sentNext">Từ khác →</button>
+        <button data-act="sentCheck">Kiểm tra</button>
+      </div>
+      <p class="hint">Phím tắt: Ctrl + Enter để kiểm tra</p>
+    </div>`;
+}
+function checkSent(){
+  const l = currentLessonOr(ui.sentLesson);
+  const w = l && l.words.find(x => x.id === ui.sentWord);
+  const box = $('#sentText'), res = $('#sentResult');
+  if(!w || !box) return;
+  const text = box.value.trim();
+  if(!HANGUL.test(text)){
+    res.style.color = 'var(--bad)';
+    res.textContent = 'Hãy viết câu bằng tiếng Hàn trước.';
+    return;
+  }
+  // Động từ/tính từ kết thúc bằng 다: kiểm tra phần gốc để nhận cả dạng đã chia (먹다 → 먹어요)
+  const key = w.ko.length > 1 && w.ko.endsWith('다') ? w.ko.slice(0, -1) : w.ko;
+  const ok = text.includes(key);
+  res.style.color = ok ? 'var(--ok)' : 'var(--bad)';
+  res.textContent = ok
+    ? `✔ Đúng! Bạn đã dùng từ «${w.ko}».`
+    : `Câu chưa có từ «${w.ko}» (hoặc dạng đã chia của nó). Thử lại nhé.`;
+  if(ok) setProg(w.id, {sentence: text});
+}
+
+/* ============ SỰ KIỆN ============ */
+function act(name, d){
+  switch(name){
+    case 'pickFile': $('#fileInput').click(); break;
+    case 'back': go('library'); break;
+    case 'words': ui.wordsLesson = d.id; ui.wordsPage = 1; go('words'); break;
+    case 'flash': ui.flashLesson = d.id; ui.flashOrder = null; ui.flashIdx = 0; ui.flipped = false; go('flash'); break;
+    case 'quiz': ui.quizLesson = d.id; ui.quiz = null; go('quiz'); break;
+    case 'sent': ui.sentLesson = d.id; ui.sentWord = null; go('sent'); break;
+    case 'del': deleteLesson(d.id); break;
+    case 'flip': ui.flipped = !ui.flipped; renderView(); break;
+    case 'prev': flashStep(-1); break;
+    case 'next': flashStep(1); break;
+    case 'mark': flashMark(d.v === '1'); break;
+    case 'shuffleFlash': {
+      const c = flashCur();
+      if(c){ ui.flashOrder.ids = shuffle(c.ids); ui.flashIdx = 0; ui.flipped = false; renderView(); }
+      break;
+    }
+    case 'quizStart': startQuiz(); break;
+    case 'quizPick': answerQuiz(+d.i); break;
+    case 'quizNext': nextQuiz(); break;
+    case 'sentNext': ui.sentWord = null; renderSent(); break;
+    case 'sentCheck': checkSent(); break;
+  }
+}
+
+document.addEventListener('click', e => {
+  const nav = e.target.closest('[data-go]');
+  if(nav){ go(nav.dataset.go); return; }
+  const pg = e.target.closest('[data-pg]');
+  if(pg){ ui[pg.dataset.pg] = +pg.dataset.to; renderView(); return; }
+  const el = e.target.closest('[data-act]');
+  if(el) act(el.dataset.act, el.dataset);
+});
+
+document.addEventListener('change', e => {
+  const kind = e.target.dataset && e.target.dataset.pick;
+  if(!kind) return;
+  const id = e.target.value;
+  if(kind === 'flash'){ ui.flashLesson = id; ui.flashOrder = null; ui.flashIdx = 0; ui.flipped = false; }
+  if(kind === 'quiz'){ ui.quizLesson = id; ui.quiz = null; }
+  if(kind === 'sent'){ ui.sentLesson = id; ui.sentWord = null; }
+  renderView();
+});
+
+document.addEventListener('keydown', e => {
+  if(e.target.closest('input, textarea, select')){
+    if(e.key === 'Enter' && e.ctrlKey && ui.view === 'sent') checkSent();
+    return;
+  }
+  if(e.target.closest('button') && (e.key === 'Enter' || e.key === ' ')) return;
+  if(ui.view === 'flash'){
+    if(e.key === 'ArrowRight') flashStep(1);
+    else if(e.key === 'ArrowLeft') flashStep(-1);
+    else if(e.key === ' '){ e.preventDefault(); act('flip'); }
+    else if(e.key === '1') flashMark(false);
+    else if(e.key === '2') flashMark(true);
+  }
+  if(ui.view === 'quiz' && ui.quiz){
+    if(/^[1-4]$/.test(e.key)) answerQuiz(+e.key - 1);
+    else if(e.key === 'Enter') nextQuiz();
+  }
+});
+
+// Kéo thả file
+const drop = $('#drop');
+['dragenter', 'dragover'].forEach(t => drop.addEventListener(t, e => { e.preventDefault(); drop.classList.add('over'); }));
+['dragleave', 'drop'].forEach(t => drop.addEventListener(t, e => { e.preventDefault(); drop.classList.remove('over'); }));
+drop.addEventListener('drop', e => { if(e.dataTransfer.files.length) importFiles([...e.dataTransfer.files]); });
+
+$('#fileInput').addEventListener('change', e => {
+  if(e.target.files.length) importFiles([...e.target.files]);
+  e.target.value = '';
+});
+
+go('library');
+</script>
+</body>
+</html>
