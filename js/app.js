@@ -3,6 +3,9 @@
 
   var Core = window.HanhocCore;
   var SAMPLE = window.HANHOC_SAMPLE;
+  // Khi chạy bản gộp một file, tài nguyên được nhúng sẵn trong HANHOC_ASSETS.
+  var ASSETS = window.HANHOC_ASSETS || {};
+  var LOGO = ASSETS['assets/logo.jpg'] || 'assets/logo.jpg';
 
   var STORE_SOURCES = 'hanhoc.sources.v1';
   var STORE_PROGRESS = 'hanhoc.progress.v1';
@@ -226,7 +229,7 @@
     if (!scriptPromises[src]) {
       scriptPromises[src] = new Promise(function (resolve, reject) {
         var s = document.createElement('script');
-        s.src = src;
+        s.src = ASSETS[src] || src;
         s.onload = resolve;
         s.onerror = function () { reject(new Error('Không tải được thư viện ' + src)); };
         document.head.appendChild(s);
@@ -403,7 +406,7 @@
 
     root.innerHTML = '' +
       '<section class="card hero">' +
-        '<img src="assets/logo.jpg" alt="Logo Học Hàn Ngữ">' +
+        '<img src="' + LOGO + '" alt="Logo Học Hàn Ngữ">' +
         '<div><h1>Học Hàn Ngữ</h1>' +
         '<p>Từ file bài giảng của bạn, trang tự tạo flashcard, bài tập viết, trắc nghiệm và dịch câu.</p></div>' +
       '</section>' +
@@ -455,6 +458,8 @@
       'Nạp file của bạn, trang tự cập nhật flashcard và bài tập. Hỗ trợ .txt, .csv, .tsv, .md, .docx, .xlsx. Dữ liệu được lưu trên trình duyệt này.') +
       '<div class="row end" style="margin-bottom:1rem">' +
         '<button class="btn soft" id="loadSample">Nạp dữ liệu mẫu</button>' +
+        '<button class="btn ghost" id="exportBackup">Lưu bản sao (.json)</button>' +
+        '<label class="btn ghost" style="cursor:pointer">Mở bản sao<input type="file" id="restoreFile" accept=".json,application/json" hidden></label>' +
         '<button class="btn danger" id="clearAll">Xoá tất cả</button>' +
       '</div>' +
       warnings +
@@ -495,6 +500,12 @@
       toast('Đã nạp dữ liệu mẫu.');
       render();
     });
+    $('#exportBackup', root).addEventListener('click', exportBackup);
+    $('#restoreFile', root).addEventListener('change', function (e) {
+      var file = e.target.files && e.target.files[0];
+      if (file) restoreBackup(file);
+      e.target.value = '';
+    });
     $('#clearAll', root).addEventListener('click', function () {
       if (!window.confirm('Xoá toàn bộ file đã nạp? Tiến độ học vẫn được giữ.')) return;
       state.sources = emptySources();
@@ -514,6 +525,39 @@
       render();
     }).catch(function (err) {
       toast(err && err.message ? err.message : 'Không đọc được file.');
+    });
+  }
+
+  // ---------- Sao lưu ----------
+
+  function exportBackup() {
+    var payload = { app: 'hanhoc', version: 1, sources: state.sources, progress: state.progress };
+    var blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = 'hoc-han-ngu-' + new Date().toISOString().slice(0, 10) + '.json';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+    toast('Đã tải file sao lưu về máy.');
+  }
+
+  function restoreBackup(file) {
+    file.text().then(function (text) {
+      var data = JSON.parse(text);
+      if (!data || data.app !== 'hanhoc' || !data.sources) {
+        throw new Error('File này không phải bản sao lưu của Học Hàn Ngữ.');
+      }
+      state.sources = Object.assign(emptySources(), data.sources);
+      state.progress = data.progress || {};
+      saveJSON(STORE_PROGRESS, state.progress);
+      persistSources();
+      toast('Đã khôi phục dữ liệu từ bản sao.');
+      render();
+    }).catch(function (err) {
+      toast(err && err.message ? err.message : 'Không mở được file sao lưu.');
     });
   }
 

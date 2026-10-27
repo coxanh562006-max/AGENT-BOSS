@@ -11,15 +11,17 @@ Trang web học từ vựng, ngữ pháp và câu tiếng Hàn. Bạn nạp file
 
 ## Chạy trang
 
-Không cần cài đặt. Mở `index.html` bằng trình duyệt là dùng được. Nếu muốn chạy qua máy chủ cục bộ:
+**Cách dễ nhất:** tải file `Hoc-Han-Ngu.html` về máy rồi nhấp đúp. Đây là toàn bộ web trong một file, không cần mạng hay thư mục đi kèm.
+
+Dữ liệu và tiến độ học được lưu trong trình duyệt của máy đang dùng. Để giữ bản sao trên máy, vào **Nhập dữ liệu → Lưu bản sao (.json)**. Khi đổi máy hoặc xoá lịch sử trình duyệt, dùng **Mở bản sao** để khôi phục.
+
+Khi sửa mã nguồn, tạo lại file một-file bằng:
 
 ```bash
-python3 -m http.server 8000
+node scripts/build-single-file.js
 ```
 
-rồi mở `http://localhost:8000`.
-
-Dữ liệu và tiến độ học được lưu trong trình duyệt (localStorage) của máy đang dùng.
+Muốn chạy bản phát triển qua máy chủ cục bộ: `python3 -m http.server 8000` rồi mở `http://localhost:8000`.
 
 ## Định dạng file
 
@@ -41,7 +43,9 @@ Có sẵn nút **Nạp dữ liệu mẫu** trong trang Nhập dữ liệu để 
 ## Cấu trúc
 
 ```
-index.html        Giao diện chính
+Hoc-Han-Ngu.html  Bản gộp một file (tạo bởi scripts/build-single-file.js) — file để tải về dùng
+index.html        Giao diện chính (bản phát triển)
+scripts/          Script gộp file một-file
 css/style.css     Giao diện, tông xanh bầu trời
 js/core.js        Đọc dữ liệu, ghép câu, sinh bài tập, chấm điểm (không phụ thuộc DOM)
 js/app.js         Điều hướng, nạp file, flashcard, bài tập, danh sách tài liệu
