@@ -7,16 +7,18 @@
   var ASSETS = window.HANHOC_ASSETS || {};
   var LOGO = ASSETS['assets/logo.jpg'] || 'assets/logo.jpg';
 
-  var STORE_SOURCES = 'hanhoc.sources.v1';
-  var STORE_PROGRESS = 'hanhoc.progress.v1';
-  var CATEGORY_KEYS = ['vocabLines', 'grammarLines', 'koLines', 'viLines', 'lectureLines'];
+  var STORE_STATE = 'hanhoc.state.v2';
+  var STORE_V1_SOURCES = 'hanhoc.sources.v1';
+  var STORE_V1_PROGRESS = 'hanhoc.progress.v1';
+  var STORE_SYNC = 'hanhoc.sync.v1';
+  var STORE_SCOPE = 'hanhoc.scope.v1';
 
   var NAV = [
     {
       group: 'Quản lý',
       items: [
         { id: 'home', label: 'Trang chủ', icon: '🏠' },
-        { id: 'import', label: 'Nhập dữ liệu', icon: '📥' }
+        { id: 'lessons', label: 'Bài học & file', icon: '🗂️' }
       ]
     },
     {
@@ -46,21 +48,21 @@
       title: 'Viết từ',
       desc: 'Cho nghĩa tiếng Việt, bạn gõ lại từ tiếng Hàn tương ứng.',
       need: function (ds) { return ds.vocab.length > 0; },
-      needText: 'Cần có file từ vựng.',
+      needText: 'Cần có file từ vựng trong bài.',
       build: function (ds) { return Core.wordQuestions(ds.vocab); }
     },
     order: {
       title: 'Sắp xếp câu',
       desc: 'Cho câu tiếng Việt, bấm các từ tiếng Hàn đã xáo trộn để ghép lại thành câu đúng.',
       need: function (ds) { return ds.sentences.length > 0; },
-      needText: 'Cần có câu tiếng Hàn kèm đáp án tiếng Việt.',
+      needText: 'Cần có câu tiếng Hàn kèm đáp án tiếng Việt trong bài.',
       build: function (ds) { return Core.orderQuestions(ds.sentences); }
     },
     extend: {
       title: 'Ví dụ mở rộng',
       desc: 'Tự viết câu mới dùng từ vựng hoặc mẫu ngữ pháp. Với từ vựng, trang kiểm tra có dùng đúng từ không. Với mẫu ngữ pháp, bạn tự so sánh với ví dụ mẫu.',
       need: function (ds) { return ds.vocab.length + ds.grammar.length > 0; },
-      needText: 'Cần có file từ vựng hoặc file ngữ pháp.',
+      needText: 'Cần có file từ vựng hoặc file ngữ pháp trong bài.',
       build: function (ds) { return Core.extensionQuestions(ds.vocab, ds.grammar); }
     },
     mcq: {
@@ -74,44 +76,21 @@
       title: 'Dịch hai chiều',
       desc: 'Dịch câu tiếng Hàn sang tiếng Việt và ngược lại. Kết quả được đối chiếu với đáp án đã cho.',
       need: function (ds) { return ds.sentences.length > 0; },
-      needText: 'Cần có câu tiếng Hàn kèm đáp án tiếng Việt.',
+      needText: 'Cần có câu tiếng Hàn kèm đáp án tiếng Việt trong bài.',
       build: function (ds) { return Core.translationQuestions(ds.sentences); }
     }
   };
 
-  var SLOTS = [
-    {
-      key: 'vocab', target: 'vocabLines', title: 'Từ vựng', icon: '📘',
-      desc: 'Mỗi dòng: từ tiếng Hàn | nghĩa | ví dụ (không bắt buộc) | dịch ví dụ (không bắt buộc).',
-      accept: '.txt,.csv,.tsv,.md,.xlsx,.docx,.pdf,.doc'
-    },
-    {
-      key: 'grammar', target: 'grammarLines', title: 'Ngữ pháp', icon: '📐',
-      desc: 'Mỗi dòng: mẫu | ý nghĩa | giải thích | ví dụ tiếng Hàn | ví dụ tiếng Việt. Dòng trùng mẫu sẽ được gộp.',
-      accept: '.txt,.csv,.tsv,.md,.xlsx,.docx,.pdf,.doc'
-    },
-    {
-      key: 'ko', target: 'koLines', title: 'Câu tiếng Hàn', icon: '💬',
-      desc: 'Mỗi dòng một câu. Có thể viết sẵn "câu hàn | câu việt" để ghép cặp ngay trong file.',
-      accept: '.txt,.csv,.tsv,.md,.xlsx,.docx,.pdf,.doc'
-    },
-    {
-      key: 'vi', target: 'viLines', title: 'Đáp án dịch (tiếng Việt)', icon: '✅',
-      desc: 'Mỗi dòng một câu tiếng Việt, đúng thứ tự với file câu tiếng Hàn.',
-      accept: '.txt,.csv,.tsv,.md,.xlsx,.docx,.pdf,.doc'
-    },
-    {
-      key: 'lecture', target: 'lectureLines', title: 'Bài giảng', icon: '📖',
-      desc: 'Tiêu đề bắt đầu bằng #. Dòng "từ | nghĩa" được thêm vào từ vựng, dòng "câu hàn | câu việt" được thêm vào câu.',
-      accept: '.txt,.md,.docx,.pdf,.doc,.csv,.tsv,.xlsx'
-    }
-  ];
+  var FILE_ACCEPT = '.txt,.csv,.tsv,.md,.xlsx,.docx,.pdf,.doc';
 
   var state = {
-    sources: null,
-    progress: null,
-    dataset: null
+    data: null,      // toàn bộ dữ liệu: bài, file đã xoá, tiến độ
+    dataset: null,   // dữ liệu của phạm vi đang chọn (một bài hoặc tất cả)
+    scope: 'all'
   };
+
+  var syncTimer = null;
+  var syncMessage = '';
 
   // ---------- Tiện ích ----------
 
@@ -149,67 +128,26 @@
     el.textContent = message;
     el.hidden = false;
     clearTimeout(toastTimer);
-    toastTimer = setTimeout(function () { el.hidden = true; }, 3200);
+    toastTimer = setTimeout(function () { el.hidden = true; }, 3400);
   }
 
-  function emptySources() {
-    var src = { names: {} };
-    CATEGORY_KEYS.forEach(function (k) { src[k] = []; });
-    return src;
+  function fmtDate(ts) {
+    return ts ? new Date(ts).toLocaleDateString('vi-VN') : '';
+  }
+
+  function fmtDateTime(ts) {
+    if (!ts) return '';
+    return new Date(ts).toLocaleString('vi-VN', {
+      day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'
+    });
+  }
+
+  function reviewText(ts) {
+    return ts ? fmtDate(ts) : 'Chưa ôn';
   }
 
   function hasData(ds) {
     return ds.vocab.length + ds.grammar.length + ds.sentences.length + ds.lecture.length > 0;
-  }
-
-  function rebuild() {
-    state.dataset = Core.buildDataset(state.sources);
-  }
-
-  function persistSources() {
-    saveJSON(STORE_SOURCES, state.sources);
-    rebuild();
-  }
-
-  function getProgress(id) {
-    return state.progress[id] || { ok: 0, bad: 0, known: false };
-  }
-
-  function bump(id, ok) {
-    var p = getProgress(id);
-    if (ok) p.ok++; else p.bad++;
-    p.last = Date.now();
-    state.progress[id] = p;
-    saveJSON(STORE_PROGRESS, state.progress);
-  }
-
-  function setKnown(id, known) {
-    var p = getProgress(id);
-    p.known = known;
-    p.last = Date.now();
-    state.progress[id] = p;
-    saveJSON(STORE_PROGRESS, state.progress);
-  }
-
-  function totals() {
-    var t = { ok: 0, bad: 0, known: 0 };
-    Object.keys(state.progress).forEach(function (id) {
-      var p = state.progress[id];
-      t.ok += p.ok || 0;
-      t.bad += p.bad || 0;
-      if (id.indexOf('card:') === 0 && p.known) t.known++;
-    });
-    return t;
-  }
-
-  function emptyState(icon, title, text, linkHref, linkText) {
-    return '' +
-      '<div class="card empty">' +
-        '<div class="big-icon">' + icon + '</div>' +
-        '<h2>' + esc(title) + '</h2>' +
-        '<p>' + esc(text) + '</p>' +
-        (linkHref ? '<a class="btn primary" href="' + linkHref + '">' + esc(linkText) + '</a>' : '') +
-      '</div>';
   }
 
   function pageHead(title, desc) {
@@ -219,7 +157,83 @@
 
   function noDataView(root) {
     root.innerHTML = pageHead('Chưa có dữ liệu') +
-      emptyState('📥', 'Hãy nạp file của bạn trước', 'Tải file bài giảng, từ vựng, ngữ pháp và câu để trang tự tạo flashcard và bài tập.', '#/import', 'Đi tới Nhập dữ liệu');
+      '<div class="card empty"><div class="big-icon">📭</div>' +
+      '<h2>' + esc(scopeLabel()) + ' chưa có nội dung</h2>' +
+      '<p>Vào Bài học & file để tạo bài và tải file lên: bài giảng, từ vựng, ngữ pháp, câu tiếng Hàn và đáp án tiếng Việt.</p>' +
+      '<a class="btn primary" href="#/lessons">Đi tới Bài học & file</a></div>';
+  }
+
+  // ---------- Lưu trữ và phạm vi ----------
+
+  function activeLessons() {
+    if (state.scope === 'all') return state.data.lessons;
+    return state.data.lessons.filter(function (l) { return l.id === state.scope; });
+  }
+
+  function scopeLabel() {
+    if (state.scope === 'all') return 'Tất cả các bài';
+    var l = findLesson(state.scope);
+    return l ? 'Bài "' + l.name + '"' : 'Tất cả các bài';
+  }
+
+  function findLesson(id) {
+    return state.data.lessons.filter(function (l) { return l.id === id; })[0] || null;
+  }
+
+  function refresh() {
+    if (state.scope !== 'all' && !findLesson(state.scope)) state.scope = 'all';
+    state.dataset = Core.scopeDataset(activeLessons());
+  }
+
+  // Lưu sau mỗi thay đổi và hẹn đồng bộ.
+  function commit() {
+    state.data.updatedAt = Date.now();
+    saveJSON(STORE_STATE, state.data);
+    refresh();
+    scheduleSync();
+  }
+
+  function loadState() {
+    var raw = loadJSON(STORE_STATE, null);
+    if (raw) return Core.mergeStates(Core.emptyState(), raw);
+    var migrated = Core.migrateV1(
+      loadJSON(STORE_V1_SOURCES, null),
+      loadJSON(STORE_V1_PROGRESS, {}) || {},
+      Date.now()
+    );
+    saveJSON(STORE_STATE, migrated);
+    return migrated;
+  }
+
+  function getProgress(id) {
+    return state.data.progress[id] || { ok: 0, bad: 0, known: false };
+  }
+
+  function bump(id, ok) {
+    var p = getProgress(id);
+    if (ok) p.ok++; else p.bad++;
+    p.last = Date.now();
+    state.data.progress[id] = p;
+    commit();
+  }
+
+  function setKnown(id, known) {
+    var p = getProgress(id);
+    p.known = known;
+    p.last = Date.now();
+    state.data.progress[id] = p;
+    commit();
+  }
+
+  function totals() {
+    var t = { ok: 0, bad: 0, known: 0 };
+    Object.keys(state.data.progress).forEach(function (id) {
+      var p = state.data.progress[id];
+      t.ok += p.ok || 0;
+      t.bad += p.bad || 0;
+      if (id.indexOf('card:') === 0 && p.known) t.known++;
+    });
+    return t;
   }
 
   // ---------- Đọc file ----------
@@ -385,19 +399,126 @@
     });
   }
 
+  // ---------- Bài học và file ----------
+
+  function createLesson(name) {
+    var now = Date.now();
+    state.data.lessons.push({ id: Core.newId('l'), name: name, createdAt: now, updatedAt: now, files: [] });
+    commit();
+  }
+
+  function deleteLesson(id) {
+    state.data.deleted.lessons[id] = Date.now();
+    state.data.lessons = state.data.lessons.filter(function (l) { return l.id !== id; });
+    commit();
+  }
+
+  function addFile(lesson, kind, file) {
+    return readFileLines(file).then(function (lines) {
+      if (!lines.length) throw new Error('File không có nội dung đọc được.');
+      var now = Date.now();
+      lesson.files.push({ id: Core.newId('f'), kind: kind, name: file.name, uploadedAt: now, lines: lines });
+      lesson.updatedAt = now;
+      commit();
+      toast('Đã tải lên ' + file.name + ' (' + lines.length + ' dòng).');
+    });
+  }
+
+  function deleteFile(lesson, fileId) {
+    state.data.deleted.files[fileId] = Date.now();
+    lesson.files = lesson.files.filter(function (f) { return f.id !== fileId; });
+    lesson.updatedAt = Date.now();
+    commit();
+  }
+
+  function loadSampleLesson() {
+    var now = Date.now();
+    var files = [
+      { kind: 'vocab', name: 'Từ vựng mẫu.txt', key: 'vocabLines' },
+      { kind: 'grammar', name: 'Ngữ pháp mẫu.txt', key: 'grammarLines' },
+      { kind: 'ko', name: 'Câu tiếng Hàn mẫu.txt', key: 'koLines' },
+      { kind: 'vi', name: 'Đáp án tiếng Việt mẫu.txt', key: 'viLines' },
+      { kind: 'lecture', name: 'Bài giảng mẫu.txt', key: 'lectureLines' }
+    ].map(function (f) {
+      return { id: Core.newId('f'), kind: f.kind, name: f.name, uploadedAt: now, lines: SAMPLE[f.key].slice() };
+    });
+    state.data.lessons.push({ id: Core.newId('l'), name: 'Bài mẫu', createdAt: now, updatedAt: now, files: files });
+    commit();
+  }
+
+  // ---------- Đồng bộ ----------
+
+  function syncConfig() {
+    return loadJSON(STORE_SYNC, null) || {};
+  }
+
+  function scheduleSync() {
+    if (!syncConfig().url) return;
+    clearTimeout(syncTimer);
+    syncTimer = setTimeout(function () { syncNow(false); }, 2000);
+  }
+
+  function setSyncMessage(msg) {
+    syncMessage = msg;
+    var el = $('#syncStatus');
+    if (el) el.textContent = msg;
+  }
+
+  function syncNow(manual) {
+    var cfg = syncConfig();
+    if (!cfg.url || !cfg.key) {
+      if (manual) toast('Hãy nhập địa chỉ máy chủ và mã đồng bộ trước.');
+      return Promise.resolve();
+    }
+    var base = cfg.url.replace(/\/+$/, '');
+    setSyncMessage('Đang đồng bộ…');
+    var before = JSON.stringify(state.data);
+    return fetch(base + '/api/sync?key=' + encodeURIComponent(cfg.key), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ state: state.data })
+    }).then(function (res) {
+      if (!res.ok) throw new Error('máy chủ trả về lỗi ' + res.status);
+      return res.json();
+    }).then(function (body) {
+      state.data = Core.mergeStates(state.data, body.state);
+      saveJSON(STORE_STATE, state.data);
+      refresh();
+      var now = new Date();
+      setSyncMessage('Đã đồng bộ lúc ' + now.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }));
+      // Vẽ lại nếu thiết bị khác vừa thay đổi dữ liệu, trừ khi đang làm bài.
+      if (JSON.stringify(state.data) !== before && !$('.quiz')) render();
+    }).catch(function (err) {
+      setSyncMessage('Chưa đồng bộ được: ' + (err && err.message ? err.message : 'lỗi mạng') +
+        '. Dữ liệu vẫn được lưu trên máy này.');
+    });
+  }
+
   // ---------- Điều hướng ----------
 
-  function renderNav(activeId) {
-    var html = '';
+  function renderSidebar(activeId) {
+    var nav = '';
     NAV.forEach(function (group) {
-      html += '<div class="nav-group">' + esc(group.group) + '</div>';
+      nav += '<div class="nav-group">' + esc(group.group) + '</div>';
       group.items.forEach(function (item) {
-        html += '<a class="nav-link' + (item.id === activeId ? ' active' : '') + '" href="#/' + item.id + '"' +
+        nav += '<a class="nav-link' + (item.id === activeId ? ' active' : '') + '" href="#/' + item.id + '"' +
           (item.id === activeId ? ' aria-current="page"' : '') + '>' +
           '<span class="nav-icon">' + item.icon + '</span>' + esc(item.label) + '</a>';
       });
     });
-    $('#nav').innerHTML = html;
+    $('#nav').innerHTML = nav;
+
+    var options = '<option value="all"' + (state.scope === 'all' ? ' selected' : '') + '>Tất cả các bài</option>';
+    state.data.lessons.forEach(function (l) {
+      options += '<option value="' + esc(l.id) + '"' + (state.scope === l.id ? ' selected' : '') + '>' + esc(l.name) + '</option>';
+    });
+    $('#scopeWrap').innerHTML = '<label class="scope-label">Đang học<select class="select scope-select" id="scope">' + options + '</select></label>';
+    $('#scope').addEventListener('change', function (e) {
+      state.scope = e.target.value;
+      saveJSON(STORE_SCOPE, state.scope);
+      refresh();
+      render();
+    });
 
     var ds = state.dataset;
     $('#sideFoot').innerHTML =
@@ -408,7 +529,7 @@
 
   var VIEWS = {
     home: viewHome,
-    import: viewImport,
+    lessons: viewLessons,
     flashcard: viewFlashcard,
     word: function (root) { viewExercise(root, 'word'); },
     order: function (root) { viewExercise(root, 'order'); },
@@ -428,7 +549,7 @@
 
   function render() {
     var id = currentRoute();
-    renderNav(id);
+    renderSidebar(id);
     var root = $('#view');
     VIEWS[id](root);
     root.scrollTop = 0;
@@ -441,8 +562,17 @@
     var ds = state.dataset;
     var t = totals();
     var pct = t.ok + t.bad ? Math.round((t.ok / (t.ok + t.bad)) * 100) : 0;
+    var idx = Core.reviewIndex(state.data.progress);
 
     var warnings = ds.warnings.map(function (w) { return '<div class="notice">' + esc(w) + '</div>'; }).join('');
+
+    var lessonRows = state.data.lessons.map(function (l) {
+      var d = Core.lessonDataset(l);
+      return '<tr><td class="ko">' + esc(l.name) + '</td>' +
+        '<td>' + fmtDate(l.createdAt) + '</td>' +
+        '<td>' + esc(reviewText(Core.lessonLastReview(d, idx))) + '</td>' +
+        '<td>' + d.vocab.length + ' từ · ' + d.sentences.length + ' câu · ' + d.grammar.length + ' mẫu</td></tr>';
+    }).join('');
 
     var tiles = NAV[1].items.map(function (item) {
       var desc = {
@@ -458,8 +588,10 @@
     }).join('');
 
     var body;
-    if (!hasData(ds)) {
-      body = emptyState('🌱', 'Chưa có dữ liệu học', 'Nạp file bài giảng, từ vựng, ngữ pháp và câu của bạn để bắt đầu. Hoặc dùng dữ liệu mẫu để thử trước.', '#/import', 'Nhập dữ liệu');
+    if (!state.data.lessons.length) {
+      body = '<div class="card empty"><div class="big-icon">🌱</div><h2>Chưa có bài nào</h2>' +
+        '<p>Tạo bài đầu tiên và tải file lên, hoặc nạp bài mẫu để thử trước.</p>' +
+        '<a class="btn primary" href="#/lessons">Đi tới Bài học & file</a></div>';
     } else {
       body = '' +
         '<section class="section grid grid-stats">' +
@@ -469,6 +601,9 @@
           '<div class="card stat"><div class="num">' + t.known + '</div><div class="label">Thẻ đã thuộc</div></div>' +
           '<div class="card stat"><div class="num">' + pct + '%</div><div class="label">Đúng trong bài tập (' + (t.ok + t.bad) + ' lượt)</div></div>' +
         '</section>' +
+        '<section class="section"><h2>Các bài</h2><div class="table-wrap"><table class="table">' +
+          '<thead><tr><th>Bài</th><th>Tạo ngày</th><th>Ôn gần nhất</th><th>Nội dung</th></tr></thead>' +
+          '<tbody>' + lessonRows + '</tbody></table></div></section>' +
         '<section class="section"><h2>Bắt đầu học</h2><div class="grid grid-tiles">' + tiles + '</div></section>';
     }
 
@@ -482,150 +617,148 @@
       body;
   }
 
-  // ---------- Nhập dữ liệu ----------
+  // ---------- Bài học & file ----------
 
-  function slotStatus(slot) {
-    var lines = state.sources[slot.target] || [];
-    if (!lines.length) return { text: 'Chưa có file', loaded: false };
-    var name = state.sources.names[slot.key] || 'Đã nạp';
-    var detail;
-    if (slot.key === 'vocab') {
-      var v = Core.parseVocab(lines);
-      detail = v.items.length + ' từ' + (v.skipped ? ' · bỏ qua ' + v.skipped + ' dòng không hợp lệ' : '');
-    } else if (slot.key === 'grammar') {
-      var g = Core.parseGrammar(lines);
-      detail = g.items.length + ' mẫu' + (g.skipped ? ' · bỏ qua ' + g.skipped + ' dòng không hợp lệ' : '');
-    } else if (slot.key === 'ko') {
-      var koCount = lines.filter(Core.hasHangul).length;
-      detail = koCount + ' dòng có tiếng Hàn';
-    } else if (slot.key === 'vi') {
-      detail = lines.length + ' dòng';
-    } else {
-      var reading = Core.parseLecture(lines).reading.length;
-      detail = reading + ' dòng nội dung';
-    }
-    return { text: name + ' · ' + detail, loaded: true };
-  }
+  function viewLessons(root) {
+    var sync = syncConfig();
+    var lessons = state.data.lessons.map(function (l) {
+      var counts = Core.lessonDataset(l);
+      var idx = Core.reviewIndex(state.data.progress);
+      var files = l.files.map(function (f) {
+        var info = Core.kindInfo(f.kind);
+        return '<li class="file-row">' +
+          '<div class="file-main"><span class="badge">' + esc(info ? info.label : f.kind) + '</span>' +
+          '<strong>' + esc(f.name) + '</strong>' +
+          '<small>Tải lên ' + esc(fmtDateTime(f.uploadedAt)) + ' · ' + f.lines.length + ' dòng</small></div>' +
+          '<button class="btn small danger" data-del-file="' + esc(f.id) + '" data-lesson="' + esc(l.id) + '">Xoá file</button>' +
+        '</li>';
+      }).join('') || '<li class="muted">Chưa có file nào.</li>';
 
-  function viewImport(root) {
-    var slotsHtml = SLOTS.map(function (slot) {
-      var st = slotStatus(slot);
+      var kindOptions = Core.KINDS.map(function (k) {
+        return '<option value="' + k.kind + '">' + esc(k.label) + '</option>';
+      }).join('');
+
       return '' +
-        '<section class="card slot" data-slot="' + slot.key + '">' +
-          '<div class="slot-head"><h3>' + slot.icon + ' ' + esc(slot.title) + '</h3>' +
-          (st.loaded ? '<button class="btn small ghost" data-clear="' + slot.key + '">Xoá</button>' : '') + '</div>' +
-          '<p>' + esc(slot.desc) + '</p>' +
-          '<input class="file-input" type="file" accept="' + slot.accept + '" data-file="' + slot.key + '">' +
-          '<div class="status' + (st.loaded ? ' loaded' : '') + '">' + esc(st.text) + '</div>' +
-        '</section>';
+        '<article class="card lesson">' +
+          '<div class="lesson-head">' +
+            '<div><h2>' + esc(l.name) + '</h2>' +
+              '<small>Tạo ngày ' + esc(fmtDate(l.createdAt)) + ' · Ôn gần nhất: ' + esc(reviewText(Core.lessonLastReview(counts, idx))) + '</small></div>' +
+            '<button class="btn small danger" data-del-lesson="' + esc(l.id) + '">Xoá bài</button>' +
+          '</div>' +
+          '<div class="lesson-counts"><span class="badge">' + counts.vocab.length + ' từ</span>' +
+            '<span class="badge">' + counts.grammar.length + ' mẫu</span>' +
+            '<span class="badge">' + counts.sentences.length + ' câu</span>' +
+            '<span class="badge">' + counts.lecture.length + ' dòng bài giảng</span></div>' +
+          '<ul class="file-list">' + files + '</ul>' +
+          '<div class="upload-row">' +
+            '<select class="select" data-kind-for="' + esc(l.id) + '" aria-label="Loại file">' + kindOptions + '</select>' +
+            '<input class="file-input" type="file" accept="' + FILE_ACCEPT + '" data-upload="' + esc(l.id) + '" multiple>' +
+          '</div>' +
+        '</article>';
     }).join('');
 
-    var warnings = state.dataset.warnings.map(function (w) { return '<div class="notice">' + esc(w) + '</div>'; }).join('');
-
-    root.innerHTML = pageHead('Nhập dữ liệu',
-      'Nạp file của bạn, trang tự cập nhật flashcard và bài tập. Hỗ trợ .pdf, .docx, .xlsx, .txt, .csv, .tsv, .md. Dữ liệu được lưu trên trình duyệt này.') +
-      '<div class="row end" style="margin-bottom:1rem">' +
-        '<button class="btn soft" id="loadSample">Nạp dữ liệu mẫu</button>' +
-        '<button class="btn ghost" id="exportBackup">Lưu bản sao (.json)</button>' +
-        '<label class="btn ghost" style="cursor:pointer">Mở bản sao<input type="file" id="restoreFile" accept=".json,application/json" hidden></label>' +
-        '<button class="btn danger" id="clearAll">Xoá tất cả</button>' +
-      '</div>' +
-      warnings +
-      '<div class="grid grid-slots">' + slotsHtml + '</div>' +
+    root.innerHTML = pageHead('Bài học & file',
+      'Mỗi bài có các file riêng. Chọn một bài ở thanh bên để luyện riêng bài đó, hoặc chọn "Tất cả các bài". Có thể xoá từng file khi không cần nữa.') +
+      '<section class="card sync-card">' +
+        '<h2>Đồng bộ giữa các thiết bị</h2>' +
+        '<p class="muted">Điện thoại, máy tính và tablet dùng cùng một địa chỉ máy chủ và cùng một mã đồng bộ thì sẽ thấy cùng dữ liệu. Xem hướng dẫn trong README.</p>' +
+        '<div class="sync-form">' +
+          '<input class="input" id="syncUrl" placeholder="Địa chỉ máy chủ, ví dụ https://ten-may-chu.example.com" value="' + esc(sync.url || '') + '">' +
+          '<input class="input" id="syncKey" placeholder="Mã đồng bộ (dùng chung trên mọi thiết bị)" value="' + esc(sync.key || '') + '">' +
+          '<div class="row"><button class="btn primary" id="syncSave">Lưu và đồng bộ</button>' +
+          '<button class="btn soft" id="syncNow">Đồng bộ ngay</button></div>' +
+        '</div>' +
+        '<p class="sync-status" id="syncStatus">' + esc(syncMessage || (sync.url ? 'Đã cấu hình.' : 'Chưa cấu hình, dữ liệu chỉ lưu trên máy này.')) + '</p>' +
+      '</section>' +
+      '<section class="card create-lesson">' +
+        '<h2>Tạo bài mới</h2>' +
+        '<div class="row"><input class="input" id="lessonName" placeholder="Tên bài, ví dụ: Bài 5 - Đi học" style="flex:1 1 260px">' +
+        '<button class="btn primary" id="createLesson">Tạo bài</button>' +
+        (state.data.lessons.length ? '' : '<button class="btn soft" id="loadSample">Nạp bài mẫu</button>') + '</div>' +
+      '</section>' +
+      (state.data.lessons.length
+        ? '<div class="lesson-list">' + lessons + '</div>'
+        : '<div class="card empty"><div class="big-icon">🗂️</div><p>Chưa có bài nào.</p></div>') +
       '<details class="guide card" style="margin-top:1.25rem">' +
         '<summary>Mẹo định dạng file</summary>' +
         '<ul>' +
-          '<li>Dùng dấu <code>|</code> hoặc phím Tab để tách cột. File Excel và Word dạng bảng được đọc tự động.</li>' +
-          '<li>Dòng tiêu đề (ví dụ "Từ tiếng Hàn | Nghĩa") được bỏ qua tự động.</li>' +
-          '<li>Số thứ tự đầu dòng như "1." hoặc "2)" được bỏ đi khi ghép câu.</li>' +
-          '<li>Câu tiếng Hàn và đáp án tiếng Việt được ghép theo thứ tự dòng. Nếu muốn chắc chắn, hãy viết "câu hàn | câu việt" trên cùng một dòng.</li>' +
-          '<li>PDF cần có chữ (không phải ảnh scan). File Word cũ .doc cần lưu thành .docx trước khi nạp.</li>' +
+          '<li>Từ vựng: <code>từ tiếng Hàn | nghĩa | ví dụ | dịch ví dụ</code>. Ngữ pháp: <code>mẫu | ý nghĩa | giải thích | ví dụ | dịch</code>.</li>' +
+          '<li>Dùng <code>|</code> hoặc phím Tab để tách cột. File Excel, Word dạng bảng và PDF có chữ được đọc tự động.</li>' +
+          '<li>Dòng tiêu đề được bỏ qua. Số thứ tự đầu dòng như "1." được bỏ đi khi ghép câu.</li>' +
+          '<li>Câu tiếng Hàn và đáp án tiếng Việt ghép theo thứ tự dòng. Muốn chắc chắn, viết "câu hàn | câu việt" trên cùng một dòng.</li>' +
+          '<li>Với file Word cũ (.doc), lưu thành .docx trước khi tải lên.</li>' +
         '</ul>' +
       '</details>';
 
-    $all('input[data-file]', root).forEach(function (input) {
+    bindLessons(root);
+  }
+
+  function bindLessons(root) {
+    $('#createLesson', root).addEventListener('click', function () {
+      var name = $('#lessonName', root).value.trim();
+      if (!name) { toast('Hãy nhập tên bài.'); return; }
+      createLesson(name);
+      toast('Đã tạo bài "' + name + '".');
+      render();
+    });
+    $('#lessonName', root).addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') $('#createLesson', root).click();
+    });
+    var sample = $('#loadSample', root);
+    if (sample) sample.addEventListener('click', function () {
+      loadSampleLesson();
+      toast('Đã nạp bài mẫu.');
+      render();
+    });
+
+    $('#syncSave', root).addEventListener('click', function () {
+      var url = $('#syncUrl', root).value.trim();
+      var key = $('#syncKey', root).value.trim();
+      if (!/^https?:\/\//i.test(url)) { toast('Địa chỉ máy chủ phải bắt đầu bằng http:// hoặc https://'); return; }
+      if (key.length < 4) { toast('Mã đồng bộ cần ít nhất 4 ký tự.'); return; }
+      saveJSON(STORE_SYNC, { url: url, key: key });
+      syncNow(true);
+    });
+    $('#syncNow', root).addEventListener('click', function () { syncNow(true); });
+
+    $all('[data-upload]', root).forEach(function (input) {
       input.addEventListener('change', function () {
-        var slot = SLOTS.filter(function (s) { return s.key === input.getAttribute('data-file'); })[0];
-        var file = input.files && input.files[0];
-        if (file) onFile(slot, file);
+        var lessonId = input.getAttribute('data-upload');
+        var kind = $('[data-kind-for="' + lessonId + '"]', root).value;
+        var lesson = findLesson(lessonId);
+        var files = Array.prototype.slice.call(input.files || []);
         input.value = '';
+        if (!lesson || !files.length) return;
+        files.reduce(function (chain, file) {
+          return chain.then(function () {
+            return addFile(lesson, kind, file).catch(function (err) {
+              toast(err && err.message ? err.message : 'Không đọc được file.');
+            });
+          });
+        }, Promise.resolve()).then(function () { render(); });
       });
     });
-    $all('[data-clear]', root).forEach(function (btn) {
+
+    $all('[data-del-file]', root).forEach(function (btn) {
       btn.addEventListener('click', function () {
-        var slot = SLOTS.filter(function (s) { return s.key === btn.getAttribute('data-clear'); })[0];
-        state.sources[slot.target] = [];
-        delete state.sources.names[slot.key];
-        persistSources();
+        var lesson = findLesson(btn.getAttribute('data-lesson'));
+        var fileId = btn.getAttribute('data-del-file');
+        var file = lesson && lesson.files.filter(function (f) { return f.id === fileId; })[0];
+        if (!file || !window.confirm('Xoá file "' + file.name + '"?')) return;
+        deleteFile(lesson, fileId);
+        toast('Đã xoá ' + file.name + '.');
         render();
       });
     });
-    $('#loadSample', root).addEventListener('click', function () {
-      state.sources = emptySources();
-      CATEGORY_KEYS.forEach(function (k) { state.sources[k] = SAMPLE[k].slice(); });
-      state.sources.names = { vocab: 'Mẫu', grammar: 'Mẫu', ko: 'Mẫu', vi: 'Mẫu', lecture: 'Mẫu' };
-      persistSources();
-      toast('Đã nạp dữ liệu mẫu.');
-      render();
-    });
-    $('#exportBackup', root).addEventListener('click', exportBackup);
-    $('#restoreFile', root).addEventListener('change', function (e) {
-      var file = e.target.files && e.target.files[0];
-      if (file) restoreBackup(file);
-      e.target.value = '';
-    });
-    $('#clearAll', root).addEventListener('click', function () {
-      if (!window.confirm('Xoá toàn bộ file đã nạp? Tiến độ học vẫn được giữ.')) return;
-      state.sources = emptySources();
-      persistSources();
-      toast('Đã xoá dữ liệu.');
-      render();
-    });
-  }
 
-  function onFile(slot, file) {
-    readFileLines(file).then(function (lines) {
-      if (!lines.length) throw new Error('File không có nội dung đọc được.');
-      state.sources[slot.target] = lines;
-      state.sources.names[slot.key] = file.name;
-      persistSources();
-      toast('Đã nạp ' + file.name + ' (' + lines.length + ' dòng).');
-      render();
-    }).catch(function (err) {
-      toast(err && err.message ? err.message : 'Không đọc được file.');
-    });
-  }
-
-  // ---------- Sao lưu ----------
-
-  function exportBackup() {
-    var payload = { app: 'hanhoc', version: 1, sources: state.sources, progress: state.progress };
-    var blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
-    var url = URL.createObjectURL(blob);
-    var a = document.createElement('a');
-    a.href = url;
-    a.download = 'hoc-han-ngu-' + new Date().toISOString().slice(0, 10) + '.json';
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
-    toast('Đã tải file sao lưu về máy.');
-  }
-
-  function restoreBackup(file) {
-    file.text().then(function (text) {
-      var data = JSON.parse(text);
-      if (!data || data.app !== 'hanhoc' || !data.sources) {
-        throw new Error('File này không phải bản sao lưu của Học Hàn Ngữ.');
-      }
-      state.sources = Object.assign(emptySources(), data.sources);
-      state.progress = data.progress || {};
-      saveJSON(STORE_PROGRESS, state.progress);
-      persistSources();
-      toast('Đã khôi phục dữ liệu từ bản sao.');
-      render();
-    }).catch(function (err) {
-      toast(err && err.message ? err.message : 'Không mở được file sao lưu.');
+    $all('[data-del-lesson]', root).forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var lesson = findLesson(btn.getAttribute('data-del-lesson'));
+        if (!lesson || !window.confirm('Xoá cả bài "' + lesson.name + '" và mọi file trong bài?')) return;
+        deleteLesson(lesson.id);
+        toast('Đã xoá bài "' + lesson.name + '".');
+        render();
+      });
     });
   }
 
@@ -659,7 +792,9 @@
       var stats = '<span class="deck-count">Còn lại: ' + remaining + ' thẻ</span>';
 
       if (!session.total) {
-        root.innerHTML = pageHead('Flashcard') + emptyState('🗂️', 'Không có thẻ nào', 'Hãy nạp thêm dữ liệu tương ứng với loại thẻ đã chọn.', '#/import', 'Nhập dữ liệu');
+        root.innerHTML = pageHead('Flashcard') + filterBar(stats) +
+          '<div class="card empty"><div class="big-icon">🗂️</div><h2>Không có thẻ nào</h2>' +
+          '<p>Bài này chưa có nội dung cho loại thẻ đã chọn.</p></div>';
         bindFilter();
         return;
       }
@@ -676,13 +811,14 @@
 
       var card = deck[session.index];
       var backHtml = card.back.map(function (line) { return '<p>' + esc(line) + '</p>'; }).join('');
+      var lastText = reviewText(getProgress(card.id).last);
       root.innerHTML = pageHead('Flashcard', 'Bấm vào thẻ để lật. Chọn "Đã thuộc" để bỏ thẻ khỏi lượt này, "Chưa thuộc" để ôn lại sau.') +
         filterBar(stats) +
         '<div class="flip-stage">' +
           '<div class="fcard' + (session.flipped ? ' is-flipped' : '') + '" id="fcard" role="button" tabindex="0" aria-label="Lật thẻ">' +
             '<div class="face front card"><span class="badge">' + esc(card.label) + '</span>' +
               '<div class="front-text">' + esc(card.front) + '</div>' +
-              '<div class="hint">Bấm để xem nghĩa</div></div>' +
+              '<div class="hint">Bấm để xem nghĩa · Ôn gần nhất: ' + esc(lastText) + '</div></div>' +
             '<div class="face back"><span class="badge">' + esc(card.label) + '</span>' +
               '<div class="back-text">' + backHtml + '</div></div>' +
           '</div>' +
@@ -748,7 +884,10 @@
     var ex = EXERCISES[id];
     var ds = state.dataset;
     if (!ex.need(ds)) {
-      root.innerHTML = pageHead(ex.title, ex.desc) + emptyState('📭', 'Chưa đủ dữ liệu', ex.needText, '#/import', 'Nhập dữ liệu');
+      root.innerHTML = pageHead(ex.title, ex.desc) +
+        '<div class="card empty"><div class="big-icon">📭</div><h2>Chưa đủ dữ liệu</h2>' +
+        '<p>' + esc(ex.needText) + '</p>' +
+        '<a class="btn primary" href="#/lessons">Đi tới Bài học & file</a></div>';
       return;
     }
 
@@ -980,16 +1119,17 @@
 
   // ---------- Tài liệu ----------
 
-  function searchBox(id, placeholder) {
+  function searchBox(placeholder) {
     return '<div class="row" style="margin-bottom:1rem">' +
-      '<input class="input search" id="' + id + '" type="search" placeholder="' + esc(placeholder) + '"></div>';
+      '<input class="input search" id="q" type="search" placeholder="' + esc(placeholder) + '"></div>';
   }
 
   function viewVocab(root) {
     var ds = state.dataset;
     if (!ds.vocab.length) return noDataView(root);
-    root.innerHTML = pageHead('Từ vựng', ds.vocab.length + ' từ') + searchBox('q', 'Tìm từ, nghĩa hoặc ví dụ...') +
-      '<div class="table-wrap"><table class="table"><thead><tr><th>Từ</th><th>Nghĩa</th><th>Ví dụ</th></tr></thead><tbody id="rows"></tbody></table></div>';
+    var idx = Core.reviewIndex(state.data.progress);
+    root.innerHTML = pageHead('Từ vựng', scopeLabel() + ' · ' + ds.vocab.length + ' từ') + searchBox('Tìm từ, nghĩa hoặc ví dụ...') +
+      '<div class="table-wrap"><table class="table"><thead><tr><th>Từ</th><th>Nghĩa</th><th>Ví dụ</th><th>Ôn gần nhất</th></tr></thead><tbody id="rows"></tbody></table></div>';
 
     function paint(term) {
       var t = Core.normLoose(term);
@@ -998,8 +1138,9 @@
       });
       $('#rows', root).innerHTML = list.map(function (v) {
         var ex = v.exKo ? esc(v.exKo) + (v.exVi ? '<br><small>' + esc(v.exVi) + '</small>' : '') : '<span class="muted">—</span>';
-        return '<tr><td class="ko">' + esc(v.ko) + '</td><td>' + esc(v.vi) + '</td><td>' + ex + '</td></tr>';
-      }).join('') || '<tr><td colspan="3" class="muted">Không có kết quả.</td></tr>';
+        return '<tr><td class="ko">' + esc(v.ko) + '</td><td>' + esc(v.vi) + '</td><td>' + ex + '</td>' +
+          '<td>' + esc(reviewText(Core.lastReviewOf(v.id, idx))) + '</td></tr>';
+      }).join('') || '<tr><td colspan="4" class="muted">Không có kết quả.</td></tr>';
     }
     paint('');
     $('#q', root).addEventListener('input', function (e) { paint(e.target.value); });
@@ -1008,7 +1149,8 @@
   function viewGrammar(root) {
     var ds = state.dataset;
     if (!ds.grammar.length) return noDataView(root);
-    root.innerHTML = pageHead('Ngữ pháp', ds.grammar.length + ' mẫu') + searchBox('q', 'Tìm mẫu hoặc nghĩa...') + '<div id="list" class="grid" style="grid-template-columns:1fr"></div>';
+    var idx = Core.reviewIndex(state.data.progress);
+    root.innerHTML = pageHead('Ngữ pháp', scopeLabel() + ' · ' + ds.grammar.length + ' mẫu') + searchBox('Tìm mẫu hoặc nghĩa...') + '<div id="list" class="grid" style="grid-template-columns:1fr"></div>';
 
     function paint(term) {
       var t = Core.normLoose(term);
@@ -1023,7 +1165,8 @@
         return '<article class="card gram-card"><h3>' + esc(g.pattern) + '</h3>' +
           (g.meaning ? '<div class="meaning">' + esc(g.meaning) + '</div>' : '') +
           (g.explain ? '<p>' + esc(g.explain) + '</p>' : '') +
-          (ex ? '<ul>' + ex + '</ul>' : '') + '</article>';
+          (ex ? '<ul>' + ex + '</ul>' : '') +
+          '<small class="muted">Ôn gần nhất: ' + esc(reviewText(Core.lastReviewOf(g.id, idx))) + '</small></article>';
       }).join('') || '<p class="muted">Không có kết quả.</p>';
     }
     paint('');
@@ -1033,7 +1176,8 @@
   function viewSentences(root) {
     var ds = state.dataset;
     if (!ds.sentences.length) return noDataView(root);
-    root.innerHTML = pageHead('Câu', ds.sentences.length + ' câu') + searchBox('q', 'Tìm câu...') + '<div id="list" class="list"></div>';
+    var idx = Core.reviewIndex(state.data.progress);
+    root.innerHTML = pageHead('Câu', scopeLabel() + ' · ' + ds.sentences.length + ' câu') + searchBox('Tìm câu...') + '<div id="list" class="list"></div>';
 
     function paint(term) {
       var t = Core.normLoose(term);
@@ -1042,7 +1186,8 @@
       });
       $('#list', root).innerHTML = list.map(function (s, i) {
         return '<article class="card list-item"><div class="idx">' + (i + 1) + '</div><div>' +
-          '<div class="ko">' + esc(s.ko) + '</div><div class="vi">' + esc(s.vi) + '</div></div></article>';
+          '<div class="ko">' + esc(s.ko) + '</div><div class="vi">' + esc(s.vi) + '</div>' +
+          '<small class="muted">Ôn gần nhất: ' + esc(reviewText(Core.lastReviewOf(s.id, idx))) + '</small></div></article>';
       }).join('') || '<p class="muted">Không có kết quả.</p>';
     }
     paint('');
@@ -1050,27 +1195,35 @@
   }
 
   function viewLecture(root) {
-    var ds = state.dataset;
-    var reading = ds.lecture;
-    if (!reading.length) return noDataView(root);
-    var body = reading.map(function (item) {
-      if (item.type === 'heading') return '<h3>' + esc(item.text) + '</h3>';
-      if (item.type === 'pair') return '<div class="pair"><span class="ko">' + esc(item.ko) + '</span><span class="vi">' + esc(item.vi) + '</span></div>';
-      return '<p>' + esc(item.text) + '</p>';
+    var lessons = activeLessons();
+    var sections = lessons.map(function (lesson) {
+      var reading = Core.lessonDataset(lesson).lecture;
+      if (!reading.length) return '';
+      var body = reading.map(function (item) {
+        if (item.type === 'heading') return '<h3>' + esc(item.text) + '</h3>';
+        if (item.type === 'pair') return '<div class="pair"><span class="ko">' + esc(item.ko) + '</span><span class="vi">' + esc(item.vi) + '</span></div>';
+        return '<p>' + esc(item.text) + '</p>';
+      }).join('');
+      return '<article class="card lecture-body"><h2>' + esc(lesson.name) + '</h2>' + body + '</article>';
     }).join('');
-    root.innerHTML = pageHead('Bài giảng', 'Nội dung bài giảng. Các cặp "từ | nghĩa" và "câu | dịch" đã được thêm vào bộ học.') +
-      '<article class="card lecture-body">' + body + '</article>';
+
+    if (!sections) return noDataView(root);
+    root.innerHTML = pageHead('Bài giảng', 'Nội dung bài giảng của từng bài. Các cặp "từ | nghĩa" và "câu | dịch" đã được thêm vào bộ học của bài đó.') + sections;
   }
 
   // ---------- Khởi động ----------
 
   function init() {
-    state.sources = Object.assign(emptySources(), loadJSON(STORE_SOURCES, null) || {});
-    state.progress = loadJSON(STORE_PROGRESS, {}) || {};
-    rebuild();
+    state.data = loadState();
+    state.scope = loadJSON(STORE_SCOPE, 'all') || 'all';
+    refresh();
     window.addEventListener('hashchange', render);
+    document.addEventListener('visibilitychange', function () {
+      if (!document.hidden) syncNow(false);
+    });
     if (!window.location.hash) window.location.hash = '#/home';
     render();
+    syncNow(false);
   }
 
   init();

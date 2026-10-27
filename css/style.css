@@ -517,3 +517,46 @@ code {
   .qcard { padding: 1.1rem; }
   .btn { padding: .55rem .9rem; }
 }
+
+/* ---------- Bài học, file, đồng bộ ---------- */
+
+.scope-wrap { margin: 0 .2rem; }
+.scope-label { display: flex; flex-direction: column; gap: .3rem; font-size: .8rem; color: rgba(255, 255, 255, .85); letter-spacing: .04em; text-transform: uppercase; }
+.scope-select { width: 100%; min-width: 0; background: #fff; color: var(--sky-900); font-weight: 600; text-transform: none; letter-spacing: 0; }
+
+.sync-card, .create-lesson { margin-bottom: 1rem; }
+.sync-card h2, .create-lesson h2 { margin-bottom: .35rem; }
+.sync-form { display: flex; flex-direction: column; gap: .6rem; margin: .8rem 0; max-width: 620px; }
+.sync-status { margin: .4rem 0 0; font-size: .92rem; color: var(--sky-700); }
+
+.lesson-list { display: grid; gap: 1rem; }
+.lesson { display: flex; flex-direction: column; gap: .8rem; }
+.lesson-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; }
+.lesson-head h2 { margin-bottom: .15rem; }
+.lesson-head small { color: var(--muted); }
+.lesson-counts { display: flex; flex-wrap: wrap; gap: .4rem; }
+
+.file-list { list-style: none; margin: 0; padding: 0; display: grid; gap: .5rem; }
+.file-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: .75rem;
+  padding: .6rem .8rem;
+  border-radius: 12px;
+  background: var(--sky-50);
+  border: 1px solid var(--line);
+}
+.file-main { display: flex; flex-direction: column; gap: .15rem; min-width: 0; }
+.file-main strong { overflow-wrap: anywhere; color: var(--sky-900); }
+.file-main small { color: var(--muted); }
+.file-main .badge { align-self: flex-start; }
+
+.upload-row { display: flex; flex-wrap: wrap; gap: .6rem; align-items: center; }
+.upload-row .select { width: auto; min-width: 180px; }
+.upload-row .file-input { flex: 1 1 240px; }
+
+@media (max-width: 560px) {
+  .lesson-head { flex-direction: column; }
+  .file-row { flex-direction: column; align-items: stretch; }
+}

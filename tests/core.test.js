@@ -189,3 +189,89 @@ test('shuffle keeps all items with a seeded generator', () => {
   const out = Core.shuffle([1, 2, 3, 4, 5], seeded(7));
   assert.deepEqual([...out].sort(), [1, 2, 3, 4, 5]);
 });
+
+// ---------- Bài học, đồng bộ ----------
+
+function lessonWith(id, name, files, updatedAt) {
+  return { id: id, name: name, createdAt: 1, updatedAt: updatedAt || 1, files: files || [] };
+}
+
+test('mergeStates keeps lessons from both devices', () => {
+  const a = { updatedAt: 5, lessons: [lessonWith('l1', 'Bài 1')], deleted: { lessons: {}, files: {} }, progress: {} };
+  const b = { updatedAt: 9, lessons: [lessonWith('l2', 'Bài 2')], deleted: { lessons: {}, files: {} }, progress: {} };
+  const m = Core.mergeStates(a, b);
+  assert.deepEqual(m.lessons.map((l) => l.id).sort(), ['l1', 'l2']);
+  assert.equal(m.updatedAt, 9);
+});
+
+test('mergeStates unions files and respects deletions on either side', () => {
+  const f1 = { id: 'f1', kind: 'vocab', name: 'a.txt', uploadedAt: 1, lines: ['가다 | đi'] };
+  const f2 = { id: 'f2', kind: 'vocab', name: 'b.txt', uploadedAt: 2, lines: ['먹다 | ăn'] };
+  const a = { updatedAt: 3, lessons: [lessonWith('l1', 'Bài 1', [f1, f2], 3)], deleted: { lessons: {}, files: {} }, progress: {} };
+  const b = { updatedAt: 4, lessons: [lessonWith('l1', 'Bài 1', [f1], 2)], deleted: { lessons: {}, files: { f2: 4 } }, progress: {} };
+  const m = Core.mergeStates(a, b);
+  assert.deepEqual(m.lessons[0].files.map((f) => f.id), ['f1']);
+  // Xoá ở một bên thì file không quay lại khi đồng bộ với bên kia.
+  const again = Core.mergeStates(m, a);
+  assert.deepEqual(again.lessons[0].files.map((f) => f.id), ['f1']);
+});
+
+test('mergeStates removes a deleted lesson with its files', () => {
+  const f = { id: 'f9', kind: 'vocab', name: 'x', uploadedAt: 1, lines: [] };
+  const a = { updatedAt: 1, lessons: [lessonWith('l1', 'Bài', [f])], deleted: { lessons: {}, files: {} }, progress: {} };
+  const b = { updatedAt: 2, lessons: [], deleted: { lessons: { l1: 2 }, files: {} }, progress: {} };
+  assert.equal(Core.mergeStates(a, b).lessons.length, 0);
+});
+
+test('mergeStates keeps the most recent progress record per item', () => {
+  const a = { updatedAt: 1, lessons: [], deleted: { lessons: {}, files: {} }, progress: { 'word:v:1': { ok: 3, bad: 1, known: false, last: 100 } } };
+  const b = { updatedAt: 1, lessons: [], deleted: { lessons: {}, files: {} }, progress: { 'word:v:1': { ok: 1, bad: 0, known: true, last: 200 }, 'card:v:2': { ok: 0, bad: 0, known: true, last: 50 } } };
+  const m = Core.mergeStates(a, b);
+  assert.equal(m.progress['word:v:1'].last, 200);
+  assert.equal(m.progress['word:v:1'].known, true);
+  assert.equal(m.progress['card:v:2'].known, true);
+});
+
+test('mergeStates is idempotent', () => {
+  const f = { id: 'f1', kind: 'vocab', name: 'a', uploadedAt: 1, lines: ['가다 | đi'] };
+  const a = { updatedAt: 3, lessons: [lessonWith('l1', 'Bài', [f], 3)], deleted: { lessons: {}, files: {} }, progress: { 'word:v:1': { ok: 1, bad: 0, known: false, last: 5 } } };
+  const once = Core.mergeStates(a, a);
+  assert.deepEqual(Core.mergeStates(once, a), once);
+});
+
+test('migrateV1 turns the old single data set into one lesson', () => {
+  const st = Core.migrateV1({ vocabLines: ['가다 | đi'], grammarLines: [], koLines: [], viLines: [], lectureLines: [], names: { vocab: 'cu.txt' } }, { 'word:v:1': { ok: 1, bad: 0, last: 9 } }, 1000);
+  assert.equal(st.lessons.length, 1);
+  assert.equal(st.lessons[0].files.length, 1);
+  assert.equal(st.lessons[0].files[0].name, 'cu.txt');
+  assert.equal(st.progress['word:v:1'].ok, 1);
+});
+
+test('scopeDataset keeps lessons apart and dedupes shared words', () => {
+  const l1 = lessonWith('l1', 'Bài 1', [
+    { id: 'f1', kind: 'vocab', name: 'a', uploadedAt: 1, lines: ['가다 | đi'] },
+    { id: 'f2', kind: 'ko', name: 'b', uploadedAt: 1, lines: ['저는 학생입니다.'] },
+    { id: 'f3', kind: 'vi', name: 'c', uploadedAt: 1, lines: ['Tôi là học sinh.'] }
+  ]);
+  const l2 = lessonWith('l2', 'Bài 2', [
+    { id: 'f4', kind: 'vocab', name: 'd', uploadedAt: 1, lines: ['가다 | đi', '먹다 | ăn'] }
+  ]);
+  const one = Core.scopeDataset([l1]);
+  assert.equal(one.sentences.length, 1);
+  const both = Core.scopeDataset([l1, l2]);
+  assert.equal(both.vocab.length, 2);
+  assert.equal(both.sentences.length, 1);
+  assert.equal(Core.lessonDataset(l2).vocab.length, 2);
+});
+
+test('review dates: per item and per lesson', () => {
+  const ds = Core.buildDataset({ vocabLines: ['가다 | đi', '먹다 | ăn'], grammarLines: [], koLines: [], viLines: [], lectureLines: [] });
+  const progress = {};
+  progress['word:' + ds.vocab[0].id] = { ok: 1, bad: 0, last: 500 };
+  progress['mcq-vi:' + ds.vocab[1].id] = { ok: 0, bad: 1, last: 800 };
+  const idx = Core.reviewIndex(progress);
+  assert.equal(Core.lastReviewOf(ds.vocab[0].id, idx), 500);
+  assert.equal(Core.lastReviewOf(ds.vocab[1].id, idx), 800);
+  assert.equal(Core.lessonLastReview(ds, idx), 800);
+  assert.equal(Core.lessonLastReview(ds, {}), 0);
+});

@@ -502,7 +502,198 @@
     return a;
   }
 
+  // ---------- Bài học, tệp, đồng bộ ----------
+
+  var KINDS = [
+    { kind: 'lecture', key: 'lectureLines', label: 'Bài giảng' },
+    { kind: 'vocab', key: 'vocabLines', label: 'Từ vựng' },
+    { kind: 'grammar', key: 'grammarLines', label: 'Ngữ pháp' },
+    { kind: 'ko', key: 'koLines', label: 'Câu tiếng Hàn' },
+    { kind: 'vi', key: 'viLines', label: 'Đáp án tiếng Việt' }
+  ];
+
+  function kindInfo(kind) {
+    return KINDS.filter(function (k) { return k.kind === kind; })[0] || null;
+  }
+
+  function newId(prefix) {
+    return prefix + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+  }
+
+  // Trạng thái đầy đủ: danh sách bài, các mục đã xoá (để đồng bộ không khôi phục lại), tiến độ.
+  function emptyState() {
+    return { updatedAt: 0, lessons: [], deleted: { lessons: {}, files: {} }, progress: {} };
+  }
+
+  function lessonDataset(lesson) {
+    var src = {};
+    KINDS.forEach(function (k) { src[k.key] = []; });
+    (lesson.files || []).forEach(function (f) {
+      var info = kindInfo(f.kind);
+      if (info) src[info.key] = src[info.key].concat(f.lines || []);
+    });
+    return buildDataset(src);
+  }
+
+  // Ghép dữ liệu của nhiều bài. Mỗi bài được đọc riêng để cặp câu Hàn–Việt không bị lệch.
+  function scopeDataset(lessons) {
+    var out = { vocab: [], grammar: [], sentences: [], lecture: [], warnings: [], skipped: { vocab: 0, grammar: 0 } };
+    lessons.forEach(function (lesson) {
+      var ds = lessonDataset(lesson);
+      out.vocab = out.vocab.concat(ds.vocab);
+      out.grammar = out.grammar.concat(ds.grammar);
+      out.sentences = out.sentences.concat(ds.sentences);
+      out.lecture = out.lecture.concat(ds.lecture);
+      out.warnings = out.warnings.concat(ds.warnings);
+      out.skipped.vocab += ds.skipped.vocab;
+      out.skipped.grammar += ds.skipped.grammar;
+    });
+    out.vocab = dedupeBy(out.vocab, function (v) { return v.ko; });
+    out.grammar = dedupeBy(out.grammar, function (g) { return g.pattern; });
+    out.sentences = dedupeBy(out.sentences, function (s) { return s.ko; });
+    return out;
+  }
+
+  function mergeMaxMap(x, y) {
+    var out = {};
+    Object.keys(x || {}).forEach(function (k) { out[k] = x[k]; });
+    Object.keys(y || {}).forEach(function (k) { out[k] = Math.max(out[k] || 0, y[k]); });
+    return out;
+  }
+
+  function mergeProgressRecord(p, q) {
+    if (!p) return q;
+    if (!q) return p;
+    var newer = (q.last || 0) > (p.last || 0) ? q : p;
+    return {
+      ok: Math.max(p.ok || 0, q.ok || 0),
+      bad: Math.max(p.bad || 0, q.bad || 0),
+      known: newer.known,
+      last: Math.max(p.last || 0, q.last || 0)
+    };
+  }
+
+  // Gộp hai trạng thái (ví dụ: dữ liệu trên máy tính và trên điện thoại).
+  // - Bài và file: hợp lại theo id. Mục đã xoá ở một bên sẽ bị xoá ở cả hai bên.
+  // - Tiến độ: mỗi mục lấy bản ghi có lần ôn gần nhất mới hơn.
+  function mergeStates(a, b) {
+    a = a || emptyState();
+    b = b || emptyState();
+    var deleted = {
+      lessons: mergeMaxMap(a.deleted && a.deleted.lessons, b.deleted && b.deleted.lessons),
+      files: mergeMaxMap(a.deleted && a.deleted.files, b.deleted && b.deleted.files)
+    };
+
+    var byId = {};
+    var order = [];
+    [a.lessons || [], b.lessons || []].forEach(function (list) {
+      list.forEach(function (lesson) {
+        var cur = byId[lesson.id];
+        if (!cur) {
+          byId[lesson.id] = {
+            id: lesson.id, name: lesson.name, createdAt: lesson.createdAt,
+            updatedAt: lesson.updatedAt || 0, files: (lesson.files || []).slice()
+          };
+          order.push(lesson.id);
+          return;
+        }
+        var newer = (lesson.updatedAt || 0) > cur.updatedAt ? lesson : cur;
+        var seen = {};
+        cur.files.forEach(function (f) { seen[f.id] = true; });
+        (lesson.files || []).forEach(function (f) {
+          if (!seen[f.id]) { cur.files.push(f); seen[f.id] = true; }
+        });
+        cur.name = newer.name;
+        cur.createdAt = Math.min(cur.createdAt || Infinity, lesson.createdAt || Infinity);
+        cur.updatedAt = Math.max(cur.updatedAt, lesson.updatedAt || 0);
+      });
+    });
+
+    var lessons = order
+      .filter(function (id) { return !deleted.lessons[id]; })
+      .map(function (id) {
+        var l = byId[id];
+        l.files = l.files.filter(function (f) { return !deleted.files[f.id]; });
+        l.files.sort(function (x, y) { return (x.uploadedAt || 0) - (y.uploadedAt || 0); });
+        return l;
+      });
+
+    var progress = {};
+    [a.progress || {}, b.progress || {}].forEach(function (p) {
+      Object.keys(p).forEach(function (k) { progress[k] = mergeProgressRecord(progress[k], p[k]); });
+    });
+
+    return {
+      updatedAt: Math.max(a.updatedAt || 0, b.updatedAt || 0),
+      lessons: lessons,
+      deleted: deleted,
+      progress: progress
+    };
+  }
+
+  // Chuyển dữ liệu của phiên bản cũ (một bộ file duy nhất) thành một bài.
+  function migrateV1(sources, progress, now) {
+    var st = emptyState();
+    st.progress = progress || {};
+    st.updatedAt = now;
+    if (!sources) return st;
+    var files = [];
+    KINDS.forEach(function (k) {
+      var lines = sources[k.key] || [];
+      if (!lines.length) return;
+      files.push({
+        id: newId('f'), kind: k.kind,
+        name: (sources.names || {})[k.kind] || k.label,
+        uploadedAt: now, lines: lines
+      });
+    });
+    if (files.length) {
+      st.lessons.push({ id: newId('l'), name: 'Dữ liệu cũ', createdAt: now, updatedAt: now, files: files });
+    }
+    return st;
+  }
+
+  // Ngày ôn gần nhất: tra theo phần mã của mục, để dùng chung cho mọi loại bài tập.
+  function itemHash(id) {
+    var s = String(id);
+    return s.slice(s.lastIndexOf(':') + 1);
+  }
+
+  function reviewIndex(progress) {
+    var idx = {};
+    Object.keys(progress || {}).forEach(function (k) {
+      var p = progress[k];
+      if (!p || !p.last) return;
+      var h = itemHash(k);
+      if (!idx[h] || p.last > idx[h]) idx[h] = p.last;
+    });
+    return idx;
+  }
+
+  function lastReviewOf(id, idx) {
+    return idx[itemHash(id)] || 0;
+  }
+
+  function lessonLastReview(ds, idx) {
+    var latest = 0;
+    ds.vocab.concat(ds.grammar, ds.sentences).forEach(function (item) {
+      latest = Math.max(latest, lastReviewOf(item.id, idx));
+    });
+    return latest;
+  }
+
   var Core = {
+    KINDS: KINDS,
+    kindInfo: kindInfo,
+    newId: newId,
+    emptyState: emptyState,
+    lessonDataset: lessonDataset,
+    scopeDataset: scopeDataset,
+    mergeStates: mergeStates,
+    migrateV1: migrateV1,
+    reviewIndex: reviewIndex,
+    lastReviewOf: lastReviewOf,
+    lessonLastReview: lessonLastReview,
     hasHangul: hasHangul,
     clean: clean,
     parseCsv: parseCsv,
