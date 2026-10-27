@@ -83,27 +83,27 @@
     {
       key: 'vocab', target: 'vocabLines', title: 'Từ vựng', icon: '📘',
       desc: 'Mỗi dòng: từ tiếng Hàn | nghĩa | ví dụ (không bắt buộc) | dịch ví dụ (không bắt buộc).',
-      accept: '.txt,.csv,.tsv,.md,.xlsx,.docx'
+      accept: '.txt,.csv,.tsv,.md,.xlsx,.docx,.pdf,.doc'
     },
     {
       key: 'grammar', target: 'grammarLines', title: 'Ngữ pháp', icon: '📐',
       desc: 'Mỗi dòng: mẫu | ý nghĩa | giải thích | ví dụ tiếng Hàn | ví dụ tiếng Việt. Dòng trùng mẫu sẽ được gộp.',
-      accept: '.txt,.csv,.tsv,.md,.xlsx,.docx'
+      accept: '.txt,.csv,.tsv,.md,.xlsx,.docx,.pdf,.doc'
     },
     {
       key: 'ko', target: 'koLines', title: 'Câu tiếng Hàn', icon: '💬',
       desc: 'Mỗi dòng một câu. Có thể viết sẵn "câu hàn | câu việt" để ghép cặp ngay trong file.',
-      accept: '.txt,.csv,.tsv,.md,.xlsx,.docx'
+      accept: '.txt,.csv,.tsv,.md,.xlsx,.docx,.pdf,.doc'
     },
     {
       key: 'vi', target: 'viLines', title: 'Đáp án dịch (tiếng Việt)', icon: '✅',
       desc: 'Mỗi dòng một câu tiếng Việt, đúng thứ tự với file câu tiếng Hàn.',
-      accept: '.txt,.csv,.tsv,.md,.xlsx,.docx'
+      accept: '.txt,.csv,.tsv,.md,.xlsx,.docx,.pdf,.doc'
     },
     {
       key: 'lecture', target: 'lectureLines', title: 'Bài giảng', icon: '📖',
       desc: 'Tiêu đề bắt đầu bằng #. Dòng "từ | nghĩa" được thêm vào từ vựng, dòng "câu hàn | câu việt" được thêm vào câu.',
-      accept: '.txt,.md,.docx,.csv,.tsv,.xlsx'
+      accept: '.txt,.md,.docx,.pdf,.doc,.csv,.tsv,.xlsx'
     }
   ];
 
@@ -304,12 +304,80 @@
     });
   }
 
+  // Gom các mẩu chữ của PDF thành dòng theo toạ độ dọc. Khoảng trống lớn giữa hai mẩu
+  // (thường là ô bảng) được đổi thành dấu | để cột vẫn tách được.
+  function pdfItemsToLines(items) {
+    var rows = [];
+    items.forEach(function (item) {
+      if (!item.str || !item.str.trim()) return;
+      var y = Math.round(item.transform[5]);
+      var row = null;
+      for (var i = rows.length - 1; i >= 0; i--) {
+        if (Math.abs(rows[i].y - y) <= 2) { row = rows[i]; break; }
+      }
+      if (!row) {
+        row = { y: y, items: [] };
+        rows.push(row);
+      }
+      row.items.push(item);
+    });
+    rows.sort(function (a, b) { return b.y - a.y; });
+    return rows.map(function (row) {
+      row.items.sort(function (a, b) { return a.transform[4] - b.transform[4]; });
+      var text = '';
+      var prevEnd = null;
+      row.items.forEach(function (item) {
+        var x = item.transform[4];
+        if (prevEnd !== null) {
+          var gap = x - prevEnd;
+          text += gap > 12 ? ' | ' : (gap > 1 ? ' ' : '');
+        }
+        text += item.str;
+        prevEnd = x + (item.width || 0);
+      });
+      return Core.clean(text);
+    }).filter(Boolean);
+  }
+
+  function readPdf(file) {
+    return loadScript('vendor/pdf.worker.min.js').then(function () {
+      return loadScript('vendor/pdf.min.js');
+    }).then(function () {
+      return file.arrayBuffer();
+    }).then(function (buf) {
+      return window.pdfjsLib.getDocument({ data: buf }).promise;
+    }).then(function (pdf) {
+      var lines = [];
+      var chain = Promise.resolve();
+      for (var n = 1; n <= pdf.numPages; n++) {
+        chain = chain.then(makePageReader(pdf, n, lines));
+      }
+      return chain.then(function () {
+        if (!lines.length) {
+          throw new Error('Không đọc được chữ trong PDF. Có thể đây là file scan (ảnh), hãy dùng bản chữ hoặc file .docx.');
+        }
+        return lines;
+      });
+    });
+  }
+
+  function makePageReader(pdf, pageNumber, lines) {
+    return function () {
+      return pdf.getPage(pageNumber).then(function (page) {
+        return page.getTextContent();
+      }).then(function (content) {
+        pdfItemsToLines(content.items).forEach(function (line) { lines.push(line); });
+      });
+    };
+  }
+
   function readFileLines(file) {
     var ext = extOf(file.name);
     if (ext === 'xlsx' || ext === 'xlsm') return readXlsx(file);
     if (ext === 'docx') return readDocx(file);
-    if (ext === 'pdf') return Promise.reject(new Error('Chưa đọc được PDF. Hãy xuất file ra .docx hoặc .txt rồi nạp lại.'));
-    if (ext === 'doc' || ext === 'xls') return Promise.reject(new Error('Hãy lưu file thành .docx hoặc .xlsx rồi nạp lại.'));
+    if (ext === 'pdf') return readPdf(file);
+    if (ext === 'doc') return Promise.reject(new Error('File .doc (Word cũ) chưa đọc được. Hãy mở bằng Word, chọn Lưu thành → Word Document (.docx) rồi nạp lại.'));
+    if (ext === 'xls') return Promise.reject(new Error('File .xls chưa đọc được. Hãy lưu thành .xlsx rồi nạp lại.'));
     return file.text().then(function (text) {
       text = text.replace(/^﻿/, '');
       if (ext === 'csv') return rowsToLines(Core.parseCsv(text));
@@ -455,7 +523,7 @@
     var warnings = state.dataset.warnings.map(function (w) { return '<div class="notice">' + esc(w) + '</div>'; }).join('');
 
     root.innerHTML = pageHead('Nhập dữ liệu',
-      'Nạp file của bạn, trang tự cập nhật flashcard và bài tập. Hỗ trợ .txt, .csv, .tsv, .md, .docx, .xlsx. Dữ liệu được lưu trên trình duyệt này.') +
+      'Nạp file của bạn, trang tự cập nhật flashcard và bài tập. Hỗ trợ .pdf, .docx, .xlsx, .txt, .csv, .tsv, .md. Dữ liệu được lưu trên trình duyệt này.') +
       '<div class="row end" style="margin-bottom:1rem">' +
         '<button class="btn soft" id="loadSample">Nạp dữ liệu mẫu</button>' +
         '<button class="btn ghost" id="exportBackup">Lưu bản sao (.json)</button>' +
@@ -471,7 +539,7 @@
           '<li>Dòng tiêu đề (ví dụ "Từ tiếng Hàn | Nghĩa") được bỏ qua tự động.</li>' +
           '<li>Số thứ tự đầu dòng như "1." hoặc "2)" được bỏ đi khi ghép câu.</li>' +
           '<li>Câu tiếng Hàn và đáp án tiếng Việt được ghép theo thứ tự dòng. Nếu muốn chắc chắn, hãy viết "câu hàn | câu việt" trên cùng một dòng.</li>' +
-          '<li>File PDF chưa được hỗ trợ. Hãy xuất ra .docx hoặc .txt.</li>' +
+          '<li>PDF cần có chữ (không phải ảnh scan). File Word cũ .doc cần lưu thành .docx trước khi nạp.</li>' +
         '</ul>' +
       '</details>';
 

@@ -36,7 +36,8 @@ Muốn chạy bản phát triển qua máy chủ cục bộ: `python3 -m http.se
 - Dùng `|` hoặc phím Tab để tách cột. File `.csv`, `.tsv`, `.txt`, `.md`, `.xlsx`, `.docx` đều được hỗ trợ.
 - Dòng tiêu đề (ví dụ "Từ tiếng Hàn | Nghĩa") và dòng không có chữ Hàn ở cột đầu được bỏ qua.
 - Số thứ tự đầu dòng như `1.` hoặc `2)` được bỏ đi tự động.
-- PDF chưa được hỗ trợ. Hãy xuất ra `.docx` hoặc `.txt`.
+- PDF đọc được khi có chữ thật (không phải ảnh scan). Bảng trong PDF được tách cột theo khoảng trống.
+- File Word cũ `.doc` chưa đọc trực tiếp: mở bằng Word, chọn Lưu thành → Word Document (`.docx`) rồi nạp lại.
 
 Có sẵn nút **Nạp dữ liệu mẫu** trong trang Nhập dữ liệu để thử nhanh.
 

@@ -17,7 +17,9 @@ function dataUri(rel, mime) {
 const ASSETS = {
   'assets/logo.jpg': dataUri('assets/logo.jpg', 'image/jpeg'),
   'vendor/xlsx.full.min.js': dataUri('vendor/xlsx.full.min.js', 'text/javascript'),
-  'vendor/mammoth.browser.min.js': dataUri('vendor/mammoth.browser.min.js', 'text/javascript')
+  'vendor/mammoth.browser.min.js': dataUri('vendor/mammoth.browser.min.js', 'text/javascript'),
+  'vendor/pdf.min.js': dataUri('vendor/pdf.min.js', 'text/javascript'),
+  'vendor/pdf.worker.min.js': dataUri('vendor/pdf.worker.min.js', 'text/javascript')
 };
 
 const jsFiles = ['js/core.js', 'js/sample-data.js', 'js/app.js'];
