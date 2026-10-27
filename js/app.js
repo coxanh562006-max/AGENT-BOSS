@@ -240,6 +240,7 @@
 
   var scriptPromises = {};
   function loadScript(src) {
+    if (ASSETS[src] === 'inline') return Promise.resolve();
     if (!scriptPromises[src]) {
       scriptPromises[src] = new Promise(function (resolve, reject) {
         var s = document.createElement('script');
@@ -417,11 +418,28 @@
     return readFileLines(file).then(function (lines) {
       if (!lines.length) throw new Error('File không có nội dung đọc được.');
       var now = Date.now();
-      lesson.files.push({ id: Core.newId('f'), kind: kind, name: file.name, uploadedAt: now, lines: lines });
+      var chosen = kind === 'auto' ? (Core.guessKind(file.name) || 'lecture') : kind;
+      lesson.files.push({ id: Core.newId('f'), kind: chosen, name: file.name, uploadedAt: now, lines: lines });
       lesson.updatedAt = now;
       commit();
-      toast('Đã tải lên ' + file.name + ' (' + lines.length + ' dòng).');
+      toast(describeUpload(file.name, chosen, lines));
     });
+  }
+
+  // Thông báo sau khi tải lên: nói rõ file đã vào mục nào và có đọc được nội dung không.
+  function describeUpload(name, kind, lines) {
+    if (kind === 'vocab') {
+      var v = Core.parseVocab(lines).items.length;
+      if (!v) return 'Không đọc được từ nào trong "' + name + '". Dòng đầu: "' + lines[0] + '". Mỗi dòng cần dạng: từ | nghĩa.';
+      return 'Đã thêm "' + name + '" vào Từ vựng: ' + v + ' từ.';
+    }
+    if (kind === 'grammar') {
+      var g = Core.parseGrammar(lines).items.length;
+      if (!g) return 'Không đọc được mẫu ngữ pháp nào trong "' + name + '". Dòng đầu: "' + lines[0] + '".';
+      return 'Đã thêm "' + name + '" vào Ngữ pháp: ' + g + ' mẫu.';
+    }
+    var info = Core.kindInfo(kind);
+    return 'Đã thêm "' + name + '" vào ' + (info ? info.label : kind) + ' (' + lines.length + ' dòng).';
   }
 
   function deleteFile(lesson, fileId) {
@@ -453,7 +471,7 @@
   }
 
   function scheduleSync() {
-    if (!syncConfig().url) return;
+    if (!dbRef && !syncConfig().url) return;
     clearTimeout(syncTimer);
     syncTimer = setTimeout(function () { syncNow(false); }, 2000);
   }
@@ -465,6 +483,7 @@
   }
 
   function syncNow(manual) {
+    if (dbRef) return dbSync(manual);
     var cfg = syncConfig();
     if (!cfg.url || !cfg.key) {
       if (manual) toast('Hãy nhập địa chỉ máy chủ và mã đồng bộ trước.');
@@ -484,13 +503,161 @@
       state.data = Core.mergeStates(state.data, body.state);
       saveJSON(STORE_STATE, state.data);
       refresh();
-      var now = new Date();
-      setSyncMessage('Đã đồng bộ lúc ' + now.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }));
+      setSyncMessage('Đã đồng bộ lúc ' + timeNow());
       // Vẽ lại nếu thiết bị khác vừa thay đổi dữ liệu, trừ khi đang làm bài.
       if (JSON.stringify(state.data) !== before && !$('.quiz')) render();
     }).catch(function (err) {
       setSyncMessage('Chưa đồng bộ được: ' + (err && err.message ? err.message : 'lỗi mạng') +
         '. Dữ liệu vẫn được lưu trên máy này.');
+    });
+  }
+
+  // ---------- Sao lưu ----------
+
+  // Trong Claude, file chỉ được lưu qua capability downloads (người xem phải đồng ý).
+  var downloadsRef = null;
+  var inClaude = !!(window.claude && typeof window.claude.use === 'function');
+
+  function exportBackup() {
+    var text = JSON.stringify({ app: 'hanhoc', version: 2, state: state.data }, null, 2);
+    var filename = 'hoc-han-ngu-' + new Date().toISOString().slice(0, 10) + '.json';
+    if (downloadsRef) {
+      downloadsRef.save({ filename: filename, data: text }).then(function () {
+        toast('Đã lưu bản sao về máy.');
+      }).catch(function (err) {
+        toast(err && err.code === 'declined' ? 'Bạn đã huỷ lưu file.' : 'Không lưu được file lúc này.');
+      });
+      return;
+    }
+    if (inClaude) {
+      toast('Lưu file không khả dụng trong phiên này. Dữ liệu vẫn được đồng bộ tự động.');
+      return;
+    }
+    var blob = new Blob([text], { type: 'application/json' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+    toast('Đã tải file sao lưu về máy.');
+  }
+
+  // Mở bản sao: gộp vào dữ liệu hiện có, không xoá gì. Nhận cả bản sao phiên bản cũ.
+  function restoreBackup(file) {
+    file.text().then(function (text) {
+      var data = JSON.parse(text);
+      var incoming = null;
+      if (data && data.app === 'hanhoc' && data.state) {
+        incoming = data.state;
+      } else if (data && data.app === 'hanhoc' && data.sources) {
+        incoming = Core.migrateV1(data.sources, data.progress || {}, Date.now());
+      } else {
+        throw new Error('File này không phải bản sao lưu của Học Hàn Ngữ.');
+      }
+      state.data = Core.mergeStates(state.data, incoming);
+      saveJSON(STORE_STATE, state.data);
+      refresh();
+      scheduleSync();
+      toast('Đã khôi phục dữ liệu từ bản sao.');
+      render();
+    }).catch(function (err) {
+      toast(err && err.message ? err.message : 'Không mở được file sao lưu.');
+    });
+  }
+
+  // Đồng bộ qua tài khoản Claude (capability db). Chỉ chạy khi trang được mở trong Claude.
+  var dbRef = null;
+
+  function plain(obj) {
+    return JSON.parse(JSON.stringify(obj));
+  }
+
+  function runInSeries(list) {
+    return list.reduce(function (chain, fn) { return chain.then(fn); }, Promise.resolve());
+  }
+
+  function dbRemoteState() {
+    return Promise.all([
+      dbRef.collection('lessons').get(),
+      dbRef.collection('progress').get(),
+      dbRef.collection('tombstones').get()
+    ]).then(function (res) {
+      var remote = Core.emptyState();
+      res[0].docs.forEach(function (d) { if (d.exists) remote.lessons.push(plain(d.data())); });
+      res[1].docs.forEach(function (d) { if (d.exists) remote.progress[d.id] = plain(d.data()); });
+      res[2].docs.forEach(function (d) {
+        if (!d.exists) return;
+        var t = plain(d.data());
+        if (t.kind === 'lesson') remote.deleted.lessons[t.id] = t.at;
+        else remote.deleted.files[t.id] = t.at;
+      });
+      return remote;
+    });
+  }
+
+  function tombstoneOp(kind, id, at) {
+    var docId = (kind === 'lesson' ? 'l-' : 'f-') + id;
+    return function () {
+      return dbRef.collection('tombstones').doc(docId).set({ kind: kind, id: id, at: at });
+    };
+  }
+
+  // Ghi những gì khác với db: bài thay đổi, bài đã xoá, mục tiến độ mới.
+  function dbPush(remote) {
+    var ops = [];
+    var remoteLessons = {};
+    remote.lessons.forEach(function (l) { remoteLessons[l.id] = l; });
+
+    state.data.lessons.forEach(function (l) {
+      if (JSON.stringify(remoteLessons[l.id]) !== JSON.stringify(l)) {
+        ops.push(function () { return dbRef.collection('lessons').doc(l.id).set(l); });
+      }
+    });
+    Object.keys(state.data.deleted.lessons).forEach(function (id) {
+      if (!remote.deleted.lessons[id]) ops.push(tombstoneOp('lesson', id, state.data.deleted.lessons[id]));
+      if (remoteLessons[id]) ops.push(function () { return dbRef.collection('lessons').doc(id).delete(); });
+    });
+    Object.keys(state.data.deleted.files).forEach(function (id) {
+      if (!remote.deleted.files[id]) ops.push(tombstoneOp('file', id, state.data.deleted.files[id]));
+    });
+    Object.keys(state.data.progress).forEach(function (k) {
+      if (JSON.stringify(remote.progress[k]) !== JSON.stringify(state.data.progress[k])) {
+        ops.push(function () { return dbRef.collection('progress').doc(k).set(state.data.progress[k]); });
+      }
+    });
+    return runInSeries(ops);
+  }
+
+  function dbErrorText(err) {
+    var code = err && err.code;
+    if (code === 'invalid_argument') return 'Một bài quá lớn để đồng bộ (tối đa khoảng 256 KB mỗi bài). Hãy tách bài thành nhiều bài nhỏ.';
+    if (code === 'quota_exceeded') return 'Hết dung lượng đồng bộ. Dữ liệu vẫn được lưu trên máy này.';
+    if (code === 'not_granted' || code === 'revoked' || code === 'capability_disabled') {
+      return 'Đồng bộ không khả dụng trong phiên này. Dữ liệu vẫn được lưu trên máy này.';
+    }
+    return 'Chưa đồng bộ được (' + (err && err.message ? err.message : 'lỗi mạng') + '). Dữ liệu vẫn được lưu trên máy này.';
+  }
+
+  function timeNow() {
+    return new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+  }
+
+  function dbSync(manual) {
+    setSyncMessage('Đang đồng bộ…');
+    var before = JSON.stringify(state.data);
+    return dbRemoteState().then(function (remote) {
+      state.data = Core.mergeStates(state.data, remote);
+      saveJSON(STORE_STATE, state.data);
+      refresh();
+      return dbPush(remote);
+    }).then(function () {
+      setSyncMessage('Đã đồng bộ lúc ' + timeNow());
+      if (JSON.stringify(state.data) !== before && !$('.quiz')) render();
+    }).catch(function (err) {
+      setSyncMessage(dbErrorText(err));
     });
   }
 
@@ -619,18 +786,47 @@
 
   // ---------- Bài học & file ----------
 
+  function syncCardHtml(sync) {
+    if (dbRef) {
+      return '<section class="card sync-card">' +
+        '<h2>Đồng bộ giữa các thiết bị</h2>' +
+        '<p class="muted">Dữ liệu được đồng bộ tự động qua tài khoản Claude của bạn. Đăng nhập cùng tài khoản trên điện thoại, máy tính hoặc tablet để thấy cùng dữ liệu.</p>' +
+        '<p class="sync-status" id="syncStatus">' + esc(syncMessage || 'Đang đồng bộ…') + '</p>' +
+        '<div class="row"><button class="btn soft" id="syncNow">Đồng bộ ngay</button></div>' +
+      '</section>';
+    }
+    return     '<section class="card sync-card">' +
+        '<h2>Đồng bộ giữa các thiết bị</h2>' +
+        '<p class="muted">Điện thoại, máy tính và tablet dùng cùng một địa chỉ máy chủ và cùng một mã đồng bộ thì sẽ thấy cùng dữ liệu. Xem hướng dẫn trong README.</p>' +
+        '<div class="sync-form">' +
+          '<input class="input" id="syncUrl" placeholder="Địa chỉ máy chủ, ví dụ https://ten-may-chu.example.com" value="' + esc(sync.url || '') + '">' +
+          '<input class="input" id="syncKey" placeholder="Mã đồng bộ (dùng chung trên mọi thiết bị)" value="' + esc(sync.key || '') + '">' +
+          '<div class="row"><button class="btn primary" id="syncSave">Lưu và đồng bộ</button>' +
+          '<button class="btn soft" id="syncNow">Đồng bộ ngay</button></div>' +
+        '</div>' +
+        '<p class="sync-status" id="syncStatus">' + esc(syncMessage || (sync.url ? 'Đã cấu hình.' : 'Chưa cấu hình, dữ liệu chỉ lưu trên máy này.')) + '</p>' +
+      '</section>';
+  }
+
   function viewLessons(root) {
     var sync = syncConfig();
     var lessons = state.data.lessons.map(function (l) {
       var counts = Core.lessonDataset(l);
       var idx = Core.reviewIndex(state.data.progress);
+      var moveOptions = function (current) {
+        return Core.KINDS.map(function (k) {
+          return '<option value="' + k.kind + '"' + (k.kind === current ? ' selected' : '') + '>' + esc(k.label) + '</option>';
+        }).join('');
+      };
       var files = l.files.map(function (f) {
         var info = Core.kindInfo(f.kind);
         return '<li class="file-row">' +
-          '<div class="file-main"><span class="badge">' + esc(info ? info.label : f.kind) + '</span>' +
-          '<strong>' + esc(f.name) + '</strong>' +
+          '<div class="file-main"><strong>' + esc(f.name) + '</strong>' +
           '<small>Tải lên ' + esc(fmtDateTime(f.uploadedAt)) + ' · ' + f.lines.length + ' dòng</small></div>' +
-          '<button class="btn small danger" data-del-file="' + esc(f.id) + '" data-lesson="' + esc(l.id) + '">Xoá file</button>' +
+          '<div class="file-actions">' +
+            '<select class="select file-kind" data-move-file="' + esc(f.id) + '" data-lesson="' + esc(l.id) + '" aria-label="Thuộc mục">' + moveOptions(f.kind) + '</select>' +
+            '<button class="btn small danger" data-del-file="' + esc(f.id) + '" data-lesson="' + esc(l.id) + '">Xoá file</button>' +
+          '</div>' +
         '</li>';
       }).join('') || '<li class="muted">Chưa có file nào.</li>';
 
@@ -651,7 +847,8 @@
             '<span class="badge">' + counts.lecture.length + ' dòng bài giảng</span></div>' +
           '<ul class="file-list">' + files + '</ul>' +
           '<div class="upload-row">' +
-            '<select class="select" data-kind-for="' + esc(l.id) + '" aria-label="Loại file">' + kindOptions + '</select>' +
+            '<select class="select" data-kind-for="' + esc(l.id) + '" aria-label="Loại file">' +
+              '<option value="auto">Tự nhận theo tên file</option>' + kindOptions + '</select>' +
             '<input class="file-input" type="file" accept="' + FILE_ACCEPT + '" data-upload="' + esc(l.id) + '" multiple>' +
           '</div>' +
         '</article>';
@@ -659,16 +856,14 @@
 
     root.innerHTML = pageHead('Bài học & file',
       'Mỗi bài có các file riêng. Chọn một bài ở thanh bên để luyện riêng bài đó, hoặc chọn "Tất cả các bài". Có thể xoá từng file khi không cần nữa.') +
-      '<section class="card sync-card">' +
-        '<h2>Đồng bộ giữa các thiết bị</h2>' +
-        '<p class="muted">Điện thoại, máy tính và tablet dùng cùng một địa chỉ máy chủ và cùng một mã đồng bộ thì sẽ thấy cùng dữ liệu. Xem hướng dẫn trong README.</p>' +
-        '<div class="sync-form">' +
-          '<input class="input" id="syncUrl" placeholder="Địa chỉ máy chủ, ví dụ https://ten-may-chu.example.com" value="' + esc(sync.url || '') + '">' +
-          '<input class="input" id="syncKey" placeholder="Mã đồng bộ (dùng chung trên mọi thiết bị)" value="' + esc(sync.key || '') + '">' +
-          '<div class="row"><button class="btn primary" id="syncSave">Lưu và đồng bộ</button>' +
-          '<button class="btn soft" id="syncNow">Đồng bộ ngay</button></div>' +
+      syncCardHtml(sync) +
+      '<section class="card backup-card">' +
+        '<h2>Sao lưu</h2>' +
+        '<p class="muted">Tải bản sao về máy để giữ dữ liệu, hoặc mở bản sao khi đổi máy.</p>' +
+        '<div class="row">' +
+          '<button class="btn soft" id="exportBackup">Lưu bản sao (.json)</button>' +
+          '<label class="btn ghost" style="cursor:pointer">Mở bản sao<input type="file" id="restoreFile" accept=".json,application/json" hidden></label>' +
         '</div>' +
-        '<p class="sync-status" id="syncStatus">' + esc(syncMessage || (sync.url ? 'Đã cấu hình.' : 'Chưa cấu hình, dữ liệu chỉ lưu trên máy này.')) + '</p>' +
       '</section>' +
       '<section class="card create-lesson">' +
         '<h2>Tạo bài mới</h2>' +
@@ -711,7 +906,8 @@
       render();
     });
 
-    $('#syncSave', root).addEventListener('click', function () {
+    var saveBtn = $('#syncSave', root);
+    if (saveBtn) saveBtn.addEventListener('click', function () {
       var url = $('#syncUrl', root).value.trim();
       var key = $('#syncKey', root).value.trim();
       if (!/^https?:\/\//i.test(url)) { toast('Địa chỉ máy chủ phải bắt đầu bằng http:// hoặc https://'); return; }
@@ -719,7 +915,27 @@
       saveJSON(STORE_SYNC, { url: url, key: key });
       syncNow(true);
     });
-    $('#syncNow', root).addEventListener('click', function () { syncNow(true); });
+    $('#exportBackup', root).addEventListener('click', exportBackup);
+    $('#restoreFile', root).addEventListener('change', function (e) {
+      var file = e.target.files && e.target.files[0];
+      if (file) restoreBackup(file);
+      e.target.value = '';
+    });
+    var nowBtn = $('#syncNow', root);
+    if (nowBtn) nowBtn.addEventListener('click', function () { syncNow(true); });
+
+    $all('[data-move-file]', root).forEach(function (sel) {
+      sel.addEventListener('change', function () {
+        var lesson = findLesson(sel.getAttribute('data-lesson'));
+        var file = lesson && lesson.files.filter(function (f) { return f.id === sel.getAttribute('data-move-file'); })[0];
+        if (!file) return;
+        file.kind = sel.value;
+        lesson.updatedAt = Date.now();
+        commit();
+        toast('Đã chuyển "' + file.name + '" sang ' + Core.kindInfo(sel.value).label + '.');
+        render();
+      });
+    });
 
     $all('[data-upload]', root).forEach(function (input) {
       input.addEventListener('change', function () {
@@ -1215,9 +1431,22 @@
 
   function init() {
     state.data = loadState();
+    if (inClaude) {
+      window.claude.use('downloads').then(function (d) { downloadsRef = d; }).catch(function () {});
+      window.claude.use('db').then(function (db) {
+        if (!db) return;
+        dbRef = db;
+        if (currentRoute() === 'lessons') render();
+        syncNow(false);
+      }).catch(function () {});
+    }
     state.scope = loadJSON(STORE_SCOPE, 'all') || 'all';
     refresh();
     window.addEventListener('hashchange', render);
+    // Kiểm tra thay đổi từ thiết bị khác mỗi 30 giây khi trang đang hiển thị.
+    setInterval(function () {
+      if (!document.hidden && (dbRef || syncConfig().url)) syncNow(false);
+    }, 30000);
     document.addEventListener('visibilitychange', function () {
       if (!document.hidden) syncNow(false);
     });

@@ -275,3 +275,23 @@ test('review dates: per item and per lesson', () => {
   assert.equal(Core.lessonLastReview(ds, idx), 800);
   assert.equal(Core.lessonLastReview(ds, {}), 0);
 });
+
+test('guessKind reads the kind from the file name', () => {
+  assert.equal(Core.guessKind('Từ vựng Bài 6 – Dịch chủ đề CNTT.docx'), 'vocab');
+  assert.equal(Core.guessKind('Ngữ pháp bài 3.pdf'), 'grammar');
+  assert.equal(Core.guessKind('Bài giảng 5.docx'), 'lecture');
+  assert.equal(Core.guessKind('Đáp án tiếng Việt.txt'), 'vi');
+  assert.equal(Core.guessKind('Câu tiếng Việt.txt'), 'vi');
+  assert.equal(Core.guessKind('Câu tiếng Hàn.txt'), 'ko');
+  assert.equal(Core.guessKind('vocab.xlsx'), 'vocab');
+  assert.equal(Core.guessKind('ghi chu.txt'), null);
+});
+
+test('mergeStates takes a file from the newer lesson when its kind changed', () => {
+  const f = { id: 'f1', kind: 'vocab', name: 'a', uploadedAt: 1, lines: ['가다 | đi'] };
+  const moved = Object.assign({}, f, { kind: 'grammar' });
+  const a = { updatedAt: 1, lessons: [lessonWith('l1', 'Bài', [f], 1)], deleted: { lessons: {}, files: {} }, progress: {} };
+  const b = { updatedAt: 5, lessons: [lessonWith('l1', 'Bài', [moved], 5)], deleted: { lessons: {}, files: {} }, progress: {} };
+  assert.equal(Core.mergeStates(a, b).lessons[0].files[0].kind, 'grammar');
+  assert.equal(Core.mergeStates(b, a).lessons[0].files[0].kind, 'grammar');
+});

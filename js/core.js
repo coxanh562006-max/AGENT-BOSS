@@ -597,12 +597,16 @@
           order.push(lesson.id);
           return;
         }
+        // File có mặt ở cả hai bên: lấy bản của bài mới hơn (ví dụ vừa đổi mục).
         var newer = (lesson.updatedAt || 0) > cur.updatedAt ? lesson : cur;
+        var older = newer === lesson ? cur : lesson;
         var seen = {};
-        cur.files.forEach(function (f) { seen[f.id] = true; });
-        (lesson.files || []).forEach(function (f) {
-          if (!seen[f.id]) { cur.files.push(f); seen[f.id] = true; }
+        var merged = [];
+        (newer.files || []).forEach(function (f) { seen[f.id] = true; merged.push(f); });
+        (older.files || []).forEach(function (f) {
+          if (!seen[f.id]) { seen[f.id] = true; merged.push(f); }
         });
+        cur.files = merged;
         cur.name = newer.name;
         cur.createdAt = Math.min(cur.createdAt || Infinity, lesson.createdAt || Infinity);
         cur.updatedAt = Math.max(cur.updatedAt, lesson.updatedAt || 0);
@@ -653,6 +657,18 @@
     return st;
   }
 
+  // Đoán loại file từ tên, ví dụ "Từ vựng Bài 6 - Dịch chủ đề.docx" -> vocab.
+  // Thứ tự kiểm tra quan trọng: "Dịch" trong tên từ vựng không được hiểu là đáp án.
+  function guessKind(name) {
+    var s = String(name || '').toLowerCase();
+    if (/ngữ\s*pháp|ngu\s*phap|grammar/.test(s)) return 'grammar';
+    if (/bài\s*giảng|bai\s*giang|lecture/.test(s)) return 'lecture';
+    if (/từ\s*vựng|tu\s*vung|vocab/.test(s)) return 'vocab';
+    if (/đáp\s*án|dap\s*an|tiếng\s*việt|tieng\s*viet|dịch|dich/.test(s)) return 'vi';
+    if (/câu|cau|tiếng\s*hàn|tieng\s*han/.test(s)) return 'ko';
+    return null;
+  }
+
   // Ngày ôn gần nhất: tra theo phần mã của mục, để dùng chung cho mọi loại bài tập.
   function itemHash(id) {
     var s = String(id);
@@ -685,6 +701,7 @@
   var Core = {
     KINDS: KINDS,
     kindInfo: kindInfo,
+    guessKind: guessKind,
     newId: newId,
     emptyState: emptyState,
     lessonDataset: lessonDataset,
