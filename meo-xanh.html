@@ -255,6 +255,7 @@
 
 <input type="file" id="fileInput" multiple style="display:none"
   accept=".txt,.md,.tsv,.csv,.xlsx,.xls,.xlsm,.ods,.docx,.pdf,.pptx">
+ <input type="file" id="sentInput" accept=".txt,.docx,.xlsx,.xls,.csv,.pdf,.pptx" style="display:none">
 <input type="file" id="pdfInput" accept=".pdf,.docx,.pptx,.txt,.xlsx" style="display:none">
 <dialog id="dlg"></dialog>
 <div id="toast" role="status"></div>
@@ -280,7 +281,7 @@ let state = load();
 const ui = {
   onlyUnknown: false, dir: 'ko-vi',
   ink: false, strokes: [], past: [], future: [], tool: 'pen', reveal: false,
-  wFilter: 'all', wDir: 'vi-ko', wTimer: null,
+  wFilter: 'all', wDir: 'vi-ko', wTimer: null, sess: null,
   fl: null, wId: null, wRes: null, sId: null, sRes: null, eId: null, eRes: null,
   quiz: null, ovPage: 1, ovQuery: '', listPage: 1, notesFilter: 'all',
   draft: null, fileUrl: null, attachId: null
@@ -389,7 +390,7 @@ async function lessonFile(l, slot){
 
 /* ============ ĐỌC FILE ============ */
 // Một dòng → {ko, vi}. Nhận: "사과 - táo", "사과: táo", "사과 | táo", tab (Excel), hoặc "사과 táo"
-function parseLine(raw){
+function parseLine(raw, maxLen = 60){
   let line = raw.replace(/ /g, ' ').trim().replace(/^\d+\s*[.)]\s+/, '');
   if(!line) return null;
   let ko, vi;
@@ -415,7 +416,7 @@ function parseLine(raw){
     if(HANGUL.test(vi)) [ko, vi] = [vi, ko];
     else return null;
   }
-  if(ko.length > 60) return null;
+  if(ko.length > maxLen) return null;
   return {ko, vi};
 }
 function need(lib, name){ if(typeof lib === 'undefined') throw new Error(`thiếu thư viện đọc ${name}, kiểm tra kết nối mạng`); }
@@ -873,10 +874,13 @@ function writeView(l, sub){
   if(!tabs.length) return '<div class="card empty">Bài này không bật mục luyện viết.</div>';
   const cur = tabs.some(t => t[0] === sub) ? sub : tabs[0][0];
   const bar = `<div class="subtabs">${tabs.map(([k, t]) => `<a class="${cur === k ? 'on' : ''}" href="#/lesson/${l.id}/write/${k}">${t}</a>`).join('')}</div>`;
-  const dirBar = cur === 'word' ? `<div class="chips">
+  const dirBar = cur !== 'ext' ? `<div class="chips">
       <button class="chip ${ui.wDir === 'vi-ko' ? 'on' : ''}" data-act="wDir" data-v="vi-ko">Việt → Hàn</button>
       <button class="chip ${ui.wDir === 'ko-vi' ? 'on' : ''}" data-act="wDir" data-v="ko-vi">Hàn → Việt</button>
     </div>` : '';
+  const segBar = `<div class="seg" role="group" aria-label="Lọc theo mức thuộc">
+      ${LEVEL_FILTERS.map(([k, t]) => `<button class="${ui.wFilter === k ? 'on' : ''}" data-act="wFilter" data-v="${k}">${t}</button>`).join('')}
+    </div>`;
   const modeBar = `<div class="modebar" style="flex-direction:column;align-items:stretch;gap:10px">
     <div class="row between">
       <div class="chips">
@@ -885,14 +889,12 @@ function writeView(l, sub){
       </div>
       ${dirBar}
     </div>
-    <div class="seg" role="group" aria-label="Lọc theo mức thuộc">
-      ${LEVEL_FILTERS.map(([k, t]) => `<button class="${ui.wFilter === k ? 'on' : ''}" data-act="wFilter" data-v="${k}">${t}</button>`).join('')}
-    </div>
+    ${segBar}
   </div>`;
+  if(cur === 'sent') return bar + modeBar.replace(segBar, '') + writeSent(l);
   const pool = l.words.filter(w => ui.wFilter === 'all' || lvl(w.id) === Number(ui.wFilter));
   if(!pool.length) return bar + modeBar + '<div class="card empty">Không có từ nào ở mức này trong bài.</div>';
-  const body = cur === 'word' ? writeWord(l, pool.filter(w => w.vi))
-    : cur === 'sent' ? writeSent(l, pool) : writeExt(l, pool);
+  const body = cur === 'word' ? writeWord(l, pool.filter(w => w.vi)) : writeExt(l, pool);
   return bar + modeBar + body;
 }
 function pickId(pool, key){
@@ -984,34 +986,165 @@ function writeWord(l, pool){
     </div>
   </div>`;
 }
-function writeSent(l, pool){
-  const w = pickId(pool, 'sId');
-  if(ui.ink) return `<div class="wcard card">
-    <div class="qhead"><span class="eyebrow">2 · Viết câu</span><span class="meta">${pool.indexOf(w) + 1} / ${pool.length}</span></div>
-    <div class="qword ko" style="font-size:clamp(26px,6vw,36px)">${esc(w.ko)}</div>
-    <div class="meta">Nghĩa: <b>${w.vi ? esc(w.vi) : 'chưa có nghĩa trong file'}</b></div>
-    <div class="meta" style="margin-top:6px">Viết một câu tiếng Hàn có dùng từ trên bằng bút.</div>
-    ${inkPad()}
-    <div class="row actions" style="justify-content:flex-end;margin-top:14px">
-      <button data-act="sDone">Xong, từ khác →</button>
-    </div>
+function writeSent(l){
+  const list = sentPool(l);
+  if(!list.length) return `<div class="card empty">
+    <p>Bài này chưa có file câu. Gắn file gồm mỗi dòng: <b>câu tiếng Hàn - nghĩa tiếng Việt</b>.</p>
+    <button data-act="attachSent" data-id="${l.id}">Gắn file câu</button>
   </div>`;
-  const r = ui.sRes;
-  return `<div class="wcard card">
-    <div class="qhead"><span class="eyebrow">2 · Viết câu</span><span class="meta">${pool.indexOf(w) + 1} / ${pool.length}</span></div>
-    <div class="qword ko" style="font-size:clamp(26px,6vw,36px)">${esc(w.ko)}</div>
-    <div class="meta">Nghĩa: <b>${w.vi ? esc(w.vi) : 'chưa có nghĩa trong file'}</b></div>
-    <div class="writebox">
-      <label class="f">Viết một câu tiếng Hàn có dùng từ trên<textarea id="sIn" rows="3" placeholder="Viết câu ở đây…"></textarea></label>
+  const s = sentSession(l);
+  const byId = new Map(list.map(x => [x.id, x]));
+  const doneIds = new Set(s.hist.map(h => h.id));
+  let cur = s.cur && !doneIds.has(s.cur) ? byId.get(s.cur) : null;
+  if(!cur){
+    const nid = s.order.find(id => !doneIds.has(id)) || null;
+    s.cur = nid;
+    cur = nid ? byId.get(nid) : null;
+  }
+  const fileBar = `<div class="row between" style="margin-bottom:12px">
+    <span class="meta">File câu: <b>${esc(l.sentFile || '')}</b> · ${list.length} câu</span>
+    <button class="ghost" data-act="attachSent" data-id="${l.id}">Gắn file khác</button>
+  </div>`;
+  const card = cur
+    ? sentCard(cur, list.length, s.hist.length)
+    : `<div class="card empty"><h2>Xong rồi!</h2><p>Đúng ${s.hist.filter(h => h.ok).length} / ${list.length} câu. Làm lại các câu chưa đúng ở bên dưới.</p></div>`;
+  return fileBar + card + historyHTML(s, byId);
+}
+function sentPool(l){ return l.sentences || []; }
+function sentSession(l){
+  const list = sentPool(l);
+  const s = ui.sess;
+  if(!s || s.lesson !== l.id || s.size !== list.length){
+    ui.sess = {lesson: l.id, size: list.length, order: shuffle(list.map(x => x.id)), hist: [], cur: null};
+    resetInk();
+    ui.reveal = false;
+  }
+  return ui.sess;
+}
+function sentCard(x, total, done){
+  const toKo = ui.wDir === 'vi-ko';
+  const ask = toKo ? 'Nhìn nghĩa, viết lại câu tiếng Hàn' : 'Đọc câu tiếng Hàn, viết nghĩa tiếng Việt';
+  const head = `<div class="qhead"><span class="eyebrow">2 · Viết câu</span><span class="meta">${done + 1} / ${total}</span></div>
+    <div class="meta" style="text-align:center">${ask}${ui.ink ? ' bằng bút' : ''}.</div>
+    <div class="prompt ${toKo ? '' : 'ko'}" style="font-size:clamp(24px,6vw,40px)">${esc(toKo ? x.vi : x.ko)}</div>`;
+  if(ui.ink){
+    const actions = ui.reveal
+      ? `<div class="fb" style="margin-top:12px">Đáp án: <b class="${toKo ? 'ko' : ''}">${esc(toKo ? x.ko : x.vi)}</b></div>
+         <div class="row" style="justify-content:space-between;margin-top:14px">
+           <button class="ghost" data-act="sRecord" data-v="0">Chưa đúng</button>
+           <button data-act="sRecord" data-v="1">Tôi viết đúng ✓</button>
+         </div>`
+      : `<div class="row" style="justify-content:flex-end;margin-top:14px"><button data-act="sReveal">Xem đáp án</button></div>`;
+    return `<div class="wcard card">${head}${inkPad()}${actions}</div>`;
+  }
+  return `<div class="wcard card">${head}
+    <label class="f">Câu trả lời<input id="sIn" autocomplete="off" placeholder="${toKo ? 'Gõ câu tiếng Hàn…' : 'Gõ nghĩa tiếng Việt…'}"></label>
+    <div id="wFb"></div>
+    <div class="row between" style="margin-top:12px">
+      <button class="ghost" data-act="sRecord" data-v="0">Chưa đúng, câu tiếp</button>
+      <span class="hint">Tự kiểm tra khi bạn gõ xong</span>
     </div>
-    ${r ? `<div class="fb ${r.ok ? 'ok' : 'bad'}">${r.ok ? `✔ Đúng! Bạn đã dùng từ «${esc(w.ko)}».` : `Câu chưa có từ «${esc(w.ko)}» (hoặc dạng đã chia của nó). Thử lại nhé.`}</div>` : ''}
-    <div class="row actions" style="justify-content:space-between;margin-top:14px">
-      <button class="ghost" data-act="sNext">Từ khác →</button>
-      <button data-act="sCheck">Kiểm tra</button>
-    </div>
-    <p class="hint">Phím tắt: Ctrl + Enter để kiểm tra</p>
   </div>`;
 }
+function judgeSent(x, v, dir){
+  if(dir === 'vi-ko'){
+    const a = v.replace(/[^\p{L}\p{N}]/gu, ''), s = x.ko.replace(/[^\p{L}\p{N}]/gu, '');
+    const dist = lev(a, s);
+    const tol = Math.max(1, Math.round(s.length * 0.08));
+    const near = Math.max(2, Math.round(s.length * 0.25));
+    return {verdict: dist <= tol ? 'ok' : dist <= near ? 'near' : 'bad', dist: 0};
+  }
+  return judgeWord(x, v, 'ko-vi');
+}
+// Tự kiểm tra khi người học gõ xong câu; đúng thì tự chuyển câu sau khi hiện Đúng
+function sentAutoCheck(){
+  const l = findLesson(route().id);
+  const s = ui.sess;
+  const cur = l && s && s.cur && sentPool(l).find(x => x.id === s.cur);
+  const box = $('#sIn');
+  if(!cur || !box) return;
+  clearTimeout(ui.wTimer);
+  const v = box.value.trim();
+  if(!v){ $('#wFb').innerHTML = ''; return; }
+  ui.wTimer = setTimeout(() => {
+    const r = judgeSent(cur, v, ui.wDir);
+    $('#wFb').innerHTML = feedbackHTML(r, cur, ui.wDir);
+    if(r.verdict === 'ok') ui.wTimer = setTimeout(() => sessRecord(cur.id, true), 1000);
+  }, 900);
+}
+function sessRecord(id, ok){
+  const s = ui.sess;
+  if(!s) return;
+  clearTimeout(ui.wTimer);
+  s.hist.push({id, ok});
+  s.cur = null;
+  ui.reveal = false;
+  resetInk();
+  render();
+}
+function historyHTML(s, byId){
+  if(!s.hist.length) return '';
+  const rows = s.hist.map((h, i) => {
+    const x = byId.get(h.id);
+    if(!x) return '';
+    return `<div class="hrow">
+      <span class="meta">${i + 1}.</span>
+      <div class="hbody"><div class="ko">${esc(x.ko)}</div><div class="meta">${esc(x.vi)}</div></div>
+      <span class="badge ${h.ok ? 'b-ok' : 'b-warn'}">${h.ok ? '✔ Đúng' : 'Chưa đúng'}</span>
+      ${h.ok ? '' : `<button class="ghost" data-act="sRedo" data-id="${h.id}">Làm lại câu này</button>`}
+    </div>`;
+  }).join('');
+  return `<div class="card" style="margin-top:14px">
+    <h2>Đã làm (${s.hist.length})</h2>
+    ${rows}
+    <div class="row" style="margin-top:14px">
+      <button class="ghost" data-act="sRedoWrong">Làm lại các câu chưa đúng</button>
+      <button class="ghost" data-act="sRedoRight">Làm lại các câu đã đúng</button>
+      <button class="ghost" data-act="sRedoAll">Làm lại tất cả</button>
+    </div>
+  </div>`;
+}
+function redoSent(mode, id){
+  const s = ui.sess;
+  if(!s) return;
+  if(mode === 'one'){ s.hist = s.hist.filter(h => h.id !== id); s.cur = id; }
+  if(mode === 'wrong'){ const ids = s.hist.filter(h => !h.ok).map(h => h.id); s.hist = s.hist.filter(h => h.ok); s.cur = ids[0] || null; }
+  if(mode === 'right'){ const ids = s.hist.filter(h => h.ok).map(h => h.id); s.hist = s.hist.filter(h => !h.ok); s.cur = ids[0] || null; }
+  if(mode === 'all'){ s.hist = []; s.cur = null; s.order = shuffle(s.order); }
+  resetInk();
+  ui.reveal = false;
+  render();
+}
+function attachSent(id){
+  ui.attachId = id;
+  $('#sentInput').click();
+}
+$('#sentInput').addEventListener('change', async e => {
+  const f = e.target.files[0];
+  e.target.value = '';
+  const l = findLesson(ui.attachId);
+  if(!f || !l) return;
+  try{
+    const seen = new Set();
+    const list = [];
+    (await fileToLines(f)).forEach(line => {
+      const x = parseLine(line, 300);
+      if(x && x.vi && !seen.has(x.ko)){
+        seen.add(x.ko);
+        list.push({id: `${l.id}_s${list.length}`, ko: x.ko, vi: x.vi});
+      }
+    });
+    if(!list.length){ toast('Không tìm thấy câu nào. Mỗi dòng cần có câu tiếng Hàn và nghĩa tiếng Việt.'); return; }
+    l.sentences = list;
+    l.sentFile = f.name;
+    ui.sess = null;
+    save();
+    toast(`Đã gắn ${list.length} câu`);
+    render();
+  }catch(err){
+    toast('Không đọc được file: ' + err.message);
+  }
+});
 function writeExt(l, pool){
   const hard = pool.filter(w => lvl(w.id) < 2);
   const w = pickId(hard.length ? hard : pool, 'eId');
@@ -1042,6 +1175,8 @@ function bindWriteUI(){
   bindInk();
   const wi = $('#wIn');
   if(wi) wi.oninput = wordAutoCheck;
+  const si = $('#sIn');
+  if(si) si.oninput = sentAutoCheck;
 }
 function bindInk(){
   const c = $('#ink');
@@ -1132,18 +1267,6 @@ function nextInk(){
   render();
 }
 function stemOf(ko){ return ko.length > 1 && ko.endsWith('다') ? ko.slice(0, -1) : ko; }
-function checkSent(){
-  const l = findLesson(route().id);
-  const w = l && l.words.find(x => x.id === ui.sId);
-  const box = $('#sIn');
-  if(!w || !box) return;
-  const text = box.value.trim();
-  if(!HANGUL.test(text)){ toast('Hãy viết câu bằng tiếng Hàn trước'); return; }
-  const ok = text.includes(stemOf(w.ko));
-  ui.sRes = {ok};
-  if(ok) setProg(w.id, {sent: text});
-  render();
-}
 function checkExt(){
   const l = findLesson(route().id);
   const w = l && l.words.find(x => x.id === ui.eId);
@@ -1529,8 +1652,13 @@ function act(name, d){
     case 'onlyOff': ui.onlyUnknown = false; render(); break;
     case 'saveNote': saveNote(d.id); break;
     case 'wNext': ui.wId = null; ui.wRes = null; render(); break;
-    case 'sCheck': checkSent(); break;
-    case 'sNext': ui.sId = null; ui.sRes = null; render(); break;
+    case 'attachSent': attachSent(d.id); break;
+    case 'sReveal': ui.reveal = true; render(); break;
+    case 'sRecord': sessRecord(ui.sess && ui.sess.cur, d.v === '1'); break;
+    case 'sRedo': redoSent('one', d.id); break;
+    case 'sRedoWrong': redoSent('wrong'); break;
+    case 'sRedoRight': redoSent('right'); break;
+    case 'sRedoAll': redoSent('all'); break;
     case 'eCheck': checkExt(); break;
     case 'eNext': ui.eId = null; ui.eRes = null; render(); break;
     case 'quizStart': startQuiz(); break;
@@ -1547,7 +1675,6 @@ function act(name, d){
     case 'inkReveal': ui.reveal = true; render(); break;
     case 'inkOk': { const l = findLesson(route().id); const w = l && l.words.find(x => x.id === ui.wId); if(w) setProg(w.id, {wOk: true}); nextInk(); break; }
     case 'inkNext': nextInk(); break;
-    case 'sDone': { const l = findLesson(route().id); const w = l && l.words.find(x => x.id === ui.sId); if(w) setProg(w.id, {sent: 'viết tay'}); nextInk(); break; }
     case 'eDone': { const l = findLesson(route().id); const w = l && l.words.find(x => x.id === ui.eId); if(w) setProg(w.id, {ext: true}); nextInk(); break; }
     case 'matchStart': { const l = findLesson(route().id); if(l) matchStart(l); break; }
     case 'mcard': matchPick(d.u); break;
@@ -1639,7 +1766,6 @@ document.addEventListener('change', e => {
 document.addEventListener('keydown', e => {
   const field = e.target.closest('input, textarea, select');
   if(field){
-    if(e.key === 'Enter' && e.ctrlKey && e.target.id === 'sIn') checkSent();
     if(e.key === 'Enter' && e.target.id === 'wIn') wordAutoCheck();
     return;
   }
