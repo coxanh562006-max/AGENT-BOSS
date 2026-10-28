@@ -123,7 +123,7 @@
   .fwrap{max-width:680px;margin:0 auto}
   .modebar{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px}
   .progress-line{display:flex;justify-content:space-between;font-size:13px;color:var(--muted);margin:14px 0 6px}
-  .fcard{min-height:280px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;text-align:center;padding:28px;cursor:pointer;user-select:none;background:var(--card);border:1px solid var(--line);border-radius:22px;box-shadow:0 6px 22px rgba(28,36,48,.05)}
+  .fcard{touch-action:pan-y;min-height:280px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;text-align:center;padding:28px;cursor:pointer;user-select:none;background:var(--card);border:1px solid var(--line);border-radius:22px;box-shadow:0 6px 22px rgba(28,36,48,.05)}
   .fcard .fw{font-size:clamp(34px,9vw,54px);font-weight:700;word-break:keep-all}
   .fcard .fb{font-size:clamp(18px,4.5vw,24px);color:var(--primary);font-weight:600}
   .fcard .hint{margin-top:8px}
@@ -170,6 +170,9 @@
   #toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);background:var(--ink);color:#fff;padding:10px 16px;border-radius:12px;opacity:0;transition:.25s;pointer-events:none;max-width:90vw;text-align:center;z-index:30}
   #toast.show{opacity:1;transform:translateX(-50%)}
 
+  .kindrow{display:flex;align-items:center;gap:12px;padding:12px 2px;border-bottom:1px solid var(--line);cursor:pointer;font-size:15px}
+  .kindrow:last-of-type{border-bottom:0}
+  .kindrow input{width:18px;height:18px;min-height:0;accent-color:var(--primary)}
   @media (max-width:1000px){
     .slots{grid-template-columns:1fr 1fr}
     .grid4{grid-template-columns:1fr 1fr}
@@ -232,7 +235,6 @@
    localStorage: bài học (lessons), tiến độ (progress), sổ từ (notes), API key
    IndexedDB: file gốc từng bài, khóa "<id>|<loại file>" */
 const KEY = 'meo-xanh-v1';
-const KEY_API = 'meo-xanh-apikey';
 const PAGE_WORDS = 20;
 const PAGE_LIST = 10;
 const HANGUL = /[ᄀ-ᇿ㄰-㆏가-힯]/;
@@ -250,7 +252,7 @@ const ui = {
   onlyUnknown: false, dir: 'ko-vi',
   fl: null, wId: null, wRes: null, sId: null, sRes: null, eId: null, eRes: null,
   quiz: null, ovPage: 1, ovQuery: '', listPage: 1, notesFilter: 'all',
-  talkLesson: null, msgs: [], draft: null, fileUrl: null, attachId: null
+  draft: null, fileUrl: null, attachId: null
 };
 
 function load(){
@@ -448,12 +450,28 @@ async function fileToLines(file){
 function route(){
   const p = location.hash.replace(/^#\/?/, '').split('/');
   if(p[0] === 'lesson' && p[1]) return {name: 'lesson', id: p[1], tab: p[2] || 'overview', sub: p[3] || 'word'};
-  if(['review', 'talk', 'notes', 'stats'].includes(p[0])) return {name: p[0]};
+  if(['review', 'notes', 'stats'].includes(p[0])) return {name: p[0]};
   return {name: 'home'};
 }
 function go(hash){
   if(location.hash === hash) render(); else location.hash = hash;
 }
+// Vuốt trái/phải trên thẻ để chuyển thẻ (chuột hoặc cảm ứng)
+let swipeStart = null, swiped = false;
+document.addEventListener('pointerdown', e => {
+  swipeStart = e.target.closest && e.target.closest('.fcard') ? {x: e.clientX, y: e.clientY} : null;
+  swiped = false;
+});
+document.addEventListener('pointerup', e => {
+  if(!swipeStart) return;
+  const dx = e.clientX - swipeStart.x, dy = e.clientY - swipeStart.y;
+  swipeStart = null;
+  if(Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.5){
+    swiped = true;
+    flashStep(dx < 0 ? 1 : -1);
+  }
+});
+
 window.addEventListener('hashchange', () => { ui.quiz = null; render(); window.scrollTo(0, 0); });
 
 function render(){
@@ -463,7 +481,6 @@ function render(){
   if(r.name === 'home') return renderHome(main);
   if(r.name === 'lesson') return renderLesson(main, r);
   if(r.name === 'review') return renderFlashPage(main, null);
-  if(r.name === 'talk') return renderTalk(main);
   if(r.name === 'notes') return renderNotes(main);
   if(r.name === 'stats') return renderStats(main);
 }
@@ -478,10 +495,9 @@ function renderSide(r){
   const due = dueWords();
   $('#side').innerHTML = `
     <div class="brand"><svg class="logo" viewBox="0 0 120 100" aria-hidden="true"><use href="#cat"/></svg>Mèo xanh</div>
-    <a class="btn newbtn" href="#/home">+ Tải bài mới</a>
+    <button class="newbtn" data-act="upload">+ Tải bài mới</button>
     ${link('home', 'Trang chủ')}
     ${link('review', 'Ôn tập hôm nay', due ? `<span class="count">${due}</span>` : '')}
-    ${link('talk', 'Hội thoại AI')}
     ${link('notes', 'Sổ từ của tôi')}
     ${link('stats', 'Thống kê')}
     <div class="sec">BÀI HỌC</div>
@@ -702,7 +718,6 @@ function overviewView(l){
         ${notes.length ? notes.map(n => `<div class="note"><div>${esc(n.text)}</div></div>`).join('')
           : '<p class="meta">Chưa có ghi chú. Thêm trong mục Sổ từ của tôi.</p>'}
         <div class="row" style="margin-top:14px">
-          <button class="soft" data-act="lesson" data-id="${l.id}" data-mode="talk">Hội thoại AI</button>
           <a class="btn ghost" href="#/notes">Mở sổ từ</a>
           <button class="ghost" data-act="attach" data-id="${l.id}">Đính kèm file</button>
         </div>
@@ -786,7 +801,7 @@ function flashBody(items, title){
       </div>
       <button class="ghost" data-act="next">Sau →</button>
     </div>
-    <p class="fnote">Thẻ “Chưa nhớ” sẽ quay lại sớm hơn trong phần Ôn tập hôm nay. Phím tắt: ← → · Space lật · 1 / 2 / 3 chọn mức.</p>
+    <p class="fnote">Vuốt trái/phải trên thẻ để chuyển thẻ. Thẻ “Chưa nhớ” sẽ quay lại sớm hơn trong Ôn tập hôm nay. Phím tắt: ← → · Space lật · 1 / 2 / 3 chọn mức.</p>
   </div>`;
 }
 function renderFlashPage(main, lesson){
@@ -1029,89 +1044,6 @@ function nextQuiz(){
   render();
 }
 
-/* ============ HỘI THOẠI AI ============ */
-const getKey = () => { try{ return localStorage.getItem(KEY_API) || ''; } catch(e){ return ''; } };
-function renderTalk(main){
-  const l = findLesson(ui.talkLesson) || state.lessons[0];
-  if(!l){ main.innerHTML = emptyPage('Chưa có bài nào để trò chuyện.'); return; }
-  ui.talkLesson = l.id;
-  const key = getKey();
-  const chips = l.words.slice(0, 15).map(w =>
-    `<button class="chip" data-act="insertWord" data-v="${esc(w.ko)}">${esc(w.ko)}${w.vi ? ` <span class="meta">${esc(w.vi)}</span>` : ''}</button>`).join('');
-  const opener = `안녕하세요! 오늘은 「${l.name}」 주제로 이야기해 볼까요?`;
-  const bubbles = ui.msgs.length
-    ? ui.msgs.map(m => `<div class="bubble ${m.role === 'user' ? 'me' : 'ai'}">${esc(m.content)}</div>`).join('')
-    : `<div class="bubble ai">${esc(opener)}\n${key ? '(Hãy trả lời bằng tiếng Hàn nhé)' : '(Muốn trò chuyện với AI, hãy nhập API key ở dưới.)'}</div>`;
-  main.innerHTML = `
-    <div class="crumb">Hội thoại</div>
-    <h1>Hội thoại AI</h1>
-    <p class="sub">AI trò chuyện theo chủ đề của bài, dịch nghĩa và gợi ý cách đáp lại.</p>
-    <div class="card" style="margin-top:16px">
-      <div class="row" style="margin-bottom:10px"><select data-pick="talk" aria-label="Chọn bài" style="flex:1">${state.lessons.map(x =>
-        `<option value="${x.id}" ${x.id === l.id ? 'selected' : ''}>${esc(x.folder)} › ${esc(x.name)}</option>`).join('')}</select></div>
-      <p class="hint" style="margin:0 0 8px">Bấm từ gợi ý để chèn vào câu của bạn.</p>
-      <div class="chips">${chips || '<span class="hint">Bài này chưa có từ vựng.</span>'}</div>
-    </div>
-    <div class="card" style="margin-top:14px">
-      <div class="chat" id="chat">${bubbles}</div>
-      <div class="row">
-        <input id="talkIn" placeholder="Viết câu tiếng Hàn (hoặc tiếng Việt nếu cần)…" style="flex:1;min-width:200px">
-        <button data-act="talkSend">Gửi</button>
-      </div>
-      <p class="hint">${key ? 'AI sẽ trả lời, dịch nghĩa và gợi ý cách đáp lại theo chủ đề.' : 'Chưa có API key nên chưa trò chuyện được với AI.'}</p>
-    </div>
-    <details class="card" style="margin-top:14px">
-      <summary style="cursor:pointer;font-weight:600">Cài đặt AI (API key Anthropic)</summary>
-      <div class="row" style="margin-top:10px">
-        <input id="apiKey" type="password" placeholder="sk-ant-…" value="${esc(key)}" style="flex:1;min-width:200px">
-        <button class="ghost" data-act="saveKey">Lưu key</button>
-      </div>
-      <p class="hint">Key chỉ lưu trên máy này. Ai có key đều dùng được tài khoản của bạn, đừng chia sẻ.</p>
-    </details>`;
-  const chat = $('#chat');
-  chat.scrollTop = chat.scrollHeight;
-}
-async function askAI(l, msgs){
-  const system = `Bạn là bạn hội thoại tiếng Hàn kiên nhẫn cho người Việt đang học.
-Chủ đề: "${l.name}".
-Từ vựng nên dùng: ${l.words.slice(0, 30).map(w => `${w.ko}${w.vi ? ' (' + w.vi + ')' : ''}`).join(', ') || 'tự chọn chủ đề phù hợp'}.
-Mỗi lượt trả lời theo đúng 3 phần:
-1) Câu trả lời bằng tiếng Hàn ngắn gọn, rồi hỏi lại người học một câu.
-2) "📝 Dịch:" nghĩa tiếng Việt của phần 1.
-3) "💡 Gợi ý trả lời:" đưa 2–3 câu tiếng Hàn người học có thể đáp lại, kèm nghĩa tiếng Việt.
-Nếu người học viết sai, sửa nhẹ nhàng và giải thích ngắn bằng tiếng Việt.`;
-  const r = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'content-type': 'application/json',
-      'x-api-key': getKey(),
-      'anthropic-version': '2023-06-01',
-      'anthropic-dangerous-direct-browser-access': 'true'
-    },
-    body: JSON.stringify({model: 'claude-haiku-5-5', max_tokens: 700, system, messages: msgs.map(m => ({role: m.role, content: m.content}))})
-  });
-  if(!r.ok) throw new Error(`AI trả lỗi ${r.status}, kiểm tra lại API key`);
-  const data = await r.json();
-  return data.content.map(c => c.text || '').join('').trim();
-}
-async function talkSend(){
-  const input = $('#talkIn');
-  const text = input ? input.value.trim() : '';
-  const l = findLesson(ui.talkLesson);
-  if(!text || !l) return;
-  if(!getKey()){ toast('Nhập API key ở phần Cài đặt AI trước'); return; }
-  ui.msgs.push({role: 'user', content: text});
-  render();
-  try{
-    ui.msgs.push({role: 'assistant', content: await askAI(l, ui.msgs)});
-  }catch(e){
-    ui.msgs.pop();
-    toast(e.message);
-    if($('#talkIn')) $('#talkIn').value = text;
-  }
-  render();
-}
-
 /* ============ TÀI LIỆU GỐC ============ */
 /* ============ SỔ TỪ CỦA TÔI ============ */
 function renderNotes(main){
@@ -1261,6 +1193,7 @@ function act(name, d){
   const r = route();
   switch(name){
     case 'clearSlot': setSlotFile(d.v, null); break;
+    case 'upload': $('#fileInput').click(); break;
     case 'preview': openPreview(); break;
     case 'createLesson': createLesson(); break;
     case 'lv': flashLevel(+d.v); break;
@@ -1286,17 +1219,7 @@ function act(name, d){
     case 'editLesson': editLesson(d.id); break;
     case 'delLesson': deleteLesson(d.id); break;
     case 'attach': attachFile(d.id); break;
-    case 'lesson':
-      if(d.mode === 'talk'){ ui.talkLesson = d.id; ui.msgs = []; go('#/talk'); }
-      else go(`#/lesson/${d.id}/${d.mode}`);
-      break;
-    case 'insertWord': { const i = $('#talkIn'); if(i){ i.value = (i.value ? i.value + ' ' : '') + d.v; i.focus(); } break; }
-    case 'talkSend': talkSend(); break;
-    case 'saveKey':
-      try{ localStorage.setItem(KEY_API, $('#apiKey').value.trim()); } catch(e){}
-      toast('Đã lưu API key');
-      render();
-      break;
+    case 'lesson': go(`#/lesson/${d.id}/${d.mode}`); break;
     case 'addNote': addNote(); break;
     case 'notesFilter': ui.notesFilter = d.v; render(); break;
     case 'delNote':
@@ -1306,6 +1229,7 @@ function act(name, d){
 }
 
 document.addEventListener('click', e => {
+  if(swiped){ swiped = false; return; }
   const pg = e.target.closest('[data-pg]');
   if(pg){ ui[pg.dataset.pg] = +pg.dataset.to; render(); return; }
   const sp = e.target.closest('[data-slotpick]');
@@ -1365,7 +1289,6 @@ document.addEventListener('change', e => {
     render();
     return;
   }
-  if(t.dataset && t.dataset.pick === 'talk'){ ui.talkLesson = t.value; ui.msgs = []; render(); }
 });
 
 document.addEventListener('keydown', e => {
@@ -1373,7 +1296,6 @@ document.addEventListener('keydown', e => {
   if(field){
     if(e.key === 'Enter' && e.ctrlKey && e.target.id === 'sIn') checkSent();
     if(e.key === 'Enter' && e.target.id === 'wIn') ui.wRes ? act('wNext') : checkWrite();
-    if(e.key === 'Enter' && e.target.id === 'talkIn') talkSend();
     return;
   }
   if(e.target.closest('button') && (e.key === 'Enter' || e.key === ' ')) return;
@@ -1411,23 +1333,48 @@ document.addEventListener('drop', e => {
   if(f) setSlotFile(s.dataset.drop, f);
 });
 
-$('#fileInput').addEventListener('change', e => {
-  if(e.target.files.length){
-    // Tải nhanh nhiều file: mỗi file đoán loại theo tên
+// Tải file: với mỗi file, hỏi loại tài liệu rồi xếp vào ô tương ứng
+let uploadQueue = [];
+const KIND_LABEL = [['vocab', 'Từ vựng'], ['grammar', 'Ngữ pháp'], ['sheet', 'Sheet tổng hợp'], ['lecture', 'Bài giảng']];
+function guessKind(name){
+  const n = name.toLowerCase();
+  return /giảng|giang|lecture|slide/.test(n) ? 'lecture'
+    : /ngữ|ngu|grammar/.test(n) ? 'grammar'
+    : /sheet|xlsx|csv/.test(n) ? 'sheet' : 'vocab';
+}
+function askFileKind(){
+  const f = uploadQueue.shift();
+  if(!f){
     const d = newDraft();
-    [...e.target.files].forEach(f => {
-      const n = f.name.toLowerCase();
-      const key = /giảng|giang|lecture|slide/.test(n) ? 'lecture'
-        : /ngữ|ngu|grammar/.test(n) ? 'grammar'
-        : /sheet|xlsx|csv/.test(n) ? 'sheet' : 'vocab';
-      d.files[key] = f;
-    });
     d.words = null;
     d.busy = true;
-    render();
+    go('#/home');
     draftWords().then(() => { d.busy = false; render(); });
+    return;
   }
+  const guess = guessKind(f.name);
+  const dlg = $('#dlg');
+  dlg.innerHTML = `<form class="dlgbox"><h2>Loại tài liệu</h2>
+    <p class="hint" style="margin-top:0;word-break:break-all">${esc(f.name)}</p>
+    ${KIND_LABEL.map(([k, t]) => `<label class="kindrow"><input type="radio" name="kind" value="${k}" ${k === guess ? 'checked' : ''}> ${t}</label>`).join('')}
+    <div class="row actions" style="justify-content:flex-end">
+      <button type="button" class="ghost" data-cancel>Bỏ qua</button>
+      <button type="submit">Thêm</button>
+    </div></form>`;
+  const form = dlg.querySelector('form');
+  dlg.querySelector('[data-cancel]').onclick = () => { dlg.close(); askFileKind(); };
+  form.onsubmit = e => {
+    e.preventDefault();
+    newDraft().files[form.kind.value] = f;
+    dlg.close();
+    askFileKind();
+  };
+  dlg.showModal();
+}
+$('#fileInput').addEventListener('change', e => {
+  uploadQueue = [...e.target.files];
   e.target.value = '';
+  if(uploadQueue.length) askFileKind();
 });
 $('#pdfInput').addEventListener('change', async e => {
   const f = e.target.files[0];
