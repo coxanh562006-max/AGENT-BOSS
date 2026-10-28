@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#2f63a8">
 <title>Mèo xanh – Học tiếng Hàn</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@500;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
@@ -20,7 +22,7 @@
     --r:14px;
   }
   *{box-sizing:border-box}
-  body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Malgun Gothic","Apple SD Gothic Neo",sans-serif;line-height:1.5;font-size:15px}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:'Noto Sans KR',system-ui,-apple-system,"Segoe UI",Roboto,"Malgun Gothic","Apple SD Gothic Neo",sans-serif;line-height:1.5;font-size:15px}
   a{color:inherit}
   button,.btn{font:inherit;cursor:pointer;border:0;border-radius:12px;padding:10px 18px;min-height:42px;background:var(--primary);color:#fff;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;gap:6px;touch-action:manipulation;white-space:nowrap}
   button.ghost,.btn.ghost{background:var(--card);color:var(--primary);border:1px solid var(--line)}
@@ -162,6 +164,16 @@
   input.sw:checked{background:var(--primary)}
   input.sw:checked::after{transform:translateX(20px)}
   .inkwrap{margin-top:12px}
+  .tools{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+  .tool{background:var(--card);color:var(--ink);border:1px solid var(--line);min-height:40px;padding:8px 14px}
+  .tool.on{background:var(--soft);color:var(--primary);border-color:#c9d9ef;font-weight:600}
+  .tool:disabled{opacity:.4}
+  .seg{display:grid;grid-template-columns:repeat(4,1fr);background:#ebebe6;border-radius:12px;padding:4px;gap:4px}
+  .seg button{background:transparent;color:var(--muted);min-height:38px;padding:6px 4px;font-size:14px}
+  .seg button.on{background:var(--card);color:var(--primary);font-weight:600;box-shadow:0 1px 2px rgba(0,0,0,.06)}
+  .prompt{font-family:'Noto Sans KR',system-ui,sans-serif;text-align:center;font-size:clamp(34px,9vw,56px);font-weight:700;line-height:1.25;margin:18px 0 8px;word-break:keep-all}
+  .prompt.ko{color:var(--ink)}
+  .wfb{min-height:0}
   .ink{width:100%;height:240px;border:1.5px dashed #b9c9de;border-radius:14px;background:#fff;touch-action:none;display:block;cursor:crosshair}
   .opt:disabled{opacity:1}
   .opt.picked{border-color:var(--primary);background:var(--soft)}
@@ -267,7 +279,8 @@ const DEFAULT_MODES = {flash: true, write: true, sent: true, ext: true, quiz: tr
 let state = load();
 const ui = {
   onlyUnknown: false, dir: 'ko-vi',
-  ink: false, strokes: [], reveal: false,
+  ink: false, strokes: [], past: [], future: [], tool: 'pen', reveal: false,
+  wFilter: 'all', wDir: 'vi-ko', wTimer: null,
   fl: null, wId: null, wRes: null, sId: null, sRes: null, eId: null, eRes: null,
   quiz: null, ovPage: 1, ovQuery: '', listPage: 1, notesFilter: 'all',
   draft: null, fileUrl: null, attachId: null
@@ -697,7 +710,7 @@ function renderLesson(main, r){
   if(r.tab === 'source') renderSourceWith(l, Object.keys(l.files || {})[0]);
   if(r.tab === 'overview') bindOverview(l);
   if(r.tab === 'match') matchTimer();
-  bindInk();
+  bindWriteUI();
 }
 
 function overviewView(l){
@@ -853,21 +866,31 @@ function saveNote(wordId){
 }
 
 /* ============ LUYỆN VIẾT ============ */
+const LEVEL_FILTERS = [['all', 'Tất cả'], ['0', 'Chưa thuộc'], ['1', 'Hơi thuộc'], ['2', 'Đã thuộc']];
 function writeView(l, sub){
   const m = l.modes || DEFAULT_MODES;
   const tabs = [['word', 'Viết từ', m.write], ['sent', 'Viết câu', m.sent], ['ext', 'Ví dụ mở rộng', m.ext]].filter(t => t[2]);
   if(!tabs.length) return '<div class="card empty">Bài này không bật mục luyện viết.</div>';
   const cur = tabs.some(t => t[0] === sub) ? sub : tabs[0][0];
   const bar = `<div class="subtabs">${tabs.map(([k, t]) => `<a class="${cur === k ? 'on' : ''}" href="#/lesson/${l.id}/write/${k}">${t}</a>`).join('')}</div>`;
-  const modeBar = `<div class="modebar">
-    <div class="chips">
-      <button class="chip ${ui.ink ? '' : 'on'}" data-act="inkMode" data-v="0">Gõ phím</button>
-      <button class="chip ${ui.ink ? 'on' : ''}" data-act="inkMode" data-v="1">Viết tay</button>
+  const dirBar = cur === 'word' ? `<div class="chips">
+      <button class="chip ${ui.wDir === 'vi-ko' ? 'on' : ''}" data-act="wDir" data-v="vi-ko">Việt → Hàn</button>
+      <button class="chip ${ui.wDir === 'ko-vi' ? 'on' : ''}" data-act="wDir" data-v="ko-vi">Hàn → Việt</button>
+    </div>` : '';
+  const modeBar = `<div class="modebar" style="flex-direction:column;align-items:stretch;gap:10px">
+    <div class="row between">
+      <div class="chips">
+        <button class="chip ${ui.ink ? '' : 'on'}" data-act="inkMode" data-v="0">Gõ phím</button>
+        <button class="chip ${ui.ink ? 'on' : ''}" data-act="inkMode" data-v="1">Viết tay</button>
+      </div>
+      ${dirBar}
     </div>
-    <label class="row" style="gap:8px;font-size:14px;cursor:pointer"><input type="checkbox" data-only ${ui.onlyUnknown ? 'checked' : ''}> Chỉ từ chưa nhớ</label>
+    <div class="seg" role="group" aria-label="Lọc theo mức thuộc">
+      ${LEVEL_FILTERS.map(([k, t]) => `<button class="${ui.wFilter === k ? 'on' : ''}" data-act="wFilter" data-v="${k}">${t}</button>`).join('')}
+    </div>
   </div>`;
-  const pool = l.words.filter(w => !ui.onlyUnknown || lvl(w.id) < 2);
-  if(!pool.length) return bar + modeBar + '<div class="card empty">Không còn từ chưa nhớ trong bài này.</div>';
+  const pool = l.words.filter(w => ui.wFilter === 'all' || lvl(w.id) === Number(ui.wFilter));
+  if(!pool.length) return bar + modeBar + '<div class="card empty">Không có từ nào ở mức này trong bài.</div>';
   const body = cur === 'word' ? writeWord(l, pool.filter(w => w.vi))
     : cur === 'sent' ? writeSent(l, pool) : writeExt(l, pool);
   return bar + modeBar + body;
@@ -875,50 +898,89 @@ function writeView(l, sub){
 function pickId(pool, key){
   if(!pool.some(w => w.id === ui[key])){
     ui[key] = shuffle(pool)[0].id;
-    ui.strokes = [];
+    resetInk();
     ui.reveal = false;
   }
   return pool.find(w => w.id === ui[key]);
 }
 const inkPad = () => `<div class="inkwrap">
-  <canvas id="ink" class="ink" aria-label="Khung viết tay"></canvas>
-  <div class="row between" style="margin-top:8px">
-    <span class="hint">Viết bằng bút hoặc ngón tay trên khung.</span>
-    <button class="ghost" data-act="inkClear">Xóa nét</button>
+  <div class="tools" role="toolbar" aria-label="Công cụ viết">
+    <button class="tool ${ui.tool === 'pen' ? 'on' : ''}" data-act="inkTool" data-v="pen">✎ Bút</button>
+    <button class="tool ${ui.tool === 'erase' ? 'on' : ''}" data-act="inkTool" data-v="erase">⌫ Tẩy nét</button>
+    <button class="tool" data-act="inkUndo" ${ui.past.length ? '' : 'disabled'}>↶ Quay lại</button>
+    <button class="tool" data-act="inkRedo" ${ui.future.length ? '' : 'disabled'}>↷ Quay lên</button>
   </div>
+  <canvas id="ink" class="ink" aria-label="Khung viết tay"></canvas>
 </div>`;
+function judgeWord(w, v, dir){
+  if(dir === 'vi-ko'){
+    const a = v.replace(/\s/g, ''), s = w.ko.replace(/\s/g, '');
+    const dist = lev(a, s);
+    return {verdict: dist === 0 ? 'ok' : (dist <= 1 && s.length >= 3 ? 'near' : 'bad'), dist};
+  }
+  const exp = norm(w.vi).split(' ').filter(Boolean);
+  const got = new Set(norm(v).split(' '));
+  const hit = exp.length ? exp.filter(t => got.has(t)).length / exp.length : 0;
+  return {verdict: hit >= 0.8 ? 'ok' : hit >= 0.5 ? 'near' : 'bad', dist: 0};
+}
+function feedbackHTML(r, w, dir){
+  const answer = dir === 'vi-ko' ? esc(w.ko) : esc(w.vi || '(chưa có nghĩa)');
+  if(r.verdict === 'ok') return '<div class="fb ok"><b>✔ Đúng!</b></div>';
+  if(r.verdict === 'near') return `<div class="fb near"><b>Gần đúng</b>${dir === 'vi-ko' && r.dist ? ` — sai ${r.dist} chữ` : ''}. Đáp án: <b>${answer}</b></div>`;
+  return `<div class="fb bad"><b>Chưa đúng.</b> Đáp án: <b>${answer}</b></div>`;
+}
+// Tự kiểm tra khi người học gõ xong (dừng gõ khoảng 0,7 giây)
+function wordAutoCheck(){
+  const l = findLesson(route().id);
+  const w = l && l.words.find(x => x.id === ui.wId);
+  const box = $('#wIn');
+  if(!w || !box) return;
+  clearTimeout(ui.wTimer);
+  const v = box.value.trim();
+  if(!v){ $('#wFb').innerHTML = ''; return; }
+  ui.wTimer = setTimeout(() => {
+    const r = judgeWord(w, v, ui.wDir);
+    $('#wFb').innerHTML = feedbackHTML(r, w, ui.wDir);
+    if(r.verdict === 'ok'){
+      setProg(w.id, {wOk: true});
+      ui.wTimer = setTimeout(nextInk, 1200);
+    }
+  }, 700);
+}
 function writeWord(l, pool){
   if(!pool.length) return '<div class="card empty">Các từ trong bài chưa có nghĩa tiếng Việt.</div>';
   const w = pickId(pool, 'wId');
   const s = w.ko.replace(/\s/g, '');
-  const hint = s[0] + ' ' + Array(s.length - 1).fill('_').join(' ');
-  const head = `<div class="qhead"><span class="eyebrow">1 · Viết từ</span><span class="meta">${pool.indexOf(w) + 1} / ${pool.length}</span></div>
-    <div class="meta">${ui.ink ? 'Nhìn nghĩa, viết lại từ tiếng Hàn bằng bút.' : 'Nhìn nghĩa, gõ lại từ tiếng Hàn.'}</div>
-    <div class="qword">${esc(w.vi)}</div>
-    <div class="meta">Gợi ý: ${hint} (${s.length} chữ)</div>`;
+  const toKo = ui.wDir === 'vi-ko';
+  const prompt = toKo ? w.vi : w.ko;
+  const ask = toKo ? 'Nhìn nghĩa, viết lại từ tiếng Hàn' : 'Nhìn từ tiếng Hàn, viết nghĩa tiếng Việt';
+  const hint = toKo ? `<div class="meta" style="text-align:center">Gợi ý: ${s[0]} ${Array(s.length - 1).fill('_').join(' ')} (${s.length} chữ)</div>` : '';
+  const counter = `<span class="meta">${pool.indexOf(w) + 1} / ${pool.length}</span>`;
+  const promptHTML = `<div class="prompt ${toKo ? '' : 'ko'}">${esc(prompt)}</div>`;
   if(ui.ink){
     const actions = ui.reveal
-      ? `<div class="fb" style="margin-top:12px">Đáp án: <b class="ko">${esc(w.ko)}</b></div>
+      ? `<div class="fb" style="margin-top:12px">Đáp án: <b class="ko">${esc(toKo ? w.ko : w.vi)}</b></div>
          <div class="row" style="justify-content:space-between;margin-top:14px">
            <button class="ghost" data-act="inkNext">Chưa đúng</button>
            <button data-act="inkOk">Tôi viết đúng ✓</button>
          </div>`
       : `<div class="row" style="justify-content:flex-end;margin-top:14px"><button data-act="inkReveal">Xem đáp án</button></div>`;
-    return `<div class="wcard card">${head}${inkPad()}${actions}</div>`;
+    return `<div class="wcard card">
+      <div class="qhead"><span class="eyebrow">1 · Viết từ</span>${counter}</div>
+      <div class="meta" style="text-align:center">${ask} bằng bút.</div>
+      ${promptHTML}${hint}
+      ${inkPad()}${actions}
+    </div>`;
   }
-  const r = ui.wRes;
-  const fb = r ? {
-    ok: '<div class="fb ok"><b>✔ Đúng!</b></div>',
-    near: `<div class="fb near"><b>Gần đúng</b> — sai ${r.dist} chữ. Đáp án: <b>${esc(w.ko)}</b></div>`,
-    bad: `<div class="fb bad"><b>Chưa đúng.</b> Đáp án: <b>${esc(w.ko)}</b></div>`
-  }[r.verdict] : '';
-  return `<div class="wcard card">${head}
-    <div class="writebox">
-      <label class="f">Câu trả lời<input id="wIn" placeholder="Gõ từ tiếng Hàn…" autocomplete="off" ${r ? 'disabled' : ''} value="${r ? esc(r.v) : ''}"></label>
-    </div>
-    ${fb}
-    <div class="row actions" style="justify-content:flex-end;margin-top:14px">
-      ${r ? '<button data-act="wNext">Từ khác →</button>' : '<button data-act="wCheck">Kiểm tra</button>'}
+  return `<div class="wcard card">
+    <div class="qhead"><span class="eyebrow">1 · Viết từ</span>${counter}</div>
+    <div class="meta" style="text-align:center">${ask}.</div>
+    ${promptHTML}${hint}
+    <label class="f">Câu trả lời<input id="wIn" autocomplete="off" placeholder="${toKo ? 'Gõ từ tiếng Hàn…' : 'Gõ nghĩa tiếng Việt…'}"></label>
+    <div id="wFb"></div>
+    <div class="row between" style="margin-top:12px">
+      <button class="ghost" data-act="wNext">Từ khác →</button>
+      <span class="hint">Tự kiểm tra khi bạn gõ xong</span>
     </div>
   </div>`;
 }
@@ -974,7 +1036,13 @@ function writeExt(l, pool){
     </div>
   </div>`;
 }
-// Khung viết tay: vẽ nét bằng chuột, bút hoặc ngón tay
+
+// Khung viết tay: bút, tẩy theo từng nét, quay lại / quay lên
+function bindWriteUI(){
+  bindInk();
+  const wi = $('#wIn');
+  if(wi) wi.oninput = wordAutoCheck;
+}
 function bindInk(){
   const c = $('#ink');
   if(!c) return;
@@ -1000,44 +1068,70 @@ function drawInk(c){
     ctx.stroke();
   });
 }
+function resetInk(){
+  ui.strokes = [];
+  ui.past = [];
+  ui.future = [];
+}
+// Lưu trạng thái nét trước mỗi thao tác để quay lại / quay lên
+function snapInk(){
+  ui.past.push(JSON.stringify(ui.strokes));
+  if(ui.past.length > 100) ui.past.shift();
+  ui.future = [];
+  const undo = $('[data-act="inkUndo"]'), redo = $('[data-act="inkRedo"]');
+  if(undo) undo.disabled = false;
+  if(redo) redo.disabled = true;
+}
+function undoInk(){
+  if(!ui.past.length) return;
+  ui.future.push(JSON.stringify(ui.strokes));
+  ui.strokes = JSON.parse(ui.past.pop());
+  render();
+}
+function redoInk(){
+  if(!ui.future.length) return;
+  ui.past.push(JSON.stringify(ui.strokes));
+  ui.strokes = JSON.parse(ui.future.pop());
+  render();
+}
 let inkDrawing = false;
 const inkPos = (c, e) => { const r = c.getBoundingClientRect(); return {x: e.clientX - r.left, y: e.clientY - r.top}; };
+// Tẩy: xóa cả nét nào chạm vào vị trí tẩy
+function eraseAt(p){
+  const before = ui.strokes.length;
+  ui.strokes = ui.strokes.filter(st => !st.some(q => Math.hypot(q.x - p.x, q.y - p.y) < 14));
+  if(ui.strokes.length !== before) drawInk($('#ink'));
+}
 document.addEventListener('pointerdown', e => {
   const c = e.target.closest && e.target.closest('#ink');
   if(!c) return;
   e.preventDefault();
   inkDrawing = true;
-  ui.strokes.push([inkPos(c, e)]);
+  snapInk();
+  const p = inkPos(c, e);
+  if(ui.tool === 'erase') eraseAt(p);
+  else ui.strokes.push([p]);
   drawInk(c);
 });
 document.addEventListener('pointermove', e => {
   if(!inkDrawing) return;
   const c = $('#ink');
   if(!c) return;
-  ui.strokes[ui.strokes.length - 1].push(inkPos(c, e));
+  const p = inkPos(c, e);
+  if(ui.tool === 'erase') eraseAt(p);
+  else ui.strokes[ui.strokes.length - 1].push(p);
   drawInk(c);
 });
 document.addEventListener('pointerup', () => { inkDrawing = false; });
 function nextInk(){
+  clearTimeout(ui.wTimer);
   ui.wId = null; ui.sId = null; ui.eId = null;
   ui.wRes = null; ui.sRes = null; ui.eRes = null;
-  ui.strokes = [];
+  resetInk();
   ui.reveal = false;
   render();
 }
 function stemOf(ko){ return ko.length > 1 && ko.endsWith('다') ? ko.slice(0, -1) : ko; }
-function checkWrite(){
-  const l = findLesson(route().id);
-  const w = l && l.words.find(x => x.id === ui.wId);
-  const v = $('#wIn') ? $('#wIn').value.trim() : '';
-  if(!w || !v){ toast('Gõ đáp án trước'); return; }
-  const a = v.replace(/\s/g, ''), s = w.ko.replace(/\s/g, '');
-  const dist = lev(a, s);
-  const verdict = dist === 0 ? 'ok' : (dist <= 1 && s.length >= 3 ? 'near' : 'bad');
-  ui.wRes = {verdict, v, dist};
-  if(verdict === 'ok') setProg(w.id, {wOk: true});
-  render();
-}
 function checkSent(){
   const l = findLesson(route().id);
   const w = l && l.words.find(x => x.id === ui.sId);
@@ -1434,7 +1528,6 @@ function act(name, d){
     case 'dir': ui.dir = d.v; ui.fl.flipped = false; render(); break;
     case 'onlyOff': ui.onlyUnknown = false; render(); break;
     case 'saveNote': saveNote(d.id); break;
-    case 'wCheck': checkWrite(); break;
     case 'wNext': ui.wId = null; ui.wRes = null; render(); break;
     case 'sCheck': checkSent(); break;
     case 'sNext': ui.sId = null; ui.sRes = null; render(); break;
@@ -1444,8 +1537,13 @@ function act(name, d){
     case 'quizSetup': ui.quiz = null; render(); break;
     case 'tfAns': answerTF(d.v === '1'); break;
     case 'essayCheck': essayCheck(); break;
-    case 'inkMode': ui.ink = d.v === '1'; ui.strokes = []; ui.reveal = false; render(); break;
-    case 'inkClear': ui.strokes = []; render(); break;
+    case 'inkMode': ui.ink = d.v === '1'; resetInk(); ui.reveal = false; render(); break;
+    case 'inkTool': ui.tool = d.v; render(); break;
+    case 'inkUndo': undoInk(); break;
+    case 'inkRedo': redoInk(); break;
+    case 'wFilter': ui.wFilter = d.v; ui.wId = null; ui.sId = null; ui.eId = null; render(); break;
+    case 'wDir': ui.wDir = d.v; ui.wId = null; resetInk(); render(); break;
+    case 'wNext': nextInk(); break;
     case 'inkReveal': ui.reveal = true; render(); break;
     case 'inkOk': { const l = findLesson(route().id); const w = l && l.words.find(x => x.id === ui.wId); if(w) setProg(w.id, {wOk: true}); nextInk(); break; }
     case 'inkNext': nextInk(); break;
@@ -1542,7 +1640,7 @@ document.addEventListener('keydown', e => {
   const field = e.target.closest('input, textarea, select');
   if(field){
     if(e.key === 'Enter' && e.ctrlKey && e.target.id === 'sIn') checkSent();
-    if(e.key === 'Enter' && e.target.id === 'wIn') ui.wRes ? act('wNext') : checkWrite();
+    if(e.key === 'Enter' && e.target.id === 'wIn') wordAutoCheck();
     return;
   }
   if(e.target.closest('button') && (e.key === 'Enter' || e.key === ' ')) return;
