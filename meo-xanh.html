@@ -148,6 +148,21 @@
   .writebox{margin-top:14px}
 
   /* Trắc nghiệm */
+  .mgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+  .mcard{aspect-ratio:4/3;background:var(--card);color:var(--muted);border:1px solid var(--line);border-radius:14px;font:inherit;font-size:clamp(14px,3.4vw,19px);font-weight:600;padding:8px;line-height:1.3;word-break:keep-all;min-height:0}
+  .mcard:disabled{opacity:1}
+  .mcard.open{background:var(--soft);color:var(--primary);border-color:#c9d9ef}
+  .mcard.done{background:var(--ok-bg);color:var(--ok);border-color:transparent}
+  @media (max-width:640px){.mgrid{grid-template-columns:repeat(3,1fr);gap:8px}}
+  .testset .srow{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:16px 4px;border-bottom:1px solid var(--line);font-size:16px}
+  .testset .srow:last-of-type{border-bottom:0}
+  .testset .wide{width:100%;margin-top:18px;min-height:50px;font-size:16px}
+  input.sw{appearance:none;-webkit-appearance:none;width:48px;height:28px;min-height:0;border-radius:20px;background:#cfd6e0;position:relative;cursor:pointer;flex:none;transition:background .2s;padding:0;border:0}
+  input.sw::after{content:"";position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#fff;transition:transform .2s;box-shadow:0 1px 3px rgba(0,0,0,.2)}
+  input.sw:checked{background:var(--primary)}
+  input.sw:checked::after{transform:translateX(20px)}
+  .opt:disabled{opacity:1}
+  .opt.picked{border-color:var(--primary);background:var(--soft)}
   .opt{display:block;width:100%;text-align:left;background:var(--card);color:var(--ink);border:1px solid var(--line);margin-bottom:8px;font-size:16px;font-weight:500}
   .opt:hover{background:#f7f9fc}
   .opt.right{background:var(--ok-bg);border-color:var(--ok);color:var(--ok)}
@@ -580,7 +595,7 @@ function renderHome(main){
       ${row('write', 'Viết từ (nhìn nghĩa → gõ từ)', counts.write ? counts.write + ' câu' : '—')}
       ${row('sent', 'Viết câu với từ', counts.sent ? counts.sent + ' câu' : '—')}
       ${row('ext', 'Viết ví dụ mở rộng', counts.ext ? counts.ext + ' từ khó' : '—')}
-      ${row('quiz', 'Trắc nghiệm ABCD', '', quizSel)}
+      ${row('quiz', 'Kiểm tra (trắc nghiệm, đúng/sai, tự luận)', '', quizSel)}
     </div>
 
     <div class="recog">
@@ -651,8 +666,8 @@ function renderLesson(main, r){
   const l = findLesson(r.id);
   if(!l){ go('#/home'); return; }
   const m = l.modes || DEFAULT_MODES;
-  const tabs = [['overview', 'Tổng quan', true], ['flash', 'Flashcard', m.flash], ['write', 'Luyện viết', m.write || m.sent || m.ext],
-    ['quiz', 'Trắc nghiệm', m.quiz], ['source', 'Tài liệu gốc', Object.keys(l.files || {}).length > 0]];
+  const tabs = [['overview', 'Tổng quan', true], ['flash', 'Flashcard', m.flash], ['match', 'Ghép thẻ', true], ['write', 'Luyện viết', m.write || m.sent || m.ext],
+    ['quiz', 'Kiểm tra', m.quiz], ['source', 'Tài liệu gốc', Object.keys(l.files || {}).length > 0]];
   const known = l.words.filter(w => lvl(w.id) === 2).length;
   const primary = m.flash ? 'flash' : m.write ? 'write' : m.quiz ? 'quiz' : 'overview';
   const fileNames = Object.entries(l.files || {}).map(([k, v]) => `<span class="file">${esc(v)}</span>`).join('');
@@ -660,6 +675,7 @@ function renderLesson(main, r){
   if(r.tab === 'overview') body = overviewView(l);
   else if(r.tab === 'flash') body = flashBody(l.words.map(w => ({w, l})), l.name);
   else if(r.tab === 'write') body = writeView(l, r.sub);
+  else if(r.tab === 'match') body = matchView(l);
   else if(r.tab === 'quiz') body = quizView(l);
   else if(r.tab === 'source') body = '<div id="srcBody" class="card"><p class="empty">Đang mở file…</p></div>';
   main.innerHTML = `
@@ -669,7 +685,7 @@ function renderLesson(main, r){
         <h1>${esc(l.name)}</h1>
         <div class="files">${fileNames || '<span class="meta">Chưa có file gốc</span>'}</div>
       </div>
-      <a class="btn" href="#/lesson/${l.id}/${primary}">Học tiếp: ${{flash: 'Flashcard', write: 'Luyện viết', quiz: 'Trắc nghiệm', overview: 'Tổng quan'}[primary]}</a>
+      <a class="btn" href="#/lesson/${l.id}/${primary}">Học tiếp: ${{flash: 'Flashcard', write: 'Luyện viết', quiz: 'Kiểm tra', overview: 'Tổng quan'}[primary]}</a>
     </div>
     <div class="tabs">${tabs.filter(t => t[2]).map(([k, t]) =>
       `<a class="tab ${r.tab === k ? 'on' : ''}" href="#/lesson/${l.id}/${k}">${t}</a>`).join('')}</div>
@@ -677,30 +693,15 @@ function renderLesson(main, r){
     <p class="hint" style="margin-top:10px">${known}/${l.words.length} từ đã nhớ</p>`;
   if(r.tab === 'source') renderSourceWith(l, Object.keys(l.files || {})[0]);
   if(r.tab === 'overview') bindOverview(l);
+  if(r.tab === 'match') matchTimer();
 }
 
 function overviewView(l){
   const total = l.words.length;
   const known = l.words.filter(w => lvl(w.id) === 2).length;
-  const wok = l.words.filter(w => prog(w.id).wOk).length;
-  const sent = l.words.filter(w => prog(w.id).sent || prog(w.id).ext).length;
-  const qr = l.words.reduce((n, w) => n + (prog(w.id).qr || 0), 0);
-  const qw = l.words.reduce((n, w) => n + (prog(w.id).qw || 0), 0);
-  const acc = qr + qw ? Math.round(100 * qr / (qr + qw)) + '%' : 'Chưa làm';
-  const pct = (a, b) => b ? Math.round(100 * a / b) : 0;
-  const stat = (label, value, pctv, color = '') => `<div class="stat">
-      <div class="l">${label}</div>
-      <div class="v">${value}</div>
-      ${pctv === null ? '' : `<div class="track"><div class="fill ${color}" style="width:${pctv}%"></div></div>`}
-    </div>`;
+  const pct = total ? Math.round(100 * known / total) : 0;
   const notes = state.notes.filter(n => n.kind === 'note' && n.lessonId === l.id);
   return `
-    <div class="grid4">
-      ${stat('Flashcard', `${known} <small>/ ${total} đã nhớ</small>`, pct(known, total), 'ok')}
-      ${stat('Viết từ', `${wok} <small>/ ${total} đúng</small>`, pct(wok, total))}
-      ${stat('Viết câu & mở rộng', `${sent} <small>/ ${total} xong</small>`, pct(sent, total))}
-      ${stat('Trắc nghiệm', acc, null)}
-    </div>
     <div class="ovgrid">
       <div class="card">
         <div class="row between" style="margin-bottom:12px">
@@ -713,13 +714,20 @@ function overviewView(l){
           <a href="#/lesson/${l.id}/flash" class="meta">Xem tất cả ${total} từ →</a>
         </div>
       </div>
-      <div class="card">
-        <h2>Ghi chú & mẫu câu</h2>
-        ${notes.length ? notes.map(n => `<div class="note"><div>${esc(n.text)}</div></div>`).join('')
-          : '<p class="meta">Chưa có ghi chú. Thêm trong mục Sổ từ của tôi.</p>'}
-        <div class="row" style="margin-top:14px">
-          <a class="btn ghost" href="#/notes">Mở sổ từ</a>
-          <button class="ghost" data-act="attach" data-id="${l.id}">Đính kèm file</button>
+      <div>
+        <div class="stat">
+          <div class="l">Flashcard</div>
+          <div class="v">${known} <small>/ ${total} đã nhớ</small></div>
+          <div class="track"><div class="fill ok" style="width:${pct}%"></div></div>
+        </div>
+        <div class="card" style="margin-top:14px">
+          <h2>Ghi chú & mẫu câu</h2>
+          ${notes.length ? notes.map(n => `<div class="note"><div>${esc(n.text)}</div></div>`).join('')
+            : '<p class="meta">Chưa có ghi chú. Thêm trong mục Sổ từ của tôi.</p>'}
+          <div class="row" style="margin-top:14px">
+            <a class="btn ghost" href="#/notes">Mở sổ từ</a>
+            <button class="ghost" data-act="attach" data-id="${l.id}">Đính kèm file</button>
+          </div>
         </div>
       </div>
     </div>`;
@@ -955,52 +963,71 @@ function checkExt(){
   render();
 }
 
-/* ============ TRẮC NGHIỆM ============ */
+/* ============ KIỂM TRA ============ */
+const testCfg = l => ({mc: true, tf: false, essay: false, showNow: false, ...(l.testCfg || {})});
+function testSetup(l){
+  const cfg = testCfg(l);
+  const row = (label, control) => `<div class="srow"><span>${label}</span>${control}</div>`;
+  const sw = key => `<input type="checkbox" class="sw" data-cfg="${key}" ${cfg[key] ? 'checked' : ''} aria-label="${key}">`;
+  return `<div class="card testset">
+    ${row('Số câu hỏi', `<select data-quizcount style="width:auto">${[10, 20, 0].map(v => `<option value="${v}" ${(l.quizCount ?? 20) === v ? 'selected' : ''}>${v || 'Tất cả'}</option>`).join('')}</select>`)}
+    ${row('Hiển thị đáp án ngay', sw('showNow'))}
+    ${row('Đúng / Sai', sw('tf'))}
+    ${row('Nhiều lựa chọn (ABCD)', sw('mc'))}
+    ${row('Tự luận', sw('essay'))}
+    ${row('Chỉ từ chưa nhớ', `<input type="checkbox" class="sw" data-only ${ui.onlyUnknown ? 'checked' : ''} aria-label="Chỉ từ chưa nhớ">`)}
+    <button class="wide" data-act="quizStart">Bắt đầu làm kiểm tra</button>
+  </div>`;
+}
 function quizView(l){
-  const pool = l.words.filter(w => w.vi && (!ui.onlyUnknown || lvl(w.id) < 2));
   const q = ui.quiz && ui.quiz.lesson === l.id ? ui.quiz : null;
-  const setup = `<div class="modebar">
-      <div class="row" style="gap:12px">
-        <label class="row" style="gap:6px;font-size:14px">Số câu
-          <select data-quizcount style="width:auto">${[10, 20, 0].map(v => `<option value="${v}" ${(l.quizCount ?? 20) === v ? 'selected' : ''}>${v ? v : 'Tất cả'}</option>`).join('')}</select>
-        </label>
-      </div>
-      <label class="row" style="gap:8px;font-size:14px;cursor:pointer"><input type="checkbox" data-only ${ui.onlyUnknown ? 'checked' : ''}> Chỉ từ chưa nhớ</label>
-    </div>`;
-  if(!q){
-    return setup + `<div class="card empty">
-      <p>Xem từ tiếng Hàn, chọn nghĩa đúng trong 4 đáp án A, B, C, D.<br>Có ${pool.length} từ phù hợp.</p>
-      <button data-act="quizStart" ${pool.length ? '' : 'disabled'}>Bắt đầu</button>
-      ${pool.length ? '' : '<p class="hint">Không còn từ nào để làm.</p>'}
-    </div>`;
-  }
-  if(q.i >= q.items.length){
-    return setup + `<div class="card empty">
+  if(!q) return testSetup(l);
+  const cfg = testCfg(l);
+  if(q.i >= q.items.length) return `<div class="card empty">
       <h2>Xong rồi!</h2>
       <p>Đúng ${q.score} / ${q.items.length} câu (${Math.round(100 * q.score / q.items.length)}%)</p>
       <div class="row" style="justify-content:center">
         <button data-act="quizStart">Làm lại</button>
-        <a class="btn ghost" href="#/lesson/${l.id}/overview">Về tổng quan</a>
+        <button class="ghost" data-act="quizSetup">Đổi cài đặt</button>
       </div>
     </div>`;
+  const it = q.items[q.i];
+  const answered = q.answered !== null;
+  const reveal = answered && cfg.showNow;
+  const head = `<div class="qhead"><span class="meta">Câu ${q.i + 1} / ${q.items.length}</span><span class="meta">Đúng: ${q.score}</span></div>`;
+  const next = answered ? `<div class="row" style="justify-content:flex-end;margin-top:12px">
+      <button data-act="quizNext">${q.i + 1 < q.items.length ? 'Câu tiếp →' : 'Xem kết quả'}</button></div>` : '';
+  const saved = answered && !cfg.showNow ? '<p class="hint">Đã ghi nhận. Đáp án sẽ hiện ở phần kết quả.</p>' : '';
+  let body;
+  if(it.type === 'mc'){
+    const correct = it.opts.findIndex(o => o.id === it.w.id);
+    body = `<div class="ko" style="font-size:clamp(30px,8vw,44px);text-align:center;margin:16px 0">${esc(it.w.ko)}</div>
+      <p class="hint" style="text-align:center;margin:-6px 0 14px">Chọn nghĩa đúng (phím 1–4)</p>
+      ${it.opts.map((o, i) => {
+        let cls = '';
+        if(reveal){ if(i === correct) cls = 'right'; else if(i === q.answered) cls = 'wrong'; }
+        else if(answered && i === q.answered) cls = 'picked';
+        return `<button class="opt ${cls}" data-act="quizPick" data-i="${i}" ${answered ? 'disabled' : ''}>${'ABCD'[i]}. ${esc(o.vi)}</button>`;
+      }).join('')}`;
+  } else if(it.type === 'tf'){
+    const ok = q.answered === it.truth;
+    body = `<div class="ko" style="font-size:clamp(30px,8vw,44px);text-align:center;margin:16px 0">${esc(it.w.ko)}</div>
+      <div class="qword" style="text-align:center;font-size:clamp(20px,5vw,26px)">${esc(it.shownVi)}</div>
+      <p class="hint" style="text-align:center">Nghĩa trên có đúng không?</p>
+      <div class="lvbtns" style="grid-template-columns:1fr 1fr;margin-top:18px">
+        <button class="lv2" data-act="tfAns" data-v="1" ${answered ? 'disabled' : ''}>Đúng</button>
+        <button class="lv0" data-act="tfAns" data-v="0" ${answered ? 'disabled' : ''}>Sai</button>
+      </div>
+      ${reveal ? `<div class="fb ${ok ? 'ok' : 'bad'}">${ok ? '✔ Đúng!' : `Chưa đúng. Nghĩa đúng: ${esc(it.w.vi)}`}</div>` : ''}`;
+  } else {
+    const ok = q.answered === true;
+    body = `<div class="meta">Viết từ tiếng Hàn cho nghĩa:</div>
+      <div class="qword">${esc(it.w.vi)}</div>
+      <label class="f">Câu trả lời<input id="essayIn" autocomplete="off" placeholder="Gõ từ tiếng Hàn…" ${answered ? 'disabled' : ''} value="${answered ? esc(q.typed || '') : ''}"></label>
+      ${reveal ? `<div class="fb ${ok ? 'ok' : 'bad'}">${ok ? '✔ Đúng!' : `Đáp án: <b>${esc(it.w.ko)}</b>`}</div>` : ''}
+      ${answered ? '' : '<div class="row" style="justify-content:flex-end;margin-top:12px"><button data-act="essayCheck">Kiểm tra</button></div>'}`;
   }
-  const w = q.items[q.i];
-  const correct = q.opts.findIndex(o => o.id === w.id);
-  return setup + `<div class="card">
-    <div class="qhead"><span class="meta">Câu ${q.i + 1} / ${q.items.length}</span><span class="meta">Đúng: ${q.score}</span></div>
-    <div class="ko" style="font-size:clamp(30px,8vw,44px);text-align:center;margin:16px 0">${esc(w.ko)}</div>
-    <p class="hint" style="text-align:center;margin:-6px 0 14px">Chọn nghĩa đúng (phím 1–4)</p>
-    ${q.opts.map((o, i) => {
-      let cls = '';
-      if(q.answered !== null){
-        if(i === correct) cls = 'right';
-        else if(i === q.answered) cls = 'wrong';
-      }
-      return `<button class="opt ${cls}" data-act="quizPick" data-i="${i}">${'ABCD'[i]}. ${esc(o.vi)}</button>`;
-    }).join('')}
-    ${q.answered !== null ? `<div class="row" style="justify-content:flex-end;margin-top:8px">
-      <button data-act="quizNext">${q.i + 1 < q.items.length ? 'Câu tiếp →' : 'Xem kết quả'}</button></div>` : ''}
-  </div>`;
+  return `<div class="card">${head}${body}${saved}${next}</div>`;
 }
 function makeOptions(w, own){
   const others = shuffle(own.filter(x => x.id !== w.id))
@@ -1016,31 +1043,135 @@ function makeOptions(w, own){
 function startQuiz(){
   const l = findLesson(route().id);
   if(!l) return;
+  const cfg = testCfg(l);
+  const types = ['mc', 'tf', 'essay'].filter(t => cfg[t]);
+  if(!types.length){ toast('Chọn ít nhất một loại câu hỏi'); return; }
   const pool = l.words.filter(w => w.vi && (!ui.onlyUnknown || lvl(w.id) < 2));
-  const total = state.lessons.flatMap(x => x.words).filter(w => w.vi).length;
-  if(!pool.length || total < 4){ toast('Cần ít nhất 4 từ có nghĩa để làm trắc nghiệm'); return; }
+  const all = state.lessons.flatMap(x => x.words).filter(w => w.vi);
+  if(!pool.length){ toast('Không còn từ nào để làm'); return; }
+  if(types.includes('mc') && all.length < 4 && types.length === 1){ toast('Cần ít nhất 4 từ có nghĩa để làm câu ABCD'); return; }
   const n = l.quizCount || 0;
-  const items = shuffle(pool).slice(0, n || pool.length);
-  ui.quiz = {lesson: l.id, items, i: 0, score: 0, answered: null, own: pool, opts: makeOptions(items[0], pool)};
+  const picks = shuffle(pool).slice(0, n || pool.length);
+  const items = picks.map((w, i) => {
+    const type = types[i % types.length];
+    if(type === 'mc') return {type, w, opts: makeOptions(w, pool)};
+    if(type === 'tf'){
+      const others = all.filter(x => x.vi !== w.vi);
+      const truth = !others.length || Math.random() < 0.5;
+      const shownVi = truth ? w.vi : others[Math.floor(Math.random() * others.length)].vi;
+      return {type, w, truth, shownVi};
+    }
+    return {type, w};
+  });
+  ui.quiz = {lesson: l.id, items: shuffle(items), i: 0, score: 0, answered: null};
   render();
 }
-function answerQuiz(i){
+function recordAnswer(ok){
   const q = ui.quiz;
-  if(!q || q.i >= q.items.length || q.answered !== null || !q.opts[i]) return;
-  const w = q.items[q.i];
-  const ok = q.opts[i].id === w.id;
-  q.answered = i;
+  const w = q.items[q.i].w;
   if(ok) q.score++;
   const p = prog(w.id);
   setProg(w.id, {qr: (p.qr || 0) + (ok ? 1 : 0), qw: (p.qw || 0) + (ok ? 0 : 1)});
+}
+function answerQuiz(i){
+  const q = ui.quiz;
+  const it = q && q.items[q.i];
+  if(!it || it.type !== 'mc' || q.answered !== null || !it.opts[i]) return;
+  q.answered = i;
+  recordAnswer(it.opts[i].id === it.w.id);
+  render();
+}
+function answerTF(v){
+  const q = ui.quiz;
+  const it = q && q.items[q.i];
+  if(!it || it.type !== 'tf' || q.answered !== null) return;
+  q.answered = v;
+  recordAnswer(v === it.truth);
+  render();
+}
+function essayCheck(){
+  const q = ui.quiz;
+  const it = q && q.items[q.i];
+  const box = $('#essayIn');
+  if(!it || it.type !== 'essay' || q.answered !== null || !box) return;
+  const v = box.value.trim();
+  if(!v){ toast('Gõ đáp án trước'); return; }
+  q.typed = v;
+  q.answered = lev(v.replace(/\s/g, ''), it.w.ko.replace(/\s/g, '')) === 0;
+  recordAnswer(q.answered);
   render();
 }
 function nextQuiz(){
   const q = ui.quiz;
   if(!q || q.answered === null) return;
   q.i++;
-  if(q.i < q.items.length) q.opts = makeOptions(q.items[q.i], q.own);
   q.answered = null;
+  render();
+}
+
+/* ============ GHÉP THẺ ============ */
+const MATCH_SIZE = 6;
+const elapsed = m => (((m.end || Date.now()) - m.start) / 1000).toFixed(1);
+function matchStart(l){
+  const pool = l.words.filter(w => w.vi && (!ui.onlyUnknown || lvl(w.id) < 2));
+  if(pool.length < 2){ toast('Cần ít nhất 2 từ có nghĩa để ghép thẻ'); return; }
+  const picked = shuffle(pool).slice(0, MATCH_SIZE);
+  const cards = shuffle(picked.flatMap(w => [{u: w.id + 'k', wid: w.id, text: w.ko}, {u: w.id + 'v', wid: w.id, text: w.vi}]));
+  ui.match = {lesson: l.id, cards, open: [], done: new Set(), start: Date.now(), end: 0, wrong: 0, busy: false};
+  render();
+}
+function matchView(l){
+  const m = ui.match && ui.match.lesson === l.id ? ui.match : null;
+  if(!m) return `<div class="card empty">
+    <p>Ghép từ tiếng Hàn với nghĩa tiếng Việt. Chạm hai thẻ, nếu đúng cặp thì ẩn đi.</p>
+    <button data-act="matchStart">Bắt đầu ghép</button>
+  </div>`;
+  const total = m.cards.length / 2;
+  if(m.done.size === total) return `<div class="card empty">
+    <h2>Hoàn thành!</h2>
+    <p>Trong ${elapsed(m)} giây · sai ${m.wrong} lần</p>
+    <button data-act="matchStart">Vòng mới</button>
+  </div>`;
+  const grid = m.cards.map(c => {
+    const done = m.done.has(c.wid), open = m.open.includes(c.u);
+    const cls = done ? 'done' : open ? 'open' : '';
+    return `<button class="mcard ${cls}" data-act="mcard" data-u="${c.u}" ${done || open ? 'disabled' : ''}>${done || open ? esc(c.text) : '?'}</button>`;
+  }).join('');
+  return `<div class="card">
+    <div class="row between" style="margin-bottom:12px">
+      <span class="meta">Đã ghép ${m.done.size} / ${total} cặp</span>
+      <span class="meta"><span id="mtime">${elapsed(m)}</span> giây</span>
+    </div>
+    <div class="mgrid">${grid}</div>
+    <p class="hint" style="text-align:center">Chạm hai thẻ để tìm cặp đúng: tiếng Hàn ↔ nghĩa tiếng Việt.</p>
+  </div>`;
+}
+function matchTimer(){
+  clearInterval(ui.matchTick);
+  ui.matchTick = setInterval(() => {
+    const el = $('#mtime');
+    if(!el || !ui.match || ui.match.end) { clearInterval(ui.matchTick); return; }
+    el.textContent = elapsed(ui.match);
+  }, 200);
+}
+function matchPick(u){
+  const m = ui.match;
+  if(!m || m.busy) return;
+  const c = m.cards.find(x => x.u === u);
+  if(!c || m.open.includes(u) || m.done.has(c.wid)) return;
+  m.open.push(u);
+  if(m.open.length === 2){
+    const [a, b] = m.open.map(x => m.cards.find(y => y.u === x));
+    if(a.wid === b.wid){
+      m.done.add(a.wid);
+      m.open = [];
+      if(m.done.size === m.cards.length / 2) m.end = Date.now();
+    } else {
+      m.wrong++;
+      m.busy = true;
+      setTimeout(() => { m.open = []; m.busy = false; render(); }, 800);
+    }
+  }
   render();
 }
 
@@ -1211,6 +1342,11 @@ function act(name, d){
     case 'eCheck': checkExt(); break;
     case 'eNext': ui.eId = null; ui.eRes = null; render(); break;
     case 'quizStart': startQuiz(); break;
+    case 'quizSetup': ui.quiz = null; render(); break;
+    case 'tfAns': answerTF(d.v === '1'); break;
+    case 'essayCheck': essayCheck(); break;
+    case 'matchStart': { const l = findLesson(route().id); if(l) matchStart(l); break; }
+    case 'mcard': matchPick(d.u); break;
     case 'quizPick': answerQuiz(+d.i); break;
     case 'quizNext': nextQuiz(); break;
     case 'addWord': openWordDialog(d.id, null); break;
@@ -1273,6 +1409,11 @@ document.addEventListener('change', e => {
     render();
     return;
   }
+  if(t.dataset && t.dataset.cfg){
+    const l = findLesson(route().id);
+    if(l){ l.testCfg = {...testCfg(l), [t.dataset.cfg]: t.checked}; ui.quiz = null; save(); render(); }
+    return;
+  }
   if(t.hasAttribute && t.hasAttribute('data-quizcount')){
     const v = +t.value;
     const r = route();
@@ -1310,7 +1451,9 @@ document.addEventListener('keydown', e => {
     else if(e.key === '3') flashLevel(2);
   }
   if(r.name === 'lesson' && r.tab === 'quiz' && ui.quiz){
-    if(/^[1-4]$/.test(e.key)) answerQuiz(+e.key - 1);
+    const it = ui.quiz.items[ui.quiz.i];
+    if(it && it.type === 'mc' && /^[1-4]$/.test(e.key)) answerQuiz(+e.key - 1);
+    else if(it && it.type === 'tf' && (e.key === '1' || e.key === '2')) answerTF(e.key === '1');
     else if(e.key === 'Enter') nextQuiz();
   }
 });
