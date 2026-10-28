@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#7fb6e3">
+<meta name="theme-color" content="#2f63a8">
 <title>Mèo xanh – Học tiếng Hàn</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
@@ -11,122 +11,190 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <style>
   :root{
-    --bg:#f5f9fd; --card:#ffffff; --soft:#eef6fc;
-    --blue:#a9d3f2; --blue-d:#5b9fd6; --blue-ink:#2f6ea8;
-    --ink:#2b3d4f; --muted:#7a8ea1; --line:#e1ecf5;
-    --ok:#4f9e7a; --ok-bg:#e8f5ee; --bad:#c9646c; --bad-bg:#fbeaec;
-    --pink-bg:#fdf1f5;
+    --bg:#f6f6f2; --card:#ffffff; --ink:#1c2430; --muted:#6b7280; --line:#e5e5df;
+    --primary:#2f63a8; --soft:#e9f0f9; --soft-ink:#2f63a8;
+    --ok:#2f7d4f; --ok-bg:#e6f3eb;
+    --warn:#a85a1a; --warn-bg:#fbf0e4;
+    --mid:#7a6a1c; --mid-bg:#f8f3d9;
+    --bad:#b4434b; --bad-bg:#fbe9ea;
+    --r:14px;
   }
   *{box-sizing:border-box}
-  body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Malgun Gothic","Apple SD Gothic Neo",sans-serif;background:var(--bg);color:var(--ink);line-height:1.5;min-height:100vh}
-  button{font:inherit;cursor:pointer;border:0;border-radius:12px;padding:10px 16px;min-height:44px;background:var(--blue-d);color:#fff;touch-action:manipulation}
-  button.ghost{background:var(--card);color:var(--blue-ink);border:1px solid var(--line)}
-  button.soft{background:var(--soft);color:var(--blue-ink)}
-  button.icon{background:transparent;color:var(--muted);min-height:36px;min-width:36px;padding:4px 8px;border-radius:10px}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Malgun Gothic","Apple SD Gothic Neo",sans-serif;line-height:1.5;font-size:15px}
+  a{color:inherit}
+  button,.btn{font:inherit;cursor:pointer;border:0;border-radius:12px;padding:10px 18px;min-height:42px;background:var(--primary);color:#fff;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;gap:6px;touch-action:manipulation;white-space:nowrap}
+  button.ghost,.btn.ghost{background:var(--card);color:var(--primary);border:1px solid var(--line)}
+  button.soft,.btn.soft{background:var(--soft);color:var(--soft-ink)}
+  button.icon{background:transparent;color:var(--muted);min-height:34px;min-width:34px;padding:4px 8px;border-radius:10px}
   button.icon:hover{background:var(--soft)}
-  button.chip{background:var(--card);color:var(--blue-ink);border:1px solid var(--line);min-height:36px;padding:6px 12px;border-radius:999px;font-size:14px}
-  button.chip.on{background:var(--blue);color:#1d4c74;border-color:var(--blue)}
-  button.tog{background:var(--soft);color:var(--blue-ink);min-height:36px;min-width:36px;padding:0;border-radius:50%}
-  button.tog.on{background:var(--ok-bg);color:var(--ok)}
   button:disabled{opacity:.4;cursor:default}
-  button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
-  input,select,textarea{font:inherit;border:1px solid var(--line);border-radius:12px;padding:10px 12px;min-height:44px;background:var(--card);color:var(--ink);width:100%}
+  button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,a:focus-visible{outline:3px solid #b9d2f0;outline-offset:2px}
+  input,select,textarea{font:inherit;border:1px solid var(--line);border-radius:12px;padding:10px 12px;min-height:42px;background:var(--card);color:var(--ink);width:100%}
   textarea{resize:vertical}
-  label{display:grid;gap:4px;font-size:14px;color:var(--muted);margin-bottom:10px}
+  input[type=checkbox]{width:20px;height:20px;min-height:0;accent-color:var(--primary);flex:none}
+  label.f{display:grid;gap:4px;font-size:13px;color:var(--muted);margin-bottom:10px}
   .hidden{display:none!important}
 
-  header.top{position:sticky;top:0;z-index:10;background:var(--card);border-bottom:1px solid var(--line)}
-  .bar{max-width:1040px;margin:auto;display:flex;align-items:center;gap:12px;padding:10px 16px}
-  .brand{display:flex;align-items:center;gap:8px;font-weight:800;font-size:18px;color:var(--blue-ink);white-space:nowrap}
-  .logo{width:48px;height:38px;flex:none}
-  nav.menu{display:flex;gap:4px;margin-left:auto;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}
-  nav.menu::-webkit-scrollbar{display:none}
-  nav.menu button{background:transparent;color:var(--muted);padding:8px 12px;min-height:40px;white-space:nowrap;font-size:15px}
-  nav.menu button:hover{background:var(--soft)}
-  nav.menu button.on{background:var(--blue);color:#1d4c74}
+  .app{display:grid;grid-template-columns:248px minmax(0,1fr);min-height:100vh}
+  aside.side{background:var(--card);border-right:1px solid var(--line);padding:20px 14px;position:sticky;top:0;height:100vh;overflow-y:auto}
+  .brand{display:flex;align-items:center;gap:8px;font-weight:800;font-size:18px;color:var(--primary);padding:0 8px 16px}
+  .logo{width:40px;height:32px;flex:none}
+  .newbtn{width:100%;margin-bottom:14px}
+  .navlink{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:9px 12px;border-radius:10px;text-decoration:none;color:var(--ink);margin-bottom:2px}
+  .navlink:hover{background:#f1f3f6}
+  .navlink.on{background:var(--soft);color:var(--primary);font-weight:600}
+  .count{background:var(--warn-bg);color:var(--warn);font-size:12px;font-weight:600;padding:1px 8px;border-radius:999px}
+  .sec{font-size:12px;color:var(--muted);font-weight:600;letter-spacing:.5px;margin:22px 12px 8px}
+  .lessonlink{display:block;padding:7px 12px;border-radius:10px;text-decoration:none;color:var(--ink);font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .lessonlink:hover{background:#f1f3f6}
+  .lessonlink.on{background:var(--soft);color:var(--primary);font-weight:600}
+  .folderlabel{font-size:12px;color:var(--muted);padding:8px 12px 2px}
 
-  main{max-width:1040px;margin:auto;padding:16px}
-  .panel{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:16px}
-  h2{margin:0 0 12px;font-size:18px;font-weight:700}
-  .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  main{padding:28px 32px 60px;max-width:1080px;width:100%;min-width:0}
+  h1{font-size:26px;margin:0 0 6px;font-weight:800}
+  h2{font-size:18px;margin:0 0 12px;font-weight:700}
+  h3.step{font-size:16px;margin:26px 0 12px;font-weight:700;color:var(--ink)}
+  h3.step b{color:var(--primary)}
+  .sub{color:var(--muted);margin:0 0 6px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:18px}
+  .card + .card{margin-top:14px}
+  .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
   .between{justify-content:space-between}
-  .chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
-  .meta{color:var(--muted);font-size:14px}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+  .meta{color:var(--muted);font-size:13px}
   .hint{color:var(--muted);font-size:13px;margin:6px 0 0}
-  .empty{text-align:center;color:var(--muted)}
-  .badge{font-size:12px;background:var(--soft);color:var(--blue-ink);padding:2px 10px;border-radius:999px;white-space:nowrap}
-  .ko{font-weight:700;font-size:18px}
-
-  /* Thư viện: cột thư mục bên trái */
-  .lib{display:grid;grid-template-columns:220px 1fr;gap:16px;align-items:start}
-  .side{position:sticky;top:76px;padding:12px}
-  .side h3{margin:4px 8px 10px;font-size:13px;color:var(--muted);font-weight:600;letter-spacing:.3px;text-transform:uppercase}
-  .fitem{display:flex;justify-content:space-between;align-items:center;width:100%;background:transparent;color:var(--ink);text-align:left;padding:9px 10px;margin-bottom:2px;font-size:15px;border-radius:10px}
-  .fitem span{color:var(--muted);font-size:13px}
-  .fitem:hover{background:var(--soft)}
-  .fitem.on{background:var(--blue);color:#1d4c74}
-  .fitem.on span{color:#1d4c74}
-  .drop{border:2px dashed var(--blue);border-radius:16px;padding:20px 16px;text-align:center;background:var(--soft);transition:background .2s}
-  .drop.over{background:#dcedfb;border-color:var(--blue-d)}
-  .lesson{display:grid;gap:8px;padding:14px 0;border-bottom:1px solid var(--line)}
-  .lesson:last-child{border-bottom:0}
-  .track{height:6px;background:var(--line);border-radius:6px;overflow:hidden}
-  .fill{height:100%;background:var(--blue-d);border-radius:6px}
+  .empty{text-align:center;color:var(--muted);padding:18px}
+  .eyebrow{font-size:12px;color:var(--muted);letter-spacing:.6px;text-transform:uppercase;font-weight:600}
+  .ko{font-weight:700}
+  .badge{font-size:12px;padding:2px 9px;border-radius:999px;white-space:nowrap;background:var(--soft);color:var(--soft-ink)}
+  .b-ok{background:var(--ok-bg);color:var(--ok)} .b-mid{background:var(--mid-bg);color:var(--mid)} .b-warn{background:var(--warn-bg);color:var(--warn)} .b-gray{background:#eef0f2;color:var(--muted)}
+  .track{height:8px;background:#e9e9e4;border-radius:8px;overflow:hidden}
+  .fill{height:100%;background:var(--primary);border-radius:8px}
+  .fill.ok{background:var(--ok)}
+  .chip{background:var(--card);color:var(--ink);border:1px solid var(--line);min-height:34px;padding:6px 14px;border-radius:999px;font-size:14px}
+  .chip.on{background:var(--soft);color:var(--primary);border-color:#c9d9ef;font-weight:600}
+  .chips{display:flex;gap:8px;flex-wrap:wrap}
   .pager{display:flex;align-items:center;justify-content:center;gap:12px;margin-top:14px;flex-wrap:wrap}
 
+  /* Trang chủ: tải tài liệu + chọn nội dung */
+  .slots{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+  .slot{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:16px;cursor:pointer;display:flex;flex-direction:column;gap:6px;min-height:150px;position:relative}
+  .slot.dashed{border:1.5px dashed #b9c9de;background:#fbfcfe}
+  .slot.over{border-color:var(--primary);background:var(--soft)}
+  .slot .top{display:flex;justify-content:space-between;align-items:center;gap:8px}
+  .slot .t{font-weight:700}
+  .slot .types{font-size:13px;color:var(--muted)}
+  .fileline{margin-top:auto;background:#f5f5f1;border-radius:10px;padding:9px 12px;font-size:14px;word-break:break-all;display:flex;justify-content:space-between;gap:8px;align-items:center}
+  .tip{font-size:13px;color:var(--muted);margin:10px 2px 0}
+  .checks .opt{display:flex;align-items:center;gap:12px;padding:14px 4px;border-bottom:1px solid var(--line)}
+  .checks .opt:last-child{border-bottom:0}
+  .checks .opt .lbl{flex:1}
+  .checks .opt .n{color:var(--muted);font-size:14px;white-space:nowrap}
+  .checks select{width:auto;min-height:36px;padding:4px 10px}
+  .recog{display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap;background:var(--soft);border-radius:var(--r);padding:16px 18px;margin-top:16px}
+  .recog .s{font-weight:600}
+  .lessongrid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .lcard{display:block;background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:16px;text-decoration:none}
+  .lcard:hover{border-color:#c9d9ef}
+
+  /* Chi tiết bài */
+  .crumb{font-size:13px;color:var(--muted);margin-bottom:6px}
+  .crumb a{text-decoration:none;color:var(--muted)}
+  .lhead{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap;margin-bottom:12px}
+  .files{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+  .file{font-size:13px;background:var(--card);border:1px solid var(--line);border-radius:999px;padding:4px 12px;color:var(--ink)}
+  .tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin:18px 0 20px;overflow-x:auto;scrollbar-width:none}
+  .tabs::-webkit-scrollbar{display:none}
+  .tab{padding:10px 14px;text-decoration:none;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap}
+  .tab.on{color:var(--primary);border-bottom-color:var(--primary);font-weight:600}
+  .stat{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:16px}
+  .stat .l{font-size:14px;color:var(--muted)}
+  .stat .v{font-size:24px;font-weight:700;margin:4px 0 8px}
+  .stat .v small{font-size:14px;color:var(--muted);font-weight:500}
+  .ovgrid{display:grid;grid-template-columns:1.6fr 1fr;gap:16px;margin-top:16px;align-items:start}
   table.words{width:100%;border-collapse:collapse}
   table.words th{text-align:left;font-size:13px;color:var(--muted);font-weight:600;padding:8px 6px;border-bottom:1px solid var(--line)}
-  table.words td{padding:8px 6px;border-bottom:1px solid var(--line);vertical-align:middle}
+  table.words td{padding:10px 6px;border-bottom:1px solid var(--line);vertical-align:middle}
   td.acts{white-space:nowrap;text-align:right}
   .addrow{display:grid;grid-template-columns:1fr 1fr auto;gap:8px}
 
   /* Thẻ học */
-  .flash{min-height:250px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;text-align:center;padding:24px;cursor:pointer;user-select:none;border:1px solid var(--line);border-radius:20px;background:linear-gradient(160deg,var(--card),var(--soft));box-shadow:0 8px 24px rgba(91,159,214,.10)}
-  .flash .ko{font-size:clamp(34px,10vw,56px)}
-  .flash .vi{font-size:clamp(20px,5.5vw,28px);color:var(--blue-ink);font-weight:700}
-  .actions{justify-content:space-between;margin-top:14px}
+  .fwrap{max-width:680px;margin:0 auto}
+  .modebar{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+  .progress-line{display:flex;justify-content:space-between;font-size:13px;color:var(--muted);margin:14px 0 6px}
+  .fcard{min-height:280px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;text-align:center;padding:28px;cursor:pointer;user-select:none;background:var(--card);border:1px solid var(--line);border-radius:22px;box-shadow:0 6px 22px rgba(28,36,48,.05)}
+  .fcard .fw{font-size:clamp(34px,9vw,54px);font-weight:700;word-break:keep-all}
+  .fcard .fb{font-size:clamp(18px,4.5vw,24px);color:var(--primary);font-weight:600}
+  .fcard .hint{margin-top:8px}
+  .lvbtns{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:14px}
+  .lvbtns button{min-height:50px}
+  .lv0{background:var(--warn-bg)!important;color:var(--warn)!important}
+  .lv1{background:var(--card)!important;color:var(--ink)!important;border:1px solid var(--line)!important}
+  .lv2{background:var(--ok-bg)!important;color:var(--ok)!important}
+  .fnote{text-align:center;font-size:13px;color:var(--muted);margin-top:14px}
+
+  /* Luyện viết */
+  .subtabs{display:grid;grid-template-columns:repeat(3,1fr);background:#ebebe6;border-radius:12px;padding:4px;gap:4px;margin-bottom:16px}
+  .subtabs a{text-align:center;padding:9px;border-radius:9px;text-decoration:none;color:var(--muted);font-size:14px}
+  .subtabs a.on{background:var(--card);color:var(--primary);font-weight:600;box-shadow:0 1px 2px rgba(0,0,0,.06)}
+  .wcard{max-width:760px;margin:0 auto}
+  .qhead{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+  .qword{font-size:clamp(22px,5vw,28px);font-weight:700;margin:6px 0}
+  .fb{padding:12px 14px;border-radius:12px;margin-top:12px;font-size:14px}
+  .fb.ok{background:var(--ok-bg);color:var(--ok)}
+  .fb.near{background:var(--warn-bg);color:var(--warn)}
+  .fb.bad{background:var(--bad-bg);color:var(--bad)}
+  .writebox{margin-top:14px}
 
   /* Trắc nghiệm */
-  .opt{display:block;width:100%;text-align:left;background:var(--card);color:var(--ink);border:1px solid var(--line);margin-bottom:8px;font-size:16px}
-  .opt.right{background:var(--ok-bg);border-color:var(--ok)}
-  .opt.wrong{background:var(--bad-bg);border-color:var(--bad)}
+  .opt{display:block;width:100%;text-align:left;background:var(--card);color:var(--ink);border:1px solid var(--line);margin-bottom:8px;font-size:16px;font-weight:500}
+  .opt:hover{background:#f7f9fc}
+  .opt.right{background:var(--ok-bg);border-color:var(--ok);color:var(--ok)}
+  .opt.wrong{background:var(--bad-bg);border-color:var(--bad);color:var(--bad)}
 
   /* Hội thoại */
   .chat{min-height:200px;max-height:50vh;overflow-y:auto;display:grid;gap:10px;padding:4px;margin-bottom:12px}
-  .bubble{max-width:85%;padding:10px 14px;border-radius:16px;white-space:pre-wrap;font-size:16px}
-  .bubble.me{justify-self:end;background:var(--blue);color:#1d4c74;border-bottom-right-radius:4px}
-  .bubble.ai{justify-self:start;background:var(--soft);border-bottom-left-radius:4px}
-  .pdf{width:100%;height:70vh;border:1px solid var(--line);border-radius:12px}
-
-  /* Sổ tay */
+  .bubble{max-width:85%;padding:10px 14px;border-radius:16px;white-space:pre-wrap;font-size:15px}
+  .bubble.me{justify-self:end;background:var(--soft);color:var(--primary);border-bottom-right-radius:4px}
+  .bubble.ai{justify-self:start;background:#f3f3ef;border-bottom-left-radius:4px}
+  .pdf{width:100%;height:72vh;border:1px solid var(--line);border-radius:12px;background:#fff}
   .note{padding:12px 0;border-bottom:1px solid var(--line)}
   .note:last-child{border-bottom:0}
 
-  dialog{border:0;border-radius:18px;padding:0;max-width:440px;width:calc(100% - 32px);background:var(--card);color:var(--ink);box-shadow:0 20px 50px rgba(0,0,0,.2)}
-  dialog::backdrop{background:rgba(43,61,79,.35)}
-  .dlgbox{padding:20px}
-  .dlgbox .actions{margin-top:6px}
+  dialog{border:0;border-radius:18px;padding:0;max-width:460px;width:calc(100% - 32px);background:var(--card);color:var(--ink);box-shadow:0 20px 50px rgba(0,0,0,.2)}
+  dialog::backdrop{background:rgba(28,36,48,.35)}
+  .dlgbox{padding:22px}
+  .dlgbox .actions{margin-top:8px}
 
-  #toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);background:var(--ink);color:var(--card);padding:10px 16px;border-radius:12px;opacity:0;transition:.25s;pointer-events:none;max-width:90vw;text-align:center;z-index:30}
+  #toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);background:var(--ink);color:#fff;padding:10px 16px;border-radius:12px;opacity:0;transition:.25s;pointer-events:none;max-width:90vw;text-align:center;z-index:30}
   #toast.show{opacity:1;transform:translateX(-50%)}
 
-  @media (max-width:820px){
-    .lib{grid-template-columns:1fr}
-    .side{position:static;display:flex;gap:6px;overflow-x:auto;padding:8px;scrollbar-width:none}
-    .side h3{display:none}
-    .fitem{width:auto;flex:none;border:1px solid var(--line);border-radius:999px;padding:7px 12px;background:var(--card)}
-    .fitem.on{border-color:var(--blue)}
+  @media (max-width:1000px){
+    .slots{grid-template-columns:1fr 1fr}
+    .grid4{grid-template-columns:1fr 1fr}
+    .ovgrid{grid-template-columns:1fr}
   }
-  @media (max-width:600px){
-    .bar{flex-wrap:wrap;padding:10px 12px;gap:8px}
-    nav.menu{width:100%;margin-left:0}
-    nav.menu button{flex:none;padding:8px 10px;font-size:14px}
-    main{padding:12px}
-    .panel{padding:14px;border-radius:14px}
+  @media (max-width:860px){
+    .app{grid-template-columns:1fr}
+    aside.side{position:sticky;top:0;height:auto;border-right:0;border-bottom:1px solid var(--line);padding:10px 12px;display:flex;align-items:center;gap:4px;overflow-x:auto;z-index:5;scrollbar-width:none}
+    aside.side::-webkit-scrollbar{display:none}
+    .brand{padding:0 8px 0 0;flex:none}
+    .newbtn{width:auto;margin:0 6px 0 0;flex:none;padding:8px 14px;min-height:38px}
+    .navlink{flex:none;padding:8px 10px;white-space:nowrap}
+    .sec,.lessonlist,.folderlabel{display:none}
+    main{padding:18px 16px 60px}
+    h1{font-size:22px}
+  }
+  @media (max-width:640px){
+    .slots,.lessongrid,.grid2{grid-template-columns:1fr}
+    .grid4{grid-template-columns:1fr 1fr}
     .addrow{grid-template-columns:1fr}
-    .actions button{flex:1 1 calc(50% - 8px)}
-    .actions button.ghost{flex-basis:100%}
+    .subtabs a{font-size:13px;padding:8px 4px}
     table.words .hide-sm{display:none}
+    .lvbtns{gap:6px}
+    .lvbtns button{font-size:14px;padding:8px 4px}
+    .fcard{min-height:240px;padding:20px}
   }
 </style>
 </head>
@@ -148,72 +216,10 @@
   </symbol>
 </svg>
 
-<header class="top">
-  <div class="bar">
-    <div class="brand">
-      <svg class="logo" viewBox="0 0 120 100" aria-hidden="true"><use href="#cat"/></svg>
-      Mèo xanh
-    </div>
-    <nav class="menu" id="menu">
-      <button data-go="library">Thư viện</button>
-      <button data-go="flash">Thẻ học</button>
-      <button data-go="quiz">Trắc nghiệm</button>
-      <button data-go="sent">Đặt câu</button>
-      <button data-go="tr">Dịch</button>
-      <button data-go="talk">Hội thoại AI</button>
-      <button data-go="grammar">Bài giảng</button>
-      <button data-go="notes">Sổ tay</button>
-    </nav>
-  </div>
-</header>
-
-<main>
-  <!-- THƯ VIỆN -->
-  <section id="v-library" class="view">
-    <div class="lib">
-      <aside class="panel side">
-        <h3>Thư mục</h3>
-        <div id="sideFolders"></div>
-      </aside>
-      <div>
-        <div class="panel">
-          <h2>Tải file lên</h2>
-          <div class="drop" id="drop">
-            Kéo file vào đây hoặc bấm <b>Chọn file</b>
-            <div class="hint">Hỗ trợ: .txt · .docx · .xlsx / .xls · .csv · .pdf · .pptx<br>Mỗi dòng là <b>từ tiếng Hàn – nghĩa</b> (Excel: 2 cột là đủ)</div>
-          </div>
-          <div class="row" style="margin-top:12px">
-            <input id="folderName" list="folderOpts" placeholder="Tên thư mục, ví dụ: Bài 1" style="flex:1;min-width:180px">
-            <datalist id="folderOpts"></datalist>
-            <select id="uploadType" style="flex:1;min-width:180px" aria-label="Loại học">
-              <option value="vocab">Từ vựng</option>
-              <option value="ko-vi">Dịch Hàn → Việt</option>
-              <option value="vi-ko">Dịch Việt → Hàn</option>
-              <option value="grammar">Ngữ pháp / bài giảng</option>
-              <option value="talk">Giao tiếp AI</option>
-            </select>
-            <button data-act="pickFile">Chọn file</button>
-          </div>
-          <p id="uploadMsg" class="hint"></p>
-        </div>
-
-        <div class="panel">
-          <div class="row between"><h2 style="margin:0">Bài học</h2><span class="meta" id="libStats"></span></div>
-          <div id="libList"></div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <section id="v-words" class="view hidden"></section>
-  <section id="v-flash" class="view hidden"></section>
-  <section id="v-quiz" class="view hidden"></section>
-  <section id="v-sent" class="view hidden"></section>
-  <section id="v-tr" class="view hidden"></section>
-  <section id="v-talk" class="view hidden"></section>
-  <section id="v-grammar" class="view hidden"></section>
-  <section id="v-notes" class="view hidden"></section>
-</main>
+<div class="app">
+  <aside class="side" id="side"></aside>
+  <main id="main"></main>
+</div>
 
 <input type="file" id="fileInput" multiple style="display:none"
   accept=".txt,.md,.tsv,.csv,.xlsx,.xls,.xlsm,.ods,.docx,.pdf,.pptx">
@@ -223,36 +229,43 @@
 
 <script>
 /* ============ DỮ LIỆU ============
-   localStorage: lessons, progress, notes
-   IndexedDB: file gốc của từng bài (PDF, Word...) */
+   localStorage: bài học (lessons), tiến độ (progress), sổ từ (notes), API key
+   IndexedDB: file gốc từng bài, khóa "<id>|<loại file>" */
 const KEY = 'meo-xanh-v1';
 const KEY_API = 'meo-xanh-apikey';
-const PAGE_LESSONS = 10;
 const PAGE_WORDS = 20;
+const PAGE_LIST = 10;
 const HANGUL = /[ᄀ-ᇿ㄰-㆏가-힯]/;
 const HANGUL_START = /^[ᄀ-ᇿ㄰-㆏가-힯]/;
-const TYPE_LABEL = {vocab: 'Từ vựng', 'ko-vi': 'Dịch Hàn → Việt', 'vi-ko': 'Dịch Việt → Hàn', grammar: 'Ngữ pháp / bài giảng', talk: 'Giao tiếp AI'};
-const TYPE_MODE = {vocab: 'flash', 'ko-vi': 'tr', 'vi-ko': 'tr', grammar: 'grammar', talk: 'talk'};
-const TYPE_BTN = {vocab: 'Thẻ học', 'ko-vi': 'Dịch', 'vi-ko': 'Dịch', grammar: 'Bài giảng', talk: 'Hội thoại'};
+const SLOTS = [
+  {key: 'lecture', title: 'Bài giảng', types: 'PDF, Word, PowerPoint', accept: '.pdf,.docx,.pptx'},
+  {key: 'vocab', title: 'Từ vựng', types: 'Word, PDF, Excel', accept: '.docx,.pdf,.xlsx,.xls,.csv,.txt,.pptx'},
+  {key: 'grammar', title: 'Ngữ pháp', types: 'Word, PDF', accept: '.docx,.pdf,.txt,.pptx'},
+  {key: 'sheet', title: 'Sheet tổng hợp', types: 'Excel, Google Sheets, CSV', accept: '.xlsx,.xls,.csv,.ods'}
+];
+const DEFAULT_MODES = {flash: true, write: true, sent: true, ext: true, quiz: true};
 
 let state = load();
 const ui = {
-  view: 'library', folder: '', libPage: 1,
-  lessonId: null, filter: 'all', wordsPage: 1,
-  flashOrder: null, flashIdx: 0, flipped: false,
-  quiz: null, sentWord: null,
-  trDir: 'ko-vi', trWord: null, trAns: null,
-  msgs: [], notesFilter: '', attachId: null, fileUrl: null
+  onlyUnknown: false, dir: 'ko-vi',
+  fl: null, wId: null, wRes: null, sId: null, sRes: null, eId: null, eRes: null,
+  quiz: null, ovPage: 1, ovQuery: '', listPage: 1, notesFilter: 'all',
+  talkLesson: null, msgs: [], draft: null, fileUrl: null, attachId: null
 };
 
 function load(){
   try{
     const s = JSON.parse(localStorage.getItem(KEY));
     if(s && Array.isArray(s.lessons)){
+      const progress = s.progress || {};
+      Object.values(progress).forEach(p => { if(p.level === undefined) p.level = p.known ? 2 : 0; });
       return {
-        lessons: s.lessons.map(l => ({type: 'vocab', hasFile: false, ...l})),
-        progress: s.progress || {},
-        notes: s.notes || []
+        lessons: s.lessons.map(l => ({
+          modes: {...DEFAULT_MODES}, quizCount: 20, createdAt: 0,
+          files: l.hasFile ? {vocab: l.fileName} : {},  // bài tạo từ phiên bản cũ
+          ...l
+        })),
+        progress, notes: s.notes || []
       };
     }
   }catch(e){}
@@ -269,13 +282,34 @@ const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt
 const shuffle = a => { a = [...a]; for(let i = a.length - 1; i > 0; i--){ const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
 const norm = s => String(s).normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D')
   .toLowerCase().replace(/[^\p{L}\p{N}\s]/gu, ' ').replace(/\s+/g, ' ').trim();
+const lev = (a, b) => {
+  let prev = Array.from({length: b.length + 1}, (_, j) => j);
+  for(let i = 1; i <= a.length; i++){
+    const cur = [i];
+    for(let j = 1; j <= b.length; j++)
+      cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+    prev = cur;
+  }
+  return prev[b.length];
+};
 const findLesson = id => state.lessons.find(l => l.id === id);
-const curLesson = () => { const l = findLesson(ui.lessonId) || state.lessons[0] || null; if(l) ui.lessonId = l.id; return l; };
-const prog = id => state.progress[id] || {known: false, right: 0, wrong: 0};
+const prog = id => state.progress[id] || {level: 0};
+const lvl = id => prog(id).level || 0;
 function setProg(id, patch){ state.progress[id] = {...prog(id), ...patch}; save(); }
-const pctKnown = l => l.words.length ? Math.round(100 * l.words.filter(w => prog(w.id).known).length / l.words.length) : 0;
-// Các từ theo bộ lọc chung (tất cả / chưa thuộc / đã thuộc)
-const pool = l => l.words.filter(w => ui.filter === 'all' || (ui.filter === 'known') === prog(w.id).known);
+function setLevel(id, level){ setProg(id, {level, known: level === 2}); }
+const lessonPct = l => l.words.length ? Math.round(100 * l.words.filter(w => lvl(w.id) === 2).length / l.words.length) : 0;
+const dueWords = () => state.lessons.flatMap(l => l.words).filter(w => lvl(w.id) < 2).length;
+const pager = (total, page, per, key) => {
+  const pages = Math.max(1, Math.ceil(total / per));
+  if(pages <= 1) return '';
+  return `<div class="pager">
+    <button class="ghost" data-pg="${key}" data-to="${page - 1}" ${page <= 1 ? 'disabled' : ''}>← Trước</button>
+    <span class="meta">Trang ${page} / ${pages}</span>
+    <button class="ghost" data-pg="${key}" data-to="${page + 1}" ${page >= pages ? 'disabled' : ''}>Sau →</button>
+  </div>`;
+};
+const clampPage = (p, total, per) => Math.min(Math.max(1, p), Math.max(1, Math.ceil(total / per)));
+const hangulLen = s => s.replace(/\s/g, '').length;
 
 let toastTimer;
 function toast(msg){
@@ -286,49 +320,7 @@ function toast(msg){
   toastTimer = setTimeout(() => t.classList.remove('show'), 2400);
 }
 
-function pager(total, page, per, key){
-  const pages = Math.max(1, Math.ceil(total / per));
-  if(pages <= 1) return '';
-  return `<div class="pager">
-    <button class="ghost" data-pg="${key}" data-to="${page - 1}" ${page <= 1 ? 'disabled' : ''}>← Trước</button>
-    <span class="meta">Trang ${page} / ${pages}</span>
-    <button class="ghost" data-pg="${key}" data-to="${page + 1}" ${page >= pages ? 'disabled' : ''}>Sau →</button>
-  </div>`;
-}
-const clampPage = (p, total, per) => Math.min(Math.max(1, p), Math.max(1, Math.ceil(total / per)));
-
-function emptyMsg(text = 'Chưa có bài học nào. Vào Thư viện để tải file lên trước nhé.'){
-  return `<div class="panel empty"><p>${text}</p><button data-go="library">Mở Thư viện</button></div>`;
-}
-function lessonSelect(){
-  return `<select data-pick="lesson" aria-label="Chọn bài">${state.lessons.map(l =>
-    `<option value="${l.id}" ${l.id === ui.lessonId ? 'selected' : ''}>${esc(l.folder)} › ${esc(l.name)}</option>`).join('')}</select>`;
-}
-function filterBar(){
-  return `<div class="chips" aria-label="Lọc từ">${[['all', 'Tất cả'], ['unknown', 'Chưa thuộc'], ['known', 'Đã thuộc']]
-    .map(([k, t]) => `<button class="chip ${ui.filter === k ? 'on' : ''}" data-act="filter" data-v="${k}">${t}</button>`).join('')}</div>`;
-}
-// Thanh đầu của các màn học: chọn bài + lọc từ (dùng chung cho mọi chế độ)
-function studyTop(l, extra = ''){
-  const n = pool(l).length;
-  return `<div class="panel">
-    <div class="row">${lessonSelect()}</div>
-    ${filterBar()}
-    ${extra}
-    <p class="hint">${n} từ trong mục đang chọn</p>
-  </div>`;
-}
-function modeButtons(l){
-  const b = (mode, label) => `<button class="soft" data-act="lesson" data-id="${l.id}" data-mode="${mode}">${label}</button>`;
-  return b('flash', 'Thẻ học') + b('quiz', 'Trắc nghiệm') + b('sent', 'Đặt câu') + b('tr', 'Dịch') + b('talk', 'Hội thoại AI') + (l.hasFile ? b('grammar', 'Bài giảng') : '');
-}
-function resetStudy(){
-  ui.flashOrder = null; ui.flashIdx = 0; ui.flipped = false;
-  ui.quiz = null; ui.sentWord = null; ui.trWord = null; ui.trAns = null;
-  ui.wordsPage = 1; ui.msgs = [];
-}
-
-/* ============ LƯU FILE GỐC (IndexedDB) ============ */
+/* ============ FILE GỐC (IndexedDB) ============ */
 let dbPromise = null;
 function db(){
   return dbPromise ||= new Promise((res, rej) => {
@@ -338,17 +330,28 @@ function db(){
     r.onerror = () => rej(r.error);
   });
 }
-async function putFile(id, blob){
+async function putFile(key, blob){
   const d = await db();
-  return new Promise((res, rej) => { const t = d.transaction('files', 'readwrite'); t.objectStore('files').put(blob, id); t.oncomplete = res; t.onerror = () => rej(t.error); });
+  return new Promise((res, rej) => { const t = d.transaction('files', 'readwrite'); t.objectStore('files').put(blob, key); t.oncomplete = res; t.onerror = () => rej(t.error); });
 }
-async function getFile(id){
+async function getFile(key){
   const d = await db();
-  return new Promise((res, rej) => { const r = d.transaction('files').objectStore('files').get(id); r.onsuccess = () => res(r.result || null); r.onerror = () => rej(r.error); });
+  return new Promise((res, rej) => { const r = d.transaction('files').objectStore('files').get(key); r.onsuccess = () => res(r.result || null); r.onerror = () => rej(r.error); });
 }
-async function delFile(id){
+async function delFiles(id){
   const d = await db();
-  return new Promise((res, rej) => { const t = d.transaction('files', 'readwrite'); t.objectStore('files').delete(id); t.oncomplete = res; t.onerror = () => rej(t.error); });
+  return new Promise((res, rej) => {
+    const t = d.transaction('files', 'readwrite'), s = t.objectStore('files');
+    SLOTS.forEach(x => s.delete(id + '|' + x.key));
+    s.delete(id);
+    t.oncomplete = res; t.onerror = () => rej(t.error);
+  });
+}
+// File của một slot; bài cũ lưu file từ vựng theo khóa là id
+async function lessonFile(l, slot){
+  let blob = await getFile(l.id + '|' + slot);
+  if(!blob && slot === 'vocab') blob = await getFile(l.id);
+  return blob;
 }
 
 /* ============ ĐỌC FILE ============ */
@@ -369,7 +372,6 @@ function parseLine(raw){
       ko = line.slice(0, m.index).trim();
       vi = line.slice(m.index + m[0].length).trim();
     } else {
-      // Không có dấu ngăn: chỉ nhận khi dòng bắt đầu bằng tiếng Hàn (tránh nhận nhầm tiêu đề, câu tiếng Việt)
       if(!HANGUL_START.test(line)) return null;
       const sp = line.search(/\s/);
       ko = sp < 0 ? line : line.slice(0, sp);
@@ -383,15 +385,12 @@ function parseLine(raw){
   if(ko.length > 60) return null;
   return {ko, vi};
 }
-
 function need(lib, name){ if(typeof lib === 'undefined') throw new Error(`thiếu thư viện đọc ${name}, kiểm tra kết nối mạng`); }
 
 async function fileToLines(file){
   const ext = file.name.split('.').pop().toLowerCase();
   const buf = await file.arrayBuffer();
-
   if(['txt', 'md', 'tsv'].includes(ext)) return new TextDecoder('utf-8').decode(buf).split(/\r?\n/);
-
   if(['csv', 'xlsx', 'xls', 'xlsm', 'ods'].includes(ext)){
     need(window.XLSX, 'Excel/CSV');
     const wb = XLSX.read(buf, {type: 'array'});
@@ -445,281 +444,550 @@ async function fileToLines(file){
   throw new Error(`định dạng .${ext} chưa hỗ trợ; file .doc/.ppt cũ hãy lưu lại thành .docx/.pptx`);
 }
 
-async function importFiles(files){
-  const folder = $('#folderName').value.trim() || 'Chưa xếp thư mục';
-  const type = $('#uploadType').value;
-  const msg = $('#uploadMsg');
-  let ok = 0;
-  const fails = [];
-  for(const f of files){
-    msg.textContent = `Đang đọc ${f.name}…`;
+/* ============ ĐIỀU HƯỚNG ============ */
+function route(){
+  const p = location.hash.replace(/^#\/?/, '').split('/');
+  if(p[0] === 'lesson' && p[1]) return {name: 'lesson', id: p[1], tab: p[2] || 'overview', sub: p[3] || 'word'};
+  if(['review', 'talk', 'notes', 'stats'].includes(p[0])) return {name: p[0]};
+  return {name: 'home'};
+}
+function go(hash){
+  if(location.hash === hash) render(); else location.hash = hash;
+}
+window.addEventListener('hashchange', () => { ui.quiz = null; render(); window.scrollTo(0, 0); });
+
+function render(){
+  const r = route();
+  renderSide(r);
+  const main = $('#main');
+  if(r.name === 'home') return renderHome(main);
+  if(r.name === 'lesson') return renderLesson(main, r);
+  if(r.name === 'review') return renderFlashPage(main, null);
+  if(r.name === 'talk') return renderTalk(main);
+  if(r.name === 'notes') return renderNotes(main);
+  if(r.name === 'stats') return renderStats(main);
+}
+
+function renderSide(r){
+  const link = (name, label, badge = '') =>
+    `<a class="navlink ${r.name === name ? 'on' : ''}" href="#/${name}">${label}${badge}</a>`;
+  const folders = [...new Set(state.lessons.map(l => l.folder))].sort((a, b) => a.localeCompare(b, 'vi'));
+  const lessonLinks = folders.map(f => `<div class="folderlabel">${esc(f)}</div>` +
+    state.lessons.filter(l => l.folder === f).map(l =>
+      `<a class="lessonlink ${r.id === l.id ? 'on' : ''}" href="#/lesson/${l.id}/overview" title="${esc(l.name)}">${esc(l.name)}</a>`).join('')).join('');
+  const due = dueWords();
+  $('#side').innerHTML = `
+    <div class="brand"><svg class="logo" viewBox="0 0 120 100" aria-hidden="true"><use href="#cat"/></svg>Mèo xanh</div>
+    <a class="btn newbtn" href="#/home">+ Tải bài mới</a>
+    ${link('home', 'Trang chủ')}
+    ${link('review', 'Ôn tập hôm nay', due ? `<span class="count">${due}</span>` : '')}
+    ${link('talk', 'Hội thoại AI')}
+    ${link('notes', 'Sổ từ của tôi')}
+    ${link('stats', 'Thống kê')}
+    <div class="sec">BÀI HỌC</div>
+    <div class="lessonlist">${lessonLinks || '<div class="meta" style="padding:0 12px">Chưa có bài nào</div>'}</div>`;
+}
+
+/* ============ TRANG CHỦ: TẢI BÀI + CHỌN NỘI DUNG ============ */
+function newDraft(){
+  return ui.draft || (ui.draft = {files: {}, words: null, name: '', folder: '', opts: {...DEFAULT_MODES}, quizCount: 20, busy: false, error: ''});
+}
+async function draftWords(){
+  const d = ui.draft;
+  if(d.words) return d.words;
+  const seen = new Set(), words = [];
+  d.error = '';
+  for(const k of ['sheet', 'vocab']){
+    const f = d.files[k];
+    if(!f) continue;
     try{
-      const seen = new Set();
-      const words = [];
       (await fileToLines(f)).forEach(l => {
         const w = parseLine(l);
         if(w && !seen.has(w.ko)){ seen.add(w.ko); words.push(w); }
       });
-      if(!words.length && type !== 'grammar'){ fails.push(`${f.name} (không tìm thấy từ nào)`); continue; }
-      const id = 'L' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
-      const lesson = {
-        id, folder, type,
-        name: f.name.replace(/\.[^.]+$/, ''),
-        hasFile: false, fileName: f.name,
-        words: words.map((w, i) => ({id: id + '_' + i, ko: w.ko, vi: w.vi}))
-      };
-      try{ await putFile(id, f); lesson.hasFile = true; } catch(e){}
-      state.lessons.push(lesson);
-      ok++;
-    }catch(e){
-      fails.push(`${f.name} (${e.message})`);
-    }
+    }catch(e){ d.error = `${f.name}: ${e.message}`; }
   }
-  save();
-  msg.textContent = (ok ? `Đã thêm ${ok} bài vào "${folder}".` : '') + (fails.length ? ' Không đọc được: ' + fails.join('; ') : '');
-  if(ok) toast(`Đã thêm ${ok} bài`);
-  ui.folder = folder;
-  renderView();
+  d.words = words;
+  return words;
 }
-
-/* ============ ĐIỀU HƯỚNG ============ */
-const NAV_OF = {words: 'library'};
-function go(view){
-  ui.view = view;
-  document.querySelectorAll('.view').forEach(v => v.classList.toggle('hidden', v.id !== 'v-' + view));
-  const navView = NAV_OF[view] || view;
-  document.querySelectorAll('nav.menu button').forEach(b => b.classList.toggle('on', b.dataset.go === navView));
-  renderView();
-  window.scrollTo(0, 0);
+async function setSlotFile(key, file){
+  const d = newDraft();
+  if(file) d.files[key] = file; else delete d.files[key];
+  d.words = null;
+  d.busy = true;
+  render();
+  await draftWords();
+  d.busy = false;
+  render();
 }
-const RENDER = {
-  library: renderLibrary, words: renderWords, flash: renderFlash, quiz: renderQuiz,
-  sent: renderSent, tr: renderTr, talk: renderTalk, grammar: renderGrammar, notes: renderNotes
-};
-function renderView(){ RENDER[ui.view](); }
+function slotCard(s, d){
+  const f = d.files[s.key];
+  return `<label class="slot ${f ? '' : 'dashed'}" data-drop="${s.key}">
+    <div class="top"><span class="t">${s.title}</span>${f ? '<span class="badge b-ok">Đã tải</span>' : ''}</div>
+    <div class="types">${s.types}</div>
+    ${f
+      ? `<div class="fileline"><span>${esc(f.name)}</span><button type="button" class="icon" data-act="clearSlot" data-v="${s.key}" aria-label="Bỏ file">✕</button></div>`
+      : `<div class="fileline" style="background:none;padding:0;color:var(--primary);font-weight:600">Kéo thả hoặc bấm để chọn file</div>`}
+    <input type="file" data-slot="${s.key}" accept="${s.accept}" hidden>
+  </label>`;
+}
+function renderHome(main){
+  const d = newDraft();
+  const recent = [...state.lessons].sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)).slice(0, 4);
+  const n = d.words ? d.words.length : 0;
+  const hasVocab = !!(d.files.vocab || d.files.sheet);
+  const counts = {flash: n, write: n, sent: n, ext: Math.min(10, n)};
+  const row = (key, label, count, right = '') => `<label class="opt">
+      <input type="checkbox" data-opt="${key}" ${d.opts[key] ? 'checked' : ''}>
+      <span class="lbl">${label}</span>
+      ${right || `<span class="n">${count}</span>`}
+    </label>`;
+  const quizSel = `<select data-quizcount aria-label="Số câu trắc nghiệm">
+      ${[10, 20, 0].map(v => `<option value="${v}" ${d.quizCount === v ? 'selected' : ''}>${v ? v + ' câu' : 'Tất cả'}</option>`).join('')}
+    </select>`;
+  main.innerHTML = `
+    <h1>Tạo bài học mới</h1>
+    <p class="sub">Tải tài liệu của một bài lên — web tự đọc và tạo flashcard, bài viết và trắc nghiệm cho bạn.</p>
 
-/* ============ THƯ VIỆN ============ */
-function renderLibrary(){
-  const folders = [...new Set(state.lessons.map(l => l.folder))].sort((a, b) => a.localeCompare(b, 'vi'));
-  $('#folderOpts').innerHTML = folders.map(f => `<option value="${esc(f)}">`).join('');
-  $('#sideFolders').innerHTML = [
-    `<button class="fitem ${!ui.folder ? 'on' : ''}" data-act="folder" data-v="">Tất cả <span>${state.lessons.length}</span></button>`,
-    ...folders.map(f => `<button class="fitem ${ui.folder === f ? 'on' : ''}" data-act="folder" data-v="${esc(f)}">${esc(f)} <span>${state.lessons.filter(l => l.folder === f).length}</span></button>`)
-  ].join('');
-  const total = state.lessons.reduce((n, l) => n + l.words.length, 0);
-  $('#libStats').textContent = `${state.lessons.length} bài · ${total} từ`;
+    <h3 class="step"><b>Bước 1</b> · Tải tài liệu</h3>
+    <div class="slots">${SLOTS.map(s => slotCard(s, d)).join('')}</div>
+    <p class="tip">Mẹo: sheet tổng hợp nên có cột Từ · Nghĩa để web nhận diện chính xác nhất.</p>
+    <div class="grid2" style="margin-top:14px">
+      <label class="f">Tên bài<input id="draftName" value="${esc(d.name)}" placeholder="Ví dụ: Bài 4 · Mua sắm"></label>
+      <label class="f">Thư mục (không bắt buộc)<input id="draftFolder" list="folderOpts" value="${esc(d.folder)}" placeholder="Ví dụ: Giáo trình tuần 1"></label>
+    </div>
+    <datalist id="folderOpts">${[...new Set(state.lessons.map(l => l.folder))].map(f => `<option value="${esc(f)}">`).join('')}</datalist>
 
-  const list = state.lessons.filter(l => !ui.folder || l.folder === ui.folder);
-  ui.libPage = clampPage(ui.libPage, list.length, PAGE_LESSONS);
-  if(!list.length){
-    $('#libList').innerHTML = '<p class="hint">Chưa có bài nào trong mục này. Hãy tải file lên ở phía trên.</p>';
-    return;
-  }
-  const items = list.slice((ui.libPage - 1) * PAGE_LESSONS, ui.libPage * PAGE_LESSONS);
-  $('#libList').innerHTML = items.map(l => {
-    const p = pctKnown(l);
-    const primary = `<button data-act="lesson" data-id="${l.id}" data-mode="${TYPE_MODE[l.type]}">${TYPE_BTN[l.type]}</button>`;
-    return `<div class="lesson">
-      <div class="row between">
-        <strong>${esc(l.name)}</strong>
-        <span class="badge">${TYPE_LABEL[l.type]}</span>
+    <h3 class="step"><b>Bước 2</b> · Chọn nội dung cần tạo</h3>
+    <div class="card checks">
+      ${row('flash', 'Flashcard từ vựng', counts.flash ? counts.flash + ' thẻ' : '—')}
+      ${row('write', 'Viết từ (nhìn nghĩa → gõ từ)', counts.write ? counts.write + ' câu' : '—')}
+      ${row('sent', 'Viết câu với từ', counts.sent ? counts.sent + ' câu' : '—')}
+      ${row('ext', 'Viết ví dụ mở rộng', counts.ext ? counts.ext + ' từ khó' : '—')}
+      ${row('quiz', 'Trắc nghiệm ABCD', '', quizSel)}
+    </div>
+
+    <div class="recog">
+      <div>
+        ${d.busy ? '<div class="s">Đang đọc file…</div>'
+          : `<div class="s">Đã nhận diện: ${n} từ vựng · ${d.files.grammar ? '1 file ngữ pháp' : 'chưa có file ngữ pháp'} · ${d.files.lecture ? '1 bài giảng' : 'chưa có bài giảng'}</div>`}
+        <div class="meta">${d.error ? esc(d.error) : 'Bạn có thể xem và sửa danh sách từ sau khi tạo.'}</div>
       </div>
-      <div class="meta">${esc(l.folder)} · ${l.words.length} từ · ${p}% đã thuộc</div>
-      <div class="track"><div class="fill" style="width:${p}%"></div></div>
       <div class="row">
-        ${primary}
-        <button class="ghost" data-act="lesson" data-id="${l.id}" data-mode="words">Xem từ</button>
-        ${l.hasFile && l.type !== 'grammar' ? `<button class="ghost" data-act="lesson" data-id="${l.id}" data-mode="grammar">Bài giảng</button>` : ''}
-        ${l.hasFile ? '' : `<button class="ghost" data-act="attach" data-id="${l.id}">Đính kèm file</button>`}
-        <button class="icon" data-act="editLesson" data-id="${l.id}">Sửa</button>
-        <button class="icon" data-act="delLesson" data-id="${l.id}">Xóa</button>
+        <button class="ghost" data-act="preview" ${hasVocab && n ? '' : 'disabled'}>Xem trước</button>
+        <button data-act="createLesson" ${hasVocab && n ? '' : 'disabled'}>Tạo bài học</button>
+      </div>
+    </div>
+
+    ${recent.length ? `<h3 class="step">Bài học gần đây</h3>
+    <div class="lessongrid">${recent.map(l => `<a class="lcard" href="#/lesson/${l.id}/overview">
+      <div class="row between"><strong>${esc(l.name)}</strong><span class="meta">${esc(l.folder)}</span></div>
+      <div class="meta" style="margin:6px 0 10px">${l.words.length} từ · đã học ${lessonPct(l)}%</div>
+      <div class="track"><div class="fill ok" style="width:${lessonPct(l)}%"></div></div>
+    </a>`).join('')}</div>` : ''}`;
+  bindDraftInputs();
+}
+function bindDraftInputs(){
+  const d = ui.draft;
+  const name = $('#draftName'), folder = $('#draftFolder');
+  if(name) name.oninput = e => d.name = e.target.value;
+  if(folder) folder.oninput = e => d.folder = e.target.value;
+}
+function openPreview(){
+  const d = ui.draft;
+  const list = d.words || [];
+  openDialog(`Xem trước · ${list.length} từ`, `
+    <div style="max-height:52vh;overflow-y:auto">
+      <table class="words"><thead><tr><th>Tiếng Hàn</th><th>Nghĩa</th></tr></thead><tbody>
+      ${list.slice(0, 80).map(w => `<tr><td class="ko">${esc(w.ko)}</td><td>${w.vi ? esc(w.vi) : '<span class="meta">chưa có nghĩa</span>'}</td></tr>`).join('')}
+      </tbody></table>
+      ${list.length > 80 ? `<p class="hint">Hiển thị 80 / ${list.length} từ. Phần còn lại vẫn được tạo.</p>` : ''}
+    </div>`, () => {});
+  $('#dlg').querySelector('[data-cancel]').textContent = 'Đóng';
+  $('#dlg').querySelector('button[type=submit]').remove();
+}
+async function createLesson(){
+  const d = ui.draft;
+  const words = await draftWords();
+  if(!words.length){ toast('Cần file từ vựng hoặc sheet có cột Từ · Nghĩa'); return; }
+  const id = 'L' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  const base = (d.files.vocab || d.files.sheet).name.replace(/\.[^.]+$/, '');
+  const files = {};
+  for(const s of SLOTS){
+    const f = d.files[s.key];
+    if(!f) continue;
+    files[s.key] = f.name;
+    try{ await putFile(id + '|' + s.key, f); } catch(e){}
+  }
+  state.lessons.push({
+    id, name: d.name.trim() || base, folder: d.folder.trim() || 'Chưa xếp thư mục',
+    files, modes: {...d.opts}, quizCount: d.quizCount, createdAt: Date.now(),
+    words: words.map((w, i) => ({id: id + '_' + i, ko: w.ko, vi: w.vi}))
+  });
+  save();
+  ui.draft = null;
+  toast('Đã tạo bài học');
+  go(`#/lesson/${id}/overview`);
+}
+
+/* ============ CHI TIẾT BÀI ============ */
+function renderLesson(main, r){
+  const l = findLesson(r.id);
+  if(!l){ go('#/home'); return; }
+  const m = l.modes || DEFAULT_MODES;
+  const tabs = [['overview', 'Tổng quan', true], ['flash', 'Flashcard', m.flash], ['write', 'Luyện viết', m.write || m.sent || m.ext],
+    ['quiz', 'Trắc nghiệm', m.quiz], ['source', 'Tài liệu gốc', Object.keys(l.files || {}).length > 0]];
+  const known = l.words.filter(w => lvl(w.id) === 2).length;
+  const primary = m.flash ? 'flash' : m.write ? 'write' : m.quiz ? 'quiz' : 'overview';
+  const fileNames = Object.entries(l.files || {}).map(([k, v]) => `<span class="file">${esc(v)}</span>`).join('');
+  let body = '';
+  if(r.tab === 'overview') body = overviewView(l);
+  else if(r.tab === 'flash') body = flashBody(l.words.map(w => ({w, l})), l.name);
+  else if(r.tab === 'write') body = writeView(l, r.sub);
+  else if(r.tab === 'quiz') body = quizView(l);
+  else if(r.tab === 'source') body = '<div id="srcBody" class="card"><p class="empty">Đang mở file…</p></div>';
+  main.innerHTML = `
+    <div class="crumb"><a href="#/home">Bài học</a> / ${esc(l.folder)}</div>
+    <div class="lhead">
+      <div>
+        <h1>${esc(l.name)}</h1>
+        <div class="files">${fileNames || '<span class="meta">Chưa có file gốc</span>'}</div>
+      </div>
+      <a class="btn" href="#/lesson/${l.id}/${primary}">Học tiếp: ${{flash: 'Flashcard', write: 'Luyện viết', quiz: 'Trắc nghiệm', overview: 'Tổng quan'}[primary]}</a>
+    </div>
+    <div class="tabs">${tabs.filter(t => t[2]).map(([k, t]) =>
+      `<a class="tab ${r.tab === k ? 'on' : ''}" href="#/lesson/${l.id}/${k}">${t}</a>`).join('')}</div>
+    <div id="lessonBody">${body}</div>
+    <p class="hint" style="margin-top:10px">${known}/${l.words.length} từ đã nhớ</p>`;
+  if(r.tab === 'source') renderSourceWith(l, Object.keys(l.files || {})[0]);
+  if(r.tab === 'overview') bindOverview(l);
+}
+
+function overviewView(l){
+  const total = l.words.length;
+  const known = l.words.filter(w => lvl(w.id) === 2).length;
+  const wok = l.words.filter(w => prog(w.id).wOk).length;
+  const sent = l.words.filter(w => prog(w.id).sent || prog(w.id).ext).length;
+  const qr = l.words.reduce((n, w) => n + (prog(w.id).qr || 0), 0);
+  const qw = l.words.reduce((n, w) => n + (prog(w.id).qw || 0), 0);
+  const acc = qr + qw ? Math.round(100 * qr / (qr + qw)) + '%' : 'Chưa làm';
+  const pct = (a, b) => b ? Math.round(100 * a / b) : 0;
+  const stat = (label, value, pctv, color = '') => `<div class="stat">
+      <div class="l">${label}</div>
+      <div class="v">${value}</div>
+      ${pctv === null ? '' : `<div class="track"><div class="fill ${color}" style="width:${pctv}%"></div></div>`}
+    </div>`;
+  const notes = state.notes.filter(n => n.kind === 'note' && n.lessonId === l.id);
+  return `
+    <div class="grid4">
+      ${stat('Flashcard', `${known} <small>/ ${total} đã nhớ</small>`, pct(known, total), 'ok')}
+      ${stat('Viết từ', `${wok} <small>/ ${total} đúng</small>`, pct(wok, total))}
+      ${stat('Viết câu & mở rộng', `${sent} <small>/ ${total} xong</small>`, pct(sent, total))}
+      ${stat('Trắc nghiệm', acc, null)}
+    </div>
+    <div class="ovgrid">
+      <div class="card">
+        <div class="row between" style="margin-bottom:12px">
+          <h2 style="margin:0">Từ vựng (${total})</h2>
+          <input id="ovSearch" placeholder="Tìm từ…" value="${esc(ui.ovQuery)}" style="max-width:200px">
+        </div>
+        <div id="ovTable"></div>
+        <div class="row" style="margin-top:12px;justify-content:space-between">
+          <button class="ghost" data-act="addWord" data-id="${l.id}">+ Thêm từ</button>
+          <a href="#/lesson/${l.id}/flash" class="meta">Xem tất cả ${total} từ →</a>
+        </div>
+      </div>
+      <div class="card">
+        <h2>Ghi chú & mẫu câu</h2>
+        ${notes.length ? notes.map(n => `<div class="note"><div>${esc(n.text)}</div></div>`).join('')
+          : '<p class="meta">Chưa có ghi chú. Thêm trong mục Sổ từ của tôi.</p>'}
+        <div class="row" style="margin-top:14px">
+          <button class="soft" data-act="lesson" data-id="${l.id}" data-mode="talk">Hội thoại AI</button>
+          <a class="btn ghost" href="#/notes">Mở sổ từ</a>
+          <button class="ghost" data-act="attach" data-id="${l.id}">Đính kèm file</button>
+        </div>
       </div>
     </div>`;
-  }).join('') + pager(list.length, ui.libPage, PAGE_LESSONS, 'libPage');
+}
+function bindOverview(l){
+  const draw = () => {
+    const q = ui.ovQuery.trim().toLowerCase();
+    const list = l.words.filter(w => !q || w.ko.toLowerCase().includes(q) || (w.vi || '').toLowerCase().includes(q));
+    ui.ovPage = clampPage(ui.ovPage, list.length, PAGE_LIST);
+    const start = (ui.ovPage - 1) * PAGE_LIST;
+    const status = w => {
+      const p = prog(w.id);
+      if(!p.level && !p.known && !p.qr && !p.qw && !p.wOk && !p.sent) return '<span class="badge b-gray">Chưa học</span>';
+      return ['<span class="badge b-warn">Chưa nhớ</span>', '<span class="badge b-mid">Hơi nhớ</span>', '<span class="badge b-ok">Đã nhớ</span>'][lvl(w.id)];
+    };
+    $('#ovTable').innerHTML = list.length ? `<table class="words">
+      <thead><tr><th>Từ</th><th>Nghĩa</th><th>Trạng thái</th><th></th></tr></thead>
+      <tbody>${list.slice(start, start + PAGE_LIST).map(w => `<tr>
+        <td class="ko">${esc(w.ko)}</td>
+        <td>${w.vi ? esc(w.vi) : '<span class="meta">chưa có nghĩa</span>'}</td>
+        <td>${status(w)}</td>
+        <td class="acts">
+          <button class="icon" data-act="editWord" data-id="${w.id}" data-lesson="${l.id}" aria-label="Sửa từ">✎</button>
+          <button class="icon" data-act="delWord" data-id="${w.id}" data-lesson="${l.id}" aria-label="Xóa từ">🗑</button>
+        </td></tr>`).join('')}</tbody></table>
+      ${pager(list.length, ui.ovPage, PAGE_LIST, 'ovPage')}` : '<p class="empty">Không tìm thấy từ nào.</p>';
+  };
+  draw();
+  const s = $('#ovSearch');
+  s.oninput = e => { ui.ovQuery = e.target.value; ui.ovPage = 1; draw(); };
 }
 
-function editLesson(id){
-  const l = findLesson(id);
-  if(!l) return;
-  const types = Object.entries(TYPE_LABEL).map(([k, v]) => `<option value="${k}" ${k === l.type ? 'selected' : ''}>${v}</option>`).join('');
-  openDialog('Sửa bài', `
-    <label>Tên bài<input name="name" value="${esc(l.name)}"></label>
-    <label>Thư mục<input name="folder" list="folderOpts" value="${esc(l.folder)}"></label>
-    <label>Loại học<select name="type">${types}</select></label>`, f => {
-      l.name = f.name.trim() || l.name;
-      l.folder = f.folder.trim() || 'Chưa xếp thư mục';
-      l.type = f.type;
-      save(); renderView();
-    });
-}
-async function deleteLesson(id){
-  const l = findLesson(id);
-  if(!l || !confirm(`Xóa bài "${l.name}", toàn bộ từ và tiến độ của bài này?`)) return;
-  state.lessons = state.lessons.filter(x => x.id !== id);
-  l.words.forEach(w => delete state.progress[w.id]);
-  state.notes = state.notes.filter(n => n.lessonId !== id);
-  save();
-  try{ await delFile(id); } catch(e){}
-  toast('Đã xóa bài');
-  renderView();
-}
-function attachFile(id){
-  ui.attachId = id;
-  $('#pdfInput').click();
-}
-
-/* ============ DANH SÁCH TỪ (xem, sửa, thêm, xóa) ============ */
-function renderWords(){
-  const l = curLesson();
-  if(!l){ $('#v-words').innerHTML = emptyMsg(); return; }
-  const list = pool(l);
-  ui.wordsPage = clampPage(ui.wordsPage, list.length, PAGE_WORDS);
-  const start = (ui.wordsPage - 1) * PAGE_WORDS;
-  const rows = list.slice(start, start + PAGE_WORDS).map((w, i) => {
-    const k = prog(w.id).known;
-    return `<tr>
-      <td class="meta hide-sm">${start + i + 1}</td>
-      <td class="ko">${esc(w.ko)}</td>
-      <td>${w.vi ? esc(w.vi) : '<span class="meta">chưa có nghĩa</span>'}</td>
-      <td><button class="tog ${k ? 'on' : ''}" data-act="toggleKnown" data-id="${w.id}" aria-label="Đánh dấu đã thuộc">${k ? '✔' : '○'}</button></td>
-      <td class="acts">
-        <button class="icon" data-act="editWord" data-id="${w.id}" aria-label="Sửa từ">✎</button>
-        <button class="icon" data-act="delWord" data-id="${w.id}" aria-label="Xóa từ">🗑</button>
-      </td>
-    </tr>`;
-  }).join('');
-  $('#v-words').innerHTML = `
-    <div class="panel row between">
-      <button class="ghost" data-act="back">← Thư viện</button>
-      <strong>${esc(l.name)}</strong>
-      <button class="ghost" data-act="editLesson" data-id="${l.id}">Sửa bài</button>
-    </div>
-    ${studyTop(l)}
-    <div class="panel">
-      <div class="addrow">
-        <input id="newKo" placeholder="Từ tiếng Hàn">
-        <input id="newVi" placeholder="Nghĩa tiếng Việt">
-        <button data-act="addWord">Thêm từ</button>
-      </div>
-    </div>
-    <div class="panel" style="overflow-x:auto">
-      ${list.length ? `<table class="words">
-        <thead><tr><th class="hide-sm">#</th><th>Tiếng Hàn</th><th>Nghĩa</th><th>Thuộc</th><th></th></tr></thead>
-        <tbody>${rows}</tbody>
-      </table>` : '<p class="empty">Không có từ nào trong mục này.</p>'}
-      ${pager(list.length, ui.wordsPage, PAGE_WORDS, 'wordsPage')}
-    </div>
-    <div class="row">${modeButtons(l)}</div>`;
-}
-function openWordDialog(id){
-  const l = curLesson();
-  const w = id ? l.words.find(x => x.id === id) : null;
-  openDialog(w ? 'Sửa từ' : 'Thêm từ', `
-    <label>Tiếng Hàn<input name="ko" value="${esc(w ? w.ko : '')}" autocomplete="off"></label>
-    <label>Nghĩa tiếng Việt<input name="vi" value="${esc(w ? w.vi : '')}"></label>`, f => {
-      const ko = f.ko.trim(), vi = f.vi.trim();
-      if(!HANGUL.test(ko)){ toast('Từ tiếng Hàn chưa đúng, hãy nhập lại'); return false; }
-      if(w){ w.ko = ko; w.vi = vi; }
-      else l.words.push({id: l.id + '_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5), ko, vi});
-      save(); renderView();
-    });
-}
-function addWordFromForm(){
-  const ko = $('#newKo').value.trim(), vi = $('#newVi').value.trim();
-  if(!HANGUL.test(ko)){ toast('Nhập từ tiếng Hàn trước'); return; }
-  const l = curLesson();
-  l.words.push({id: l.id + '_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5), ko, vi});
-  save();
-  toast('Đã thêm từ');
-  renderView();
-}
-function deleteWord(id){
-  const l = curLesson();
-  if(!confirm('Xóa từ này khỏi bài?')) return;
-  l.words = l.words.filter(w => w.id !== id);
-  delete state.progress[id];
-  save();
-  renderView();
-}
-
-/* ============ THẺ HỌC ============ */
-function flashIds(l){
-  const key = l.id + '|' + ui.filter;
-  if(!ui.flashOrder || ui.flashOrder.key !== key){
-    ui.flashOrder = {key, ids: pool(l).map(w => w.id)};
-    ui.flashIdx = 0;
-    ui.flipped = false;
+/* ============ THẺ HỌC (dùng cho bài và Ôn tập) ============ */
+function flashBody(items, title){
+  if(!items.length) return '<div class="card empty">Chưa có từ nào.</div>';
+  const key = location.hash + '|' + ui.onlyUnknown;
+  if(!ui.fl || ui.fl.key !== key){
+    ui.fl = {key, ids: items.filter(x => !ui.onlyUnknown || lvl(x.w.id) < 2).map(x => x.w.id), i: 0, flipped: false, items};
   }
-  return ui.flashOrder.ids;
-}
-function renderFlash(){
-  const box = $('#v-flash');
-  const l = curLesson();
-  if(!l){ box.innerHTML = emptyMsg(); return; }
-  const ids = flashIds(l);
+  const byId = new Map(ui.fl.items.map(x => [x.w.id, x]));
+  const ids = ui.fl.ids;
+  const dirBar = `<div class="chips">
+    <button class="chip ${ui.dir === 'ko-vi' ? 'on' : ''}" data-act="dir" data-v="ko-vi">Từ → Nghĩa</button>
+    <button class="chip ${ui.dir === 'vi-ko' ? 'on' : ''}" data-act="dir" data-v="vi-ko">Nghĩa → Từ</button>
+  </div>
+  <label class="row" style="gap:8px;font-size:14px;cursor:pointer"><input type="checkbox" data-only ${ui.onlyUnknown ? 'checked' : ''}> Chỉ thẻ chưa nhớ</label>`;
   if(!ids.length){
-    box.innerHTML = studyTop(l) + `<div class="panel empty"><p>Không có từ nào trong mục này.</p>${ui.filter !== 'all' ? '<button data-act="filter" data-v="all">Xem tất cả</button>' : ''}</div>`;
-    return;
+    return `<div class="fwrap"><div class="modebar">${dirBar}</div>
+      <div class="card empty"><p>Không còn thẻ nào chưa nhớ.</p><button data-act="onlyOff">Xem tất cả thẻ</button></div></div>`;
   }
-  ui.flashIdx = (ui.flashIdx + ids.length) % ids.length;
-  const w = l.words.find(x => x.id === ids[ui.flashIdx]);
-  const p = prog(w.id);
-  box.innerHTML = studyTop(l) + `
-    <div class="flash" data-act="flip" role="button" tabindex="0" aria-label="Lật thẻ">
-      <div class="meta">${ui.flashIdx + 1} / ${ids.length} · ${p.known ? '✔ Đã thuộc' : 'Chưa thuộc'}</div>
-      <div class="ko">${esc(w.ko)}</div>
-      ${ui.flipped ? `<div class="vi">${w.vi ? esc(w.vi) : '(chưa có nghĩa trong file)'}</div>` : ''}
-      <div class="hint">${ui.flipped ? 'Chạm để ẩn nghĩa' : 'Chạm để xem nghĩa'}</div>
+  ui.fl.i = (ui.fl.i + ids.length) % ids.length;
+  const cur = byId.get(ids[ui.fl.i]);
+  const w = cur.w;
+  const front = ui.dir === 'ko-vi' ? w.ko : (w.vi || '(chưa có nghĩa)');
+  const back = ui.dir === 'ko-vi' ? (w.vi || '(chưa có nghĩa trong file)') : w.ko;
+  const counts = [0, 1, 2].map(v => ids.filter(id => lvl(id) === v).length);
+  const done = ui.fl.i + 1;
+  const pctDone = Math.round(100 * done / ids.length);
+  return `<div class="fwrap">
+    <div class="modebar">${dirBar}</div>
+    <div class="progress-line"><span>Thẻ ${done} / ${ids.length}</span><span>Đã nhớ ${counts[2]} · Chưa nhớ ${counts[0] + counts[1]}</span></div>
+    <div class="track"><div class="fill" style="width:${pctDone}%"></div></div>
+    <div class="fcard" data-act="flip" role="button" tabindex="0" aria-label="Lật thẻ" style="margin-top:14px">
+      <div class="eyebrow">${ui.dir === 'ko-vi' ? 'Từ vựng' : 'Nghĩa'} · ${esc(cur.l.name)}</div>
+      <div class="fw">${esc(front)}</div>
+      ${ui.fl.flipped ? `<div class="fb">${esc(back)}</div>` : ''}
+      <div class="hint">${ui.fl.flipped ? 'Bấm vào thẻ để ẩn đáp án' : 'Bấm vào thẻ để lật'}</div>
     </div>
-    <div class="row actions">
+    <div class="lvbtns">
+      <button class="lv0" data-act="lv" data-v="0">Chưa nhớ</button>
+      <button class="lv1" data-act="lv" data-v="1">Hơi nhớ</button>
+      <button class="lv2" data-act="lv" data-v="2">Đã nhớ</button>
+    </div>
+    <div class="row between" style="margin-top:12px">
       <button class="ghost" data-act="prev">← Trước</button>
-      <button class="soft" data-act="mark" data-v="0">Chưa thuộc</button>
-      <button data-act="mark" data-v="1">Đã thuộc</button>
+      <div class="row">
+        <button class="ghost" data-act="shuffle">Xáo trộn</button>
+        <button class="ghost" data-act="saveNote" data-id="${w.id}">★ Lưu vào sổ từ</button>
+      </div>
       <button class="ghost" data-act="next">Sau →</button>
     </div>
-    <div class="row" style="justify-content:center;margin-top:10px">
-      <button class="ghost" data-act="shuffleFlash">Xáo trộn</button>
-      <button class="ghost" data-act="saveNote" data-id="${w.id}">★ Lưu vào sổ tay</button>
-    </div>
-    <p class="hint" style="text-align:center">Phím tắt: ← → chuyển thẻ · Space lật thẻ · 1 chưa thuộc · 2 đã thuộc</p>`;
+    <p class="fnote">Thẻ “Chưa nhớ” sẽ quay lại sớm hơn trong phần Ôn tập hôm nay. Phím tắt: ← → · Space lật · 1 / 2 / 3 chọn mức.</p>
+  </div>`;
+}
+function renderFlashPage(main, lesson){
+  const items = state.lessons.flatMap(l => l.words.map(w => ({w, l})));
+  const body = flashBody(items, 'Ôn tập');
+  main.innerHTML = `<div class="crumb">Ôn tập</div><h1>Ôn tập hôm nay</h1>
+    <p class="sub">Các thẻ chưa nhớ từ mọi bài, ưu tiên thẻ bạn hay quên.</p>
+    <div style="margin-top:18px">${body}</div>`;
 }
 function flashStep(d){
-  const l = curLesson(); if(!l) return;
-  const ids = flashIds(l);
-  if(!ids.length) return;
-  ui.flashIdx = (ui.flashIdx + d + ids.length) % ids.length;
-  ui.flipped = false;
-  renderView();
+  const ids = ui.fl && ui.fl.ids;
+  if(!ids || !ids.length) return;
+  ui.fl.i = (ui.fl.i + d + ids.length) % ids.length;
+  ui.fl.flipped = false;
+  render();
 }
-function flashMark(known){
-  const l = curLesson(); if(!l) return;
-  const ids = flashIds(l);
-  if(!ids.length) return;
-  const id = ids[ui.flashIdx];
-  setProg(id, {known});
-  if(ui.filter !== 'all'){
-    // Đang lọc: từ vừa đánh dấu không còn thuộc nhóm này, bỏ khỏi vòng học
-    ids.splice(ui.flashIdx, 1);
-    if(ui.flashIdx >= ids.length) ui.flashIdx = 0;
-    ui.flipped = false;
-    renderView();
-  } else {
-    flashStep(1);
-  }
+function flashLevel(level){
+  const ids = ui.fl && ui.fl.ids;
+  if(!ids || !ids.length) return;
+  const id = ids[ui.fl.i];
+  setLevel(id, level);
+  if(ui.onlyUnknown && level === 2){
+    ids.splice(ui.fl.i, 1);
+    if(ui.fl.i >= ids.length) ui.fl.i = 0;
+    ui.fl.flipped = false;
+    render();
+  } else flashStep(1);
 }
 function saveNote(wordId){
-  const l = curLesson();
-  const w = l && l.words.find(x => x.id === wordId);
+  const owner = state.lessons.find(l => l.words.some(w => w.id === wordId));
+  const w = owner && owner.words.find(x => x.id === wordId);
   if(!w) return;
-  if(state.notes.some(n => n.wordId === wordId)){ toast('Từ này đã có trong sổ tay'); return; }
-  state.notes.unshift({id: 'N' + Date.now().toString(36), kind: 'word', wordId, lessonId: l.id, ko: w.ko, vi: w.vi, text: '', at: Date.now()});
+  if(state.notes.some(n => n.wordId === wordId)){ toast('Từ này đã có trong sổ từ'); return; }
+  state.notes.unshift({id: 'N' + Date.now().toString(36), kind: 'word', wordId, lessonId: owner.id, ko: w.ko, vi: w.vi, text: '', at: Date.now()});
   save();
-  toast('Đã lưu vào sổ tay');
+  toast('Đã lưu vào sổ từ');
+}
+
+/* ============ LUYỆN VIẾT ============ */
+function writeView(l, sub){
+  const m = l.modes || DEFAULT_MODES;
+  const tabs = [['word', 'Viết từ', m.write], ['sent', 'Viết câu', m.sent], ['ext', 'Ví dụ mở rộng', m.ext]].filter(t => t[2]);
+  const cur = tabs.some(t => t[0] === sub) ? sub : tabs[0] && tabs[0][0];
+  const bar = `<div class="subtabs">${tabs.map(([k, t]) => `<a class="${cur === k ? 'on' : ''}" href="#/lesson/${l.id}/write/${k}">${t}</a>`).join('')}</div>`;
+  const filt = `<div class="modebar">
+    <label class="row" style="gap:8px;font-size:14px;cursor:pointer"><input type="checkbox" data-only ${ui.onlyUnknown ? 'checked' : ''}> Chỉ từ chưa nhớ</label></div>`;
+  const pool = l.words.filter(w => !ui.onlyUnknown || lvl(w.id) < 2);
+  if(!tabs.length) return '<div class="card empty">Bài này không bật mục luyện viết.</div>';
+  if(!pool.length) return bar + filt + '<div class="card empty">Không còn từ chưa nhớ trong bài này.</div>';
+  if(cur === 'word') return bar + filt + writeWord(l, pool.filter(w => w.vi));
+  if(cur === 'sent') return bar + filt + writeSent(l, pool);
+  return bar + filt + writeExt(l, pool);
+}
+function pickId(pool, key){
+  if(!pool.some(w => w.id === ui[key])) ui[key] = shuffle(pool)[0].id;
+  return pool.find(w => w.id === ui[key]);
+}
+function writeWord(l, pool){
+  if(!pool.length) return '<div class="card empty">Các từ trong bài chưa có nghĩa tiếng Việt.</div>';
+  const w = pickId(pool, 'wId');
+  const s = w.ko.replace(/\s/g, '');
+  const hint = s[0] + ' ' + Array(s.length - 1).fill('_').join(' ');
+  const r = ui.wRes;
+  const fb = r ? {
+    ok: `<div class="fb ok"><b>✔ Đúng!</b></div>`,
+    near: `<div class="fb near"><b>Gần đúng</b> — sai ${r.dist} chữ. Đáp án: <b>${esc(w.ko)}</b></div>`,
+    bad: `<div class="fb bad"><b>Chưa đúng.</b> Đáp án: <b>${esc(w.ko)}</b></div>`
+  }[r.verdict] : '';
+  return `<div class="wcard card">
+    <div class="qhead"><span class="eyebrow">1 · Viết từ</span><span class="meta">${pool.indexOf(w) + 1} / ${pool.length}</span></div>
+    <div class="meta">Nhìn nghĩa, gõ lại từ tiếng Hàn.</div>
+    <div class="qword">${esc(w.vi)}</div>
+    <div class="meta">Gợi ý: ${hint} (${s.length} chữ)</div>
+    <div class="writebox">
+      <label class="f">Câu trả lời<input id="wIn" placeholder="Gõ từ tiếng Hàn…" autocomplete="off" ${r ? 'disabled' : ''} value="${r ? esc(r.v) : ''}"></label>
+    </div>
+    ${fb}
+    <div class="row actions" style="justify-content:flex-end;margin-top:14px">
+      ${r ? '<button data-act="wNext">Từ khác →</button>' : '<button data-act="wCheck">Kiểm tra</button>'}
+    </div>
+  </div>`;
+}
+function writeSent(l, pool){
+  const w = pickId(pool, 'sId');
+  const r = ui.sRes;
+  return `<div class="wcard card">
+    <div class="qhead"><span class="eyebrow">2 · Viết câu</span><span class="meta">${pool.indexOf(w) + 1} / ${pool.length}</span></div>
+    <div class="qword ko" style="font-size:clamp(26px,6vw,36px)">${esc(w.ko)}</div>
+    <div class="meta">Nghĩa: <b>${w.vi ? esc(w.vi) : 'chưa có nghĩa trong file'}</b></div>
+    <div class="writebox">
+      <label class="f">Viết một câu tiếng Hàn có dùng từ trên<textarea id="sIn" rows="3" placeholder="Viết câu ở đây…"></textarea></label>
+    </div>
+    ${r ? `<div class="fb ${r.ok ? 'ok' : 'bad'}">${r.ok ? `✔ Đúng! Bạn đã dùng từ «${esc(w.ko)}».` : `Câu chưa có từ «${esc(w.ko)}» (hoặc dạng đã chia của nó). Thử lại nhé.`}</div>` : ''}
+    <div class="row actions" style="justify-content:space-between;margin-top:14px">
+      <button class="ghost" data-act="sNext">Từ khác →</button>
+      <button data-act="sCheck">Kiểm tra</button>
+    </div>
+    <p class="hint">Phím tắt: Ctrl + Enter để kiểm tra</p>
+  </div>`;
+}
+function writeExt(l, pool){
+  const hard = pool.filter(w => lvl(w.id) < 2);
+  const w = pickId(hard.length ? hard : pool, 'eId');
+  const r = ui.eRes;
+  const feedback = i => r && r[i] ? `<div class="fb ${r[i].ok ? 'ok' : 'bad'}">${r[i].ok ? '✔ Đúng, có từ này.' : `Câu chưa có từ «${esc(w.ko)}».`}</div>` : '';
+  return `<div class="wcard card">
+    <div class="qhead"><span class="eyebrow">3 · Ví dụ mở rộng</span><span class="meta">Từ khó</span></div>
+    <div class="meta">Viết 2 câu dùng từ <b class="ko">${esc(w.ko)}</b> (${w.vi ? esc(w.vi) : 'chưa có nghĩa'}) trong 2 tình huống khác nhau.</div>
+    <div class="writebox"><label class="f">Câu 1<textarea id="e1" rows="2" placeholder="Câu 1…"></textarea></label>${feedback(0)}</div>
+    <div class="writebox"><label class="f">Câu 2<textarea id="e2" rows="2" placeholder="Câu 2…"></textarea></label>${feedback(1)}</div>
+    <div class="row actions" style="justify-content:space-between;margin-top:14px">
+      <button class="ghost" data-act="eNext">Từ khác →</button>
+      <button data-act="eCheck">Chấm</button>
+    </div>
+  </div>`;
+}
+function stemOf(ko){ return ko.length > 1 && ko.endsWith('다') ? ko.slice(0, -1) : ko; }
+function checkWrite(){
+  const l = findLesson(route().id);
+  const w = l && l.words.find(x => x.id === ui.wId);
+  const v = $('#wIn') ? $('#wIn').value.trim() : '';
+  if(!w || !v){ toast('Gõ đáp án trước'); return; }
+  const a = v.replace(/\s/g, ''), s = w.ko.replace(/\s/g, '');
+  const dist = lev(a, s);
+  const verdict = dist === 0 ? 'ok' : (dist <= 1 && s.length >= 3 ? 'near' : 'bad');
+  ui.wRes = {verdict, v, dist};
+  if(verdict === 'ok') setProg(w.id, {wOk: true});
+  render();
+}
+function checkSent(){
+  const l = findLesson(route().id);
+  const w = l && l.words.find(x => x.id === ui.sId);
+  const box = $('#sIn');
+  if(!w || !box) return;
+  const text = box.value.trim();
+  if(!HANGUL.test(text)){ toast('Hãy viết câu bằng tiếng Hàn trước'); return; }
+  const ok = text.includes(stemOf(w.ko));
+  ui.sRes = {ok};
+  if(ok) setProg(w.id, {sent: text});
+  render();
+}
+function checkExt(){
+  const l = findLesson(route().id);
+  const w = l && l.words.find(x => x.id === ui.eId);
+  if(!w) return;
+  const texts = [$('#e1').value.trim(), $('#e2').value.trim()];
+  if(!texts[0] || !texts[1]){ toast('Viết đủ 2 câu rồi chấm'); return; }
+  const s = stemOf(w.ko);
+  ui.eRes = texts.map(t => ({ok: t.includes(s)}));
+  if(ui.eRes.every(x => x.ok)) setProg(w.id, {ext: true});
+  render();
 }
 
 /* ============ TRẮC NGHIỆM ============ */
+function quizView(l){
+  const pool = l.words.filter(w => w.vi && (!ui.onlyUnknown || lvl(w.id) < 2));
+  const q = ui.quiz && ui.quiz.lesson === l.id ? ui.quiz : null;
+  const setup = `<div class="modebar">
+      <div class="row" style="gap:12px">
+        <label class="row" style="gap:6px;font-size:14px">Số câu
+          <select data-quizcount style="width:auto">${[10, 20, 0].map(v => `<option value="${v}" ${(l.quizCount ?? 20) === v ? 'selected' : ''}>${v ? v : 'Tất cả'}</option>`).join('')}</select>
+        </label>
+      </div>
+      <label class="row" style="gap:8px;font-size:14px;cursor:pointer"><input type="checkbox" data-only ${ui.onlyUnknown ? 'checked' : ''}> Chỉ từ chưa nhớ</label>
+    </div>`;
+  if(!q){
+    return setup + `<div class="card empty">
+      <p>Xem từ tiếng Hàn, chọn nghĩa đúng trong 4 đáp án A, B, C, D.<br>Có ${pool.length} từ phù hợp.</p>
+      <button data-act="quizStart" ${pool.length ? '' : 'disabled'}>Bắt đầu</button>
+      ${pool.length ? '' : '<p class="hint">Không còn từ nào để làm.</p>'}
+    </div>`;
+  }
+  if(q.i >= q.items.length){
+    return setup + `<div class="card empty">
+      <h2>Xong rồi!</h2>
+      <p>Đúng ${q.score} / ${q.items.length} câu (${Math.round(100 * q.score / q.items.length)}%)</p>
+      <div class="row" style="justify-content:center">
+        <button data-act="quizStart">Làm lại</button>
+        <a class="btn ghost" href="#/lesson/${l.id}/overview">Về tổng quan</a>
+      </div>
+    </div>`;
+  }
+  const w = q.items[q.i];
+  const correct = q.opts.findIndex(o => o.id === w.id);
+  return setup + `<div class="card">
+    <div class="qhead"><span class="meta">Câu ${q.i + 1} / ${q.items.length}</span><span class="meta">Đúng: ${q.score}</span></div>
+    <div class="ko" style="font-size:clamp(30px,8vw,44px);text-align:center;margin:16px 0">${esc(w.ko)}</div>
+    <p class="hint" style="text-align:center;margin:-6px 0 14px">Chọn nghĩa đúng (phím 1–4)</p>
+    ${q.opts.map((o, i) => {
+      let cls = '';
+      if(q.answered !== null){
+        if(i === correct) cls = 'right';
+        else if(i === q.answered) cls = 'wrong';
+      }
+      return `<button class="opt ${cls}" data-act="quizPick" data-i="${i}">${'ABCD'[i]}. ${esc(o.vi)}</button>`;
+    }).join('')}
+    ${q.answered !== null ? `<div class="row" style="justify-content:flex-end;margin-top:8px">
+      <button data-act="quizNext">${q.i + 1 < q.items.length ? 'Câu tiếp →' : 'Xem kết quả'}</button></div>` : ''}
+  </div>`;
+}
 function makeOptions(w, own){
-  // Đáp án nhiễu: ưu tiên từ khác trong cùng bài, rồi đến các bài khác
   const others = shuffle(own.filter(x => x.id !== w.id))
     .concat(shuffle(state.lessons.flatMap(l => l.words).filter(x => x.vi && x.id !== w.id && !own.includes(x))));
   const opts = [w];
@@ -731,58 +999,15 @@ function makeOptions(w, own){
   return shuffle(opts);
 }
 function startQuiz(){
-  const l = curLesson(); if(!l) return;
-  const own = pool(l).filter(w => w.vi);
+  const l = findLesson(route().id);
+  if(!l) return;
+  const pool = l.words.filter(w => w.vi && (!ui.onlyUnknown || lvl(w.id) < 2));
   const total = state.lessons.flatMap(x => x.words).filter(w => w.vi).length;
-  if(!own.length || total < 4){
-    toast(own.length ? 'Cần ít nhất 4 từ có nghĩa để làm trắc nghiệm' : 'Không còn từ nào có nghĩa trong mục này');
-    return;
-  }
-  const items = shuffle(own);
-  ui.quiz = {items, i: 0, score: 0, answered: null, own, opts: makeOptions(items[0], own)};
-  renderQuiz();
-}
-function renderQuiz(){
-  const box = $('#v-quiz');
-  const l = curLesson();
-  if(!l){ box.innerHTML = emptyMsg(); return; }
-  const q = ui.quiz;
-  let body;
-  if(!q){
-    body = `<div class="panel empty">
-      <p>Xem từ tiếng Hàn, chọn nghĩa đúng trong 4 đáp án A, B, C, D.<br>Đang lọc: <b>${{all: 'tất cả từ', known: 'từ đã thuộc', unknown: 'từ chưa thuộc'}[ui.filter]}</b></p>
-      <button data-act="quizStart">Bắt đầu</button>
-    </div>`;
-  } else if(q.i >= q.items.length){
-    body = `<div class="panel empty">
-      <h2>Xong rồi!</h2>
-      <p>Đúng ${q.score} / ${q.items.length} câu (${Math.round(100 * q.score / q.items.length)}%)</p>
-      <div class="row" style="justify-content:center">
-        <button data-act="quizStart">Làm lại</button>
-        <button class="ghost" data-act="back">Về thư viện</button>
-      </div>
-    </div>`;
-  } else {
-    const w = q.items[q.i];
-    const correct = q.opts.findIndex(o => o.id === w.id);
-    body = `<div class="panel">
-      <div class="meta">Câu ${q.i + 1} / ${q.items.length} · Đúng: ${q.score}</div>
-      <div class="ko" style="font-size:clamp(30px,8vw,46px);text-align:center;margin:18px 0">${esc(w.ko)}</div>
-      <p class="hint" style="text-align:center;margin-top:-8px">Chọn nghĩa đúng (phím 1–4)</p>
-      ${q.opts.map((o, i) => {
-        let cls = '';
-        if(q.answered !== null){
-          if(i === correct) cls = 'right';
-          else if(i === q.answered) cls = 'wrong';
-        }
-        return `<button class="opt ${cls}" data-act="quizPick" data-i="${i}">${'ABCD'[i]}. ${esc(o.vi)}</button>`;
-      }).join('')}
-      ${q.answered !== null ? `<div class="row" style="justify-content:flex-end;margin-top:8px">
-        <button data-act="quizNext">${q.i + 1 < q.items.length ? 'Câu tiếp →' : 'Xem kết quả'}</button>
-      </div>` : ''}
-    </div>`;
-  }
-  box.innerHTML = studyTop(l) + body;
+  if(!pool.length || total < 4){ toast('Cần ít nhất 4 từ có nghĩa để làm trắc nghiệm'); return; }
+  const n = l.quizCount || 0;
+  const items = shuffle(pool).slice(0, n || pool.length);
+  ui.quiz = {lesson: l.id, items, i: 0, score: 0, answered: null, own: pool, opts: makeOptions(items[0], pool)};
+  render();
 }
 function answerQuiz(i){
   const q = ui.quiz;
@@ -792,8 +1017,8 @@ function answerQuiz(i){
   q.answered = i;
   if(ok) q.score++;
   const p = prog(w.id);
-  setProg(w.id, {right: p.right + (ok ? 1 : 0), wrong: p.wrong + (ok ? 0 : 1)});
-  renderQuiz();
+  setProg(w.id, {qr: (p.qr || 0) + (ok ? 1 : 0), qw: (p.qw || 0) + (ok ? 0 : 1)});
+  render();
 }
 function nextQuiz(){
   const q = ui.quiz;
@@ -801,109 +1026,15 @@ function nextQuiz(){
   q.i++;
   if(q.i < q.items.length) q.opts = makeOptions(q.items[q.i], q.own);
   q.answered = null;
-  renderQuiz();
+  render();
 }
-
-/* ============ ĐẶT CÂU ============ */
-function renderSent(){
-  const box = $('#v-sent');
-  const l = curLesson();
-  if(!l){ box.innerHTML = emptyMsg(); return; }
-  const list = pool(l);
-  if(!list.length){ box.innerHTML = studyTop(l) + '<div class="panel empty">Không có từ nào trong mục này.</div>'; return; }
-  if(!list.some(w => w.id === ui.sentWord)) ui.sentWord = shuffle(list)[0].id;
-  const w = list.find(x => x.id === ui.sentWord);
-  const p = prog(w.id);
-  box.innerHTML = studyTop(l) + `
-    <div class="panel" style="text-align:center">
-      <div class="ko" style="font-size:clamp(30px,8vw,46px)">${esc(w.ko)}</div>
-      <p class="vi-line" style="font-size:17px;margin:10px 0">Nghĩa: <b>${w.vi ? esc(w.vi) : 'chưa có nghĩa trong file'}</b></p>
-      <p class="hint">Viết một câu tiếng Hàn có dùng từ trên, rồi bấm Kiểm tra.</p>
-      <textarea id="sentText" rows="3" placeholder="Viết câu tiếng Hàn ở đây…" style="margin-top:10px"></textarea>
-      <div id="sentResult" class="hint" style="min-height:24px;margin:10px 0"></div>
-      <div class="row actions">
-        <button class="ghost" data-act="sentNext">Từ khác →</button>
-        <button data-act="sentCheck">Kiểm tra</button>
-      </div>
-      <p class="hint">Phím tắt: Ctrl + Enter để kiểm tra</p>
-      ${p.right ? `<p class="hint">Đã đặt câu đúng ${p.right} lần</p>` : ''}
-    </div>`;
-}
-function checkSent(){
-  const l = curLesson();
-  const w = l && l.words.find(x => x.id === ui.sentWord);
-  const box = $('#sentText'), res = $('#sentResult');
-  if(!w || !box) return;
-  const text = box.value.trim();
-  if(!HANGUL.test(text)){
-    res.style.color = 'var(--bad)';
-    res.textContent = 'Hãy viết câu bằng tiếng Hàn trước.';
-    return;
-  }
-  // Động từ/tính từ đuôi 다: kiểm tra phần gốc để nhận dạng đã chia (먹다 → 먹어요)
-  const key = w.ko.length > 1 && w.ko.endsWith('다') ? w.ko.slice(0, -1) : w.ko;
-  const ok = text.includes(key);
-  res.style.color = ok ? 'var(--ok)' : 'var(--bad)';
-  res.textContent = ok ? `✔ Đúng! Bạn đã dùng từ «${w.ko}».` : `Câu chưa có từ «${w.ko}» (hoặc dạng đã chia của nó). Thử lại nhé.`;
-  if(ok) setProg(w.id, {right: prog(w.id).right + 1});
-}
-
-/* ============ DỊCH ============ */
-function renderTr(){
-  const box = $('#v-tr');
-  const l = curLesson();
-  if(!l){ box.innerHTML = emptyMsg(); return; }
-  const dirBar = `<div class="chips">${[['ko-vi', 'Hàn → Việt'], ['vi-ko', 'Việt → Hàn']]
-    .map(([k, t]) => `<button class="chip ${ui.trDir === k ? 'on' : ''}" data-act="trdir" data-v="${k}">${t}</button>`).join('')}</div>`;
-  const list = pool(l).filter(w => w.vi);
-  if(!list.length){ box.innerHTML = studyTop(l, dirBar) + '<div class="panel empty">Không có từ có nghĩa trong mục này.</div>'; return; }
-  if(!list.some(w => w.id === ui.trWord)) ui.trWord = shuffle(list)[0].id;
-  const w = list.find(x => x.id === ui.trWord);
-  const toKo = ui.trDir === 'vi-ko';
-  const q = toKo ? w.vi : w.ko;
-  const ask = toKo ? 'Viết từ tiếng Hàn tương ứng' : 'Viết nghĩa tiếng Việt';
-  const a = ui.trAns;
-  const verdict = a ? {ok: ['✔ Đúng!', 'var(--ok)'], near: ['Gần đúng', 'var(--blue-ink)'], bad: ['Chưa đúng', 'var(--bad)']}[a.verdict] : null;
-  box.innerHTML = studyTop(l, dirBar) + `
-    <div class="panel" style="text-align:center">
-      <div class="ko" style="font-size:clamp(28px,7vw,42px);margin:10px 0">${esc(q)}</div>
-      <p class="hint">${ask}</p>
-      <input id="trIn" style="margin-top:10px;text-align:center" placeholder="Nhập đáp án…" autocomplete="off" ${a ? 'disabled' : ''} value="${a ? esc(a.v) : ''}">
-      <div id="trRes" class="hint" style="min-height:48px;margin:10px 0;font-size:15px">${a ? `<b style="color:${verdict[1]}">${verdict[0]}</b><br>Đáp án: <b>${esc(toKo ? w.ko : w.vi)}</b>` : ''}</div>
-      <div class="row actions">
-        <button class="ghost" data-act="trNext">Câu khác →</button>
-        ${a ? '' : '<button data-act="trCheck">Kiểm tra</button>'}
-      </div>
-    </div>`;
-  if(!a) $('#trIn').focus();
-}
-function trCheck(){
-  const l = curLesson();
-  const w = l && l.words.find(x => x.id === ui.trWord);
-  const v = $('#trIn') ? $('#trIn').value.trim() : '';
-  if(!w || !v){ toast('Nhập đáp án trước'); return; }
-  let verdict;
-  if(ui.trDir === 'ko-vi'){
-    const exp = norm(w.vi).split(' ').filter(Boolean);
-    const got = new Set(norm(v).split(' '));
-    const hit = exp.length ? exp.filter(t => got.has(t)).length / exp.length : 0;
-    verdict = hit >= 0.8 ? 'ok' : hit >= 0.5 ? 'near' : 'bad';
-  } else {
-    const strip = s => norm(s).replace(/ /g, '');
-    verdict = strip(v).includes(strip(w.ko)) ? 'ok' : 'bad';
-  }
-  ui.trAns = {verdict, v};
-  renderTr();
-}
-function trNext(){ ui.trWord = null; ui.trAns = null; renderTr(); }
 
 /* ============ HỘI THOẠI AI ============ */
 const getKey = () => { try{ return localStorage.getItem(KEY_API) || ''; } catch(e){ return ''; } };
-
-function renderTalk(){
-  const box = $('#v-talk');
-  const l = curLesson();
-  if(!l){ box.innerHTML = emptyMsg(); return; }
+function renderTalk(main){
+  const l = findLesson(ui.talkLesson) || state.lessons[0];
+  if(!l){ main.innerHTML = emptyPage('Chưa có bài nào để trò chuyện.'); return; }
+  ui.talkLesson = l.id;
   const key = getKey();
   const chips = l.words.slice(0, 15).map(w =>
     `<button class="chip" data-act="insertWord" data-v="${esc(w.ko)}">${esc(w.ko)}${w.vi ? ` <span class="meta">${esc(w.vi)}</span>` : ''}</button>`).join('');
@@ -911,12 +1042,17 @@ function renderTalk(){
   const bubbles = ui.msgs.length
     ? ui.msgs.map(m => `<div class="bubble ${m.role === 'user' ? 'me' : 'ai'}">${esc(m.content)}</div>`).join('')
     : `<div class="bubble ai">${esc(opener)}\n${key ? '(Hãy trả lời bằng tiếng Hàn nhé)' : '(Muốn trò chuyện với AI, hãy nhập API key ở dưới.)'}</div>`;
-  box.innerHTML = studyTop(l) + `
-    <div class="panel">
-      <p class="hint" style="margin:0 0 8px">Chủ đề: <b>${esc(l.name)}</b>. Bấm từ gợi ý để chèn vào câu của bạn.</p>
+  main.innerHTML = `
+    <div class="crumb">Hội thoại</div>
+    <h1>Hội thoại AI</h1>
+    <p class="sub">AI trò chuyện theo chủ đề của bài, dịch nghĩa và gợi ý cách đáp lại.</p>
+    <div class="card" style="margin-top:16px">
+      <div class="row" style="margin-bottom:10px"><select data-pick="talk" aria-label="Chọn bài" style="flex:1">${state.lessons.map(x =>
+        `<option value="${x.id}" ${x.id === l.id ? 'selected' : ''}>${esc(x.folder)} › ${esc(x.name)}</option>`).join('')}</select></div>
+      <p class="hint" style="margin:0 0 8px">Bấm từ gợi ý để chèn vào câu của bạn.</p>
       <div class="chips">${chips || '<span class="hint">Bài này chưa có từ vựng.</span>'}</div>
     </div>
-    <div class="panel">
+    <div class="card" style="margin-top:14px">
       <div class="chat" id="chat">${bubbles}</div>
       <div class="row">
         <input id="talkIn" placeholder="Viết câu tiếng Hàn (hoặc tiếng Việt nếu cần)…" style="flex:1;min-width:200px">
@@ -924,7 +1060,7 @@ function renderTalk(){
       </div>
       <p class="hint">${key ? 'AI sẽ trả lời, dịch nghĩa và gợi ý cách đáp lại theo chủ đề.' : 'Chưa có API key nên chưa trò chuyện được với AI.'}</p>
     </div>
-    <details class="panel">
+    <details class="card" style="margin-top:14px">
       <summary style="cursor:pointer;font-weight:600">Cài đặt AI (API key Anthropic)</summary>
       <div class="row" style="margin-top:10px">
         <input id="apiKey" type="password" placeholder="sk-ant-…" value="${esc(key)}" style="flex:1;min-width:200px">
@@ -938,7 +1074,7 @@ function renderTalk(){
 async function askAI(l, msgs){
   const system = `Bạn là bạn hội thoại tiếng Hàn kiên nhẫn cho người Việt đang học.
 Chủ đề: "${l.name}".
-Từ vựng nên dùng: ${l.words.slice(0, 30).map(w => `${w.ko}${w.vi ? ' (' + w.vi + ')' : ''}`).join(', ') || 'không có, tự chọn chủ đề phù hợp'}.
+Từ vựng nên dùng: ${l.words.slice(0, 30).map(w => `${w.ko}${w.vi ? ' (' + w.vi + ')' : ''}`).join(', ') || 'tự chọn chủ đề phù hợp'}.
 Mỗi lượt trả lời theo đúng 3 phần:
 1) Câu trả lời bằng tiếng Hàn ngắn gọn, rồi hỏi lại người học một câu.
 2) "📝 Dịch:" nghĩa tiếng Việt của phần 1.
@@ -961,76 +1097,43 @@ Nếu người học viết sai, sửa nhẹ nhàng và giải thích ngắn b�
 async function talkSend(){
   const input = $('#talkIn');
   const text = input ? input.value.trim() : '';
-  const l = curLesson();
+  const l = findLesson(ui.talkLesson);
   if(!text || !l) return;
   if(!getKey()){ toast('Nhập API key ở phần Cài đặt AI trước'); return; }
   ui.msgs.push({role: 'user', content: text});
-  renderTalk();
+  render();
   try{
-    const reply = await askAI(l, ui.msgs);
-    ui.msgs.push({role: 'assistant', content: reply});
+    ui.msgs.push({role: 'assistant', content: await askAI(l, ui.msgs)});
   }catch(e){
     ui.msgs.pop();
-    $('#talkIn').value = text;
     toast(e.message);
+    if($('#talkIn')) $('#talkIn').value = text;
   }
-  renderTalk();
+  render();
 }
 
-/* ============ BÀI GIẢNG (file gốc) ============ */
-async function renderGrammar(){
-  const box = $('#v-grammar');
-  const l = curLesson();
-  if(!l){ box.innerHTML = emptyMsg(); return; }
-  box.innerHTML = `<div class="panel row between">
-      <button class="ghost" data-act="back">← Thư viện</button>
-      ${lessonSelect()}
-    </div>
-    <div class="panel" id="gBody"><p class="hint">Đang mở file…</p></div>`;
-  const body = $('#gBody');
-  if(!l.hasFile){
-    body.innerHTML = `<p class="empty">Bài này chưa có file bài giảng.</p>
-      <div class="row" style="justify-content:center"><button data-act="attach" data-id="${l.id}">Đính kèm file PDF</button></div>`;
-    return;
-  }
-  let blob = null;
-  try{ blob = await getFile(l.id); } catch(e){}
-  if(ui.view !== 'grammar') return;
-  if(!blob){ body.innerHTML = '<p class="empty">Không mở được file đã lưu. Hãy đính kèm lại.</p>'; return; }
-  if(ui.fileUrl) URL.revokeObjectURL(ui.fileUrl);
-  ui.fileUrl = URL.createObjectURL(blob);
-  const isPdf = blob.type === 'application/pdf' || /\.pdf$/i.test(l.fileName || '');
-  body.innerHTML = isPdf
-    ? `<iframe class="pdf" src="${ui.fileUrl}" title="Bài giảng"></iframe>
-       <p class="hint"><a href="${ui.fileUrl}" target="_blank" rel="noopener">Mở trong tab mới</a></p>`
-    : `<p class="empty">File này không xem trực tiếp được trong trang.</p>
-       <div class="row" style="justify-content:center"><a href="${ui.fileUrl}" download="${esc(l.fileName || 'file')}">Tải file gốc</a></div>`;
-}
-
-/* ============ SỔ TAY ============ */
-function renderNotes(){
-  const box = $('#v-notes');
-  const list = state.notes.filter(n => !ui.notesFilter || n.lessonId === ui.notesFilter);
+/* ============ TÀI LIỆU GỐC ============ */
+/* ============ SỔ TỪ CỦA TÔI ============ */
+function renderNotes(main){
+  const list = state.notes.filter(n => ui.notesFilter === 'all' || (ui.notesFilter === 'word' ? n.kind === 'word' : n.kind === 'note'));
   const lessonName = id => (findLesson(id) || {}).name || '';
-  const opts = `<option value="">Tất cả bài</option>` + state.lessons.map(l =>
-    `<option value="${l.id}" ${l.id === ui.notesFilter ? 'selected' : ''}>${esc(l.name)}</option>`).join('');
-  box.innerHTML = `
-    <div class="panel">
-      <h2>Sổ tay</h2>
-      <p class="hint" style="margin-top:0">Lưu lại từ hoặc câu bạn thấy hay, hoặc cần chú ý. Trong Thẻ học bấm "★ Lưu vào sổ tay" để thêm từ.</p>
-      <div class="row" style="margin:10px 0">
-        <select data-pick="notesFilter" aria-label="Lọc theo bài" style="flex:1;min-width:200px">${opts}</select>
-      </div>
+  main.innerHTML = `
+    <div class="crumb">Sổ từ</div>
+    <h1>Sổ từ của tôi</h1>
+    <p class="sub">Những từ và câu bạn thấy hay hoặc cần chú ý. Trong Flashcard bấm "★ Lưu vào sổ từ" để thêm từ.</p>
+    <div class="card" style="margin-top:16px">
       <textarea id="noteText" rows="2" placeholder="Viết câu hoặc ghi chú…"></textarea>
       <div class="row between" style="margin-top:8px">
-        <select id="noteLesson" style="flex:1;min-width:200px">
+        <select id="noteLesson" style="flex:1;min-width:200px;max-width:340px">
           <option value="">Không gắn với bài nào</option>
-          ${state.lessons.map(l => `<option value="${l.id}" ${l.id === ui.notesFilter ? 'selected' : ''}>${esc(l.name)}</option>`).join('')}
+          ${state.lessons.map(l => `<option value="${l.id}">${esc(l.name)}</option>`).join('')}
         </select>
-        <button data-act="addNote">Thêm vào sổ tay</button>
+        <button data-act="addNote">Thêm vào sổ từ</button>
       </div>
     </div>
-    <div class="panel">
+    <div class="chips" style="margin:18px 0 10px">${[['all', 'Tất cả'], ['word', 'Từ đã lưu'], ['note', 'Ghi chú']]
+      .map(([k, t]) => `<button class="chip ${ui.notesFilter === k ? 'on' : ''}" data-act="notesFilter" data-v="${k}">${t}</button>`).join('')}</div>
+    <div class="card">
       ${list.length ? list.map(n => `<div class="note">
         <div class="row between">
           ${n.kind === 'word'
@@ -1038,9 +1141,8 @@ function renderNotes(){
             : `<div>${esc(n.text)}</div>`}
           <button class="icon" data-act="delNote" data-id="${n.id}" aria-label="Xóa">🗑</button>
         </div>
-        ${n.kind === 'word' && n.text ? `<div class="hint">${esc(n.text)}</div>` : ''}
         ${n.lessonId ? `<div class="hint">${esc(lessonName(n.lessonId))}</div>` : ''}
-      </div>`).join('') : '<p class="empty">Chưa có gì trong sổ tay.</p>'}
+      </div>`).join('') : '<p class="empty">Chưa có gì trong sổ từ.</p>'}
     </div>`;
 }
 function addNote(){
@@ -1048,15 +1150,48 @@ function addNote(){
   if(!text){ toast('Viết nội dung trước'); return; }
   state.notes.unshift({id: 'N' + Date.now().toString(36), kind: 'note', text, lessonId: $('#noteLesson').value || null, at: Date.now()});
   save();
-  renderNotes();
-  toast('Đã thêm vào sổ tay');
+  toast('Đã thêm vào sổ từ');
+  render();
 }
 
-/* ============ HỘP THOẠI CHUNG ============ */
+/* ============ THỐNG KÊ ============ */
+function renderStats(main){
+  const words = state.lessons.flatMap(l => l.words);
+  const known = words.filter(w => lvl(w.id) === 2).length;
+  const qr = words.reduce((n, w) => n + (prog(w.id).qr || 0), 0);
+  const qw = words.reduce((n, w) => n + (prog(w.id).qw || 0), 0);
+  const acc = qr + qw ? Math.round(100 * qr / (qr + qw)) + '%' : 'Chưa làm';
+  const stat = (l, v, s = '') => `<div class="stat"><div class="l">${l}</div><div class="v">${v}${s ? ` <small>${s}</small>` : ''}</div></div>`;
+  main.innerHTML = `
+    <div class="crumb">Thống kê</div>
+    <h1>Thống kê</h1>
+    <p class="sub">Tiến độ học của bạn trên tất cả các bài.</p>
+    <div class="grid4" style="margin:18px 0">
+      ${stat('Số bài', state.lessons.length)}
+      ${stat('Tổng số từ', words.length)}
+      ${stat('Đã nhớ', words.length ? Math.round(100 * known / words.length) + '%' : '0%', `${known} từ`)}
+      ${stat('Trắc nghiệm đúng', acc, qr + qw ? `${qr}/${qr + qw}` : '')}
+    </div>
+    <div class="card">
+      <h2>Theo từng bài</h2>
+      ${state.lessons.length ? `<table class="words"><thead><tr><th>Bài</th><th>Từ</th><th>Đã nhớ</th><th style="width:30%">Tiến độ</th></tr></thead><tbody>
+        ${state.lessons.map(l => `<tr>
+          <td><a href="#/lesson/${l.id}/overview">${esc(l.name)}</a><div class="meta">${esc(l.folder)}</div></td>
+          <td>${l.words.length}</td>
+          <td>${lessonPct(l)}%</td>
+          <td><div class="track"><div class="fill ok" style="width:${lessonPct(l)}%"></div></div></td>
+        </tr>`).join('')}</tbody></table>` : '<p class="empty">Chưa có bài nào.</p>'}
+    </div>`;
+}
+
+/* ============ TRANG CHUNG & HỘP THOẠI ============ */
+function emptyPage(text){
+  return `<div class="card empty"><p>${text}</p><a class="btn" href="#/home">Tạo bài học</a></div>`;
+}
 function openDialog(title, body, onOk){
   const d = $('#dlg');
   d.innerHTML = `<form class="dlgbox"><h2>${esc(title)}</h2>${body}
-    <div class="row actions">
+    <div class="row actions" style="justify-content:flex-end">
       <button type="button" class="ghost" data-cancel>Hủy</button>
       <button type="submit">Lưu</button>
     </div></form>`;
@@ -1068,105 +1203,230 @@ function openDialog(title, body, onOk){
   };
   d.showModal();
 }
+function openWordDialog(lessonId, wordId){
+  const l = findLesson(lessonId);
+  const w = wordId ? l.words.find(x => x.id === wordId) : null;
+  openDialog(w ? 'Sửa từ' : 'Thêm từ', `
+    <label class="f">Tiếng Hàn<input name="ko" value="${esc(w ? w.ko : '')}" autocomplete="off"></label>
+    <label class="f">Nghĩa tiếng Việt<input name="vi" value="${esc(w ? w.vi : '')}"></label>`, f => {
+      const ko = f.ko.trim(), vi = f.vi.trim();
+      if(!HANGUL.test(ko)){ toast('Từ tiếng Hàn chưa đúng, hãy nhập lại'); return false; }
+      if(w){ w.ko = ko; w.vi = vi; }
+      else l.words.push({id: l.id + '_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5), ko, vi});
+      save(); render();
+    });
+}
+function deleteWord(lessonId, wordId){
+  const l = findLesson(lessonId);
+  if(!confirm('Xóa từ này khỏi bài?')) return;
+  l.words = l.words.filter(w => w.id !== wordId);
+  delete state.progress[wordId];
+  save();
+  render();
+}
+async function deleteLesson(id){
+  const l = findLesson(id);
+  if(!l || !confirm(`Xóa bài "${l.name}", toàn bộ từ, tiến độ và file của bài này?`)) return;
+  state.lessons = state.lessons.filter(x => x.id !== id);
+  l.words.forEach(w => delete state.progress[w.id]);
+  state.notes = state.notes.filter(n => n.lessonId !== id);
+  save();
+  try{ await delFiles(id); } catch(e){}
+  toast('Đã xóa bài');
+  go('#/home');
+}
+function editLesson(id){
+  const l = findLesson(id);
+  if(!l) return;
+  const m = l.modes || DEFAULT_MODES;
+  openDialog('Sửa bài', `
+    <label class="f">Tên bài<input name="name" value="${esc(l.name)}"></label>
+    <label class="f">Thư mục<input name="folder" list="folderOpts" value="${esc(l.folder)}"></label>
+    <datalist id="folderOpts">${[...new Set(state.lessons.map(x => x.folder))].map(f => `<option value="${esc(f)}">`).join('')}</datalist>
+    <label class="f">Số câu trắc nghiệm<select name="quizCount">${[10, 20, 0].map(v => `<option value="${v}" ${(l.quizCount ?? 20) === v ? 'selected' : ''}>${v ? v + ' câu' : 'Tất cả'}</option>`).join('')}</select></label>`, f => {
+      l.name = f.name.trim() || l.name;
+      l.folder = f.folder.trim() || 'Chưa xếp thư mục';
+      l.quizCount = +f.quizCount;
+      l.modes = m;
+      save(); render();
+    });
+}
+function attachFile(id){
+  ui.attachId = id;
+  $('#pdfInput').click();
+}
 
 /* ============ SỰ KIỆN ============ */
 function act(name, d){
+  const r = route();
   switch(name){
-    case 'pickFile': $('#fileInput').click(); break;
-    case 'back': go('library'); break;
-    case 'folder': ui.folder = d.v; ui.libPage = 1; renderView(); break;
-    case 'lesson':
-      ui.lessonId = d.id;
-      resetStudy();
-      go(d.mode || 'words');
-      break;
-    case 'filter': ui.filter = d.v; resetStudy(); renderView(); break;
-    case 'trdir': ui.trDir = d.v; ui.trWord = null; ui.trAns = null; renderView(); break;
-    case 'attach': attachFile(d.id); break;
-    case 'editLesson': editLesson(d.id); break;
-    case 'delLesson': deleteLesson(d.id); break;
-    case 'toggleKnown': setProg(d.id, {known: !prog(d.id).known}); renderView(); break;
-    case 'editWord': openWordDialog(d.id); break;
-    case 'addWord': addWordFromForm(); break;
-    case 'delWord': deleteWord(d.id); break;
-    case 'flip': ui.flipped = !ui.flipped; renderView(); break;
+    case 'clearSlot': setSlotFile(d.v, null); break;
+    case 'preview': openPreview(); break;
+    case 'createLesson': createLesson(); break;
+    case 'lv': flashLevel(+d.v); break;
+    case 'flip': ui.fl.flipped = !ui.fl.flipped; render(); break;
     case 'prev': flashStep(-1); break;
     case 'next': flashStep(1); break;
-    case 'mark': flashMark(d.v === '1'); break;
-    case 'shuffleFlash': {
-      const l = curLesson();
-      if(l){ ui.flashOrder.ids = shuffle(flashIds(l)); ui.flashIdx = 0; ui.flipped = false; renderView(); }
-      break;
-    }
+    case 'shuffle': ui.fl.ids = shuffle(ui.fl.ids); ui.fl.i = 0; ui.fl.flipped = false; render(); break;
+    case 'dir': ui.dir = d.v; ui.fl.flipped = false; render(); break;
+    case 'onlyOff': ui.onlyUnknown = false; render(); break;
     case 'saveNote': saveNote(d.id); break;
+    case 'wCheck': checkWrite(); break;
+    case 'wNext': ui.wId = null; ui.wRes = null; render(); break;
+    case 'sCheck': checkSent(); break;
+    case 'sNext': ui.sId = null; ui.sRes = null; render(); break;
+    case 'eCheck': checkExt(); break;
+    case 'eNext': ui.eId = null; ui.eRes = null; render(); break;
     case 'quizStart': startQuiz(); break;
     case 'quizPick': answerQuiz(+d.i); break;
     case 'quizNext': nextQuiz(); break;
-    case 'sentNext': ui.sentWord = null; renderSent(); break;
-    case 'sentCheck': checkSent(); break;
-    case 'trCheck': trCheck(); break;
-    case 'trNext': trNext(); break;
+    case 'addWord': openWordDialog(d.id, null); break;
+    case 'editWord': openWordDialog(d.lesson, d.id); break;
+    case 'delWord': deleteWord(d.lesson, d.id); break;
+    case 'editLesson': editLesson(d.id); break;
+    case 'delLesson': deleteLesson(d.id); break;
+    case 'attach': attachFile(d.id); break;
+    case 'lesson':
+      if(d.mode === 'talk'){ ui.talkLesson = d.id; ui.msgs = []; go('#/talk'); }
+      else go(`#/lesson/${d.id}/${d.mode}`);
+      break;
     case 'insertWord': { const i = $('#talkIn'); if(i){ i.value = (i.value ? i.value + ' ' : '') + d.v; i.focus(); } break; }
     case 'talkSend': talkSend(); break;
     case 'saveKey':
       try{ localStorage.setItem(KEY_API, $('#apiKey').value.trim()); } catch(e){}
       toast('Đã lưu API key');
-      renderTalk();
+      render();
       break;
     case 'addNote': addNote(); break;
+    case 'notesFilter': ui.notesFilter = d.v; render(); break;
     case 'delNote':
-      if(confirm('Xóa mục này khỏi sổ tay?')){ state.notes = state.notes.filter(n => n.id !== d.id); save(); renderNotes(); }
+      if(confirm('Xóa mục này khỏi sổ từ?')){ state.notes = state.notes.filter(n => n.id !== d.id); save(); render(); }
       break;
   }
 }
 
 document.addEventListener('click', e => {
-  const nav = e.target.closest('[data-go]');
-  if(nav){ resetStudy(); go(nav.dataset.go); return; }
   const pg = e.target.closest('[data-pg]');
-  if(pg){ ui[pg.dataset.pg] = +pg.dataset.to; renderView(); return; }
+  if(pg){ ui[pg.dataset.pg] = +pg.dataset.to; render(); return; }
+  const sp = e.target.closest('[data-slotpick]');
+  if(sp){
+    e.preventDefault();
+    const l = findLesson(route().id);
+    if(l) renderSourceWith(l, sp.dataset.slotpick);
+    return;
+  }
   const el = e.target.closest('[data-act]');
   if(el) act(el.dataset.act, el.dataset);
 });
 
+async function renderSourceWith(l, slot){
+  const body = $('#srcBody');
+  if(!body) return;
+  if(ui.fileUrl){ URL.revokeObjectURL(ui.fileUrl); ui.fileUrl = null; }
+  const blob = await lessonFile(l, slot);
+  const slots = Object.keys(l.files || {});
+  const tabs = slots.map(s => `<a class="chip ${s === slot ? 'on' : ''}" href="#/lesson/${l.id}/source" data-slotpick="${s}">${SLOTS.find(x => x.key === s).title}</a>`).join('');
+  if(!blob){ body.innerHTML = '<p class="empty">Không mở được file đã lưu.</p>'; return; }
+  ui.fileUrl = URL.createObjectURL(blob);
+  const isPdf = blob.type === 'application/pdf' || /\.pdf$/i.test(l.files[slot] || '');
+  body.innerHTML = `<div class="chips" style="margin-bottom:12px">${tabs}</div>` + (isPdf
+    ? `<iframe class="pdf" src="${ui.fileUrl}" title="Tài liệu gốc"></iframe>`
+    : `<p class="empty">File này không xem trực tiếp được trong trang.</p>
+       <div class="row" style="justify-content:center"><a class="btn ghost" href="${ui.fileUrl}" download="${esc(l.files[slot])}">Tải file gốc</a></div>`);
+}
+
 document.addEventListener('change', e => {
-  const kind = e.target.dataset && e.target.dataset.pick;
-  if(!kind) return;
-  if(kind === 'lesson'){ ui.lessonId = e.target.value; resetStudy(); }
-  if(kind === 'notesFilter'){ ui.notesFilter = e.target.value; }
-  renderView();
+  const t = e.target;
+  if(t.dataset && t.dataset.slot){
+    const f = t.files[0];
+    t.value = '';
+    if(f) setSlotFile(t.dataset.slot, f);
+    return;
+  }
+  if(t.dataset && t.dataset.opt){
+    const d = newDraft();
+    d.opts[t.dataset.opt] = t.checked;
+    render();
+    return;
+  }
+  if(t.hasAttribute && t.hasAttribute('data-quizcount')){
+    const v = +t.value;
+    const r = route();
+    if(r.name === 'lesson'){
+      const l = findLesson(r.id);
+      if(l){ l.quizCount = v; save(); ui.quiz = null; render(); }
+    } else { newDraft().quizCount = v; render(); }
+    return;
+  }
+  if(t.hasAttribute && t.hasAttribute('data-only')){
+    ui.onlyUnknown = t.checked;
+    ui.fl = null;
+    ui.quiz = null;
+    render();
+    return;
+  }
+  if(t.dataset && t.dataset.pick === 'talk'){ ui.talkLesson = t.value; ui.msgs = []; render(); }
 });
 
 document.addEventListener('keydown', e => {
-  const tag = e.target.closest('input, textarea, select');
-  if(tag){
-    if(e.key === 'Enter' && e.ctrlKey && ui.view === 'sent') checkSent();
-    if(e.key === 'Enter' && e.target.id === 'trIn') ui.trAns ? trNext() : trCheck();
+  const field = e.target.closest('input, textarea, select');
+  if(field){
+    if(e.key === 'Enter' && e.ctrlKey && e.target.id === 'sIn') checkSent();
+    if(e.key === 'Enter' && e.target.id === 'wIn') ui.wRes ? act('wNext') : checkWrite();
     if(e.key === 'Enter' && e.target.id === 'talkIn') talkSend();
     return;
   }
   if(e.target.closest('button') && (e.key === 'Enter' || e.key === ' ')) return;
-  if(ui.view === 'flash'){
+  const r = route();
+  if(r.name === 'lesson' && r.tab === 'flash' || r.name === 'review'){
+    if(!ui.fl) return;
     if(e.key === 'ArrowRight') flashStep(1);
     else if(e.key === 'ArrowLeft') flashStep(-1);
-    else if(e.key === ' '){ e.preventDefault(); act('flip', {}); }
-    else if(e.key === '1') flashMark(false);
-    else if(e.key === '2') flashMark(true);
+    else if(e.key === ' '){ e.preventDefault(); act('flip'); }
+    else if(e.key === '1') flashLevel(0);
+    else if(e.key === '2') flashLevel(1);
+    else if(e.key === '3') flashLevel(2);
   }
-  if(ui.view === 'quiz' && ui.quiz){
+  if(r.name === 'lesson' && r.tab === 'quiz' && ui.quiz){
     if(/^[1-4]$/.test(e.key)) answerQuiz(+e.key - 1);
     else if(e.key === 'Enter') nextQuiz();
   }
 });
 
-// Kéo thả file
-const drop = $('#drop');
-['dragenter', 'dragover'].forEach(t => drop.addEventListener(t, e => { e.preventDefault(); drop.classList.add('over'); }));
-['dragleave', 'drop'].forEach(t => drop.addEventListener(t, e => { e.preventDefault(); drop.classList.remove('over'); }));
-drop.addEventListener('drop', e => { if(e.dataTransfer.files.length) importFiles([...e.dataTransfer.files]); });
+// Kéo thả file vào từng ô tải lên
+document.addEventListener('dragover', e => {
+  const s = e.target.closest && e.target.closest('[data-drop]');
+  if(s){ e.preventDefault(); s.classList.add('over'); }
+});
+document.addEventListener('dragleave', e => {
+  const s = e.target.closest && e.target.closest('[data-drop]');
+  if(s) s.classList.remove('over');
+});
+document.addEventListener('drop', e => {
+  const s = e.target.closest && e.target.closest('[data-drop]');
+  if(!s) return;
+  e.preventDefault();
+  s.classList.remove('over');
+  const f = e.dataTransfer.files[0];
+  if(f) setSlotFile(s.dataset.drop, f);
+});
 
 $('#fileInput').addEventListener('change', e => {
-  if(e.target.files.length) importFiles([...e.target.files]);
+  if(e.target.files.length){
+    // Tải nhanh nhiều file: mỗi file đoán loại theo tên
+    const d = newDraft();
+    [...e.target.files].forEach(f => {
+      const n = f.name.toLowerCase();
+      const key = /giảng|giang|lecture|slide/.test(n) ? 'lecture'
+        : /ngữ|ngu|grammar/.test(n) ? 'grammar'
+        : /sheet|xlsx|csv/.test(n) ? 'sheet' : 'vocab';
+      d.files[key] = f;
+    });
+    d.words = null;
+    d.busy = true;
+    render();
+    draftWords().then(() => { d.busy = false; render(); });
+  }
   e.target.value = '';
 });
 $('#pdfInput').addEventListener('change', async e => {
@@ -1175,18 +1435,17 @@ $('#pdfInput').addEventListener('change', async e => {
   const l = findLesson(ui.attachId);
   if(!f || !l) return;
   try{
-    await putFile(l.id, f);
-    l.hasFile = true;
-    l.fileName = f.name;
+    await putFile(l.id + '|' + (f.name.toLowerCase().endsWith('.pdf') ? 'lecture' : 'grammar'), f);
+    l.files = {...(l.files || {}), [f.name.toLowerCase().endsWith('.pdf') ? 'lecture' : 'grammar']: f.name};
     save();
-    toast('Đã đính kèm file bài giảng');
+    toast('Đã đính kèm file');
   }catch(err){
     toast('Không lưu được file: ' + err.message);
   }
-  renderView();
+  render();
 });
 
-go('library');
+render();
 </script>
 </body>
 </html>
