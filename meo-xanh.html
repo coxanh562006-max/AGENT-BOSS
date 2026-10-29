@@ -209,6 +209,29 @@
   #toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);background:var(--ink);color:#fff;padding:10px 16px;border-radius:12px;opacity:0;transition:.25s;pointer-events:none;max-width:90vw;text-align:center;z-index:30}
   #toast.show{opacity:1;transform:translateX(-50%)}
 
+  .hhead{display:flex;gap:16px;align-items:center;margin-bottom:22px}
+  .hicon{width:62px;height:62px;border-radius:18px;background:#c3eede;color:#0f5e4a;display:grid;place-items:center;flex:none}
+  .drop2{display:block;cursor:pointer;border:2px dashed #0f5e4a;background:#c3eede;border-radius:24px;padding:34px 20px;text-align:center;color:#0f5e4a;transition:background .2s}
+  .drop2.over{background:#a9e3cb}
+  .dcloud{width:76px;height:76px;margin:0 auto;border-radius:50%;background:#fff;display:grid;place-items:center;color:#0f5e4a}
+  .dtitle{font-size:22px;font-weight:700;margin-top:14px;word-break:break-all}
+  .dsub{color:#2f5f52;margin-top:4px}
+  .dsub u{text-decoration:underline}
+  .fmts{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:16px}
+  .fmts span{background:#fff;border-radius:999px;padding:6px 14px;font-size:14px;color:#0f5e4a}
+  .dtip{font-size:14px;color:#3d5a50;margin-top:14px}
+  .mcards{display:grid;grid-template-columns:repeat(5,1fr);gap:14px}
+  .mcard2{border-radius:20px;padding:18px;min-height:150px;display:flex;flex-direction:column;gap:14px;font-weight:600;font-size:16px}
+  .mcard2 .mi{width:50px;height:50px;border-radius:14px;background:#fff;display:grid;place-items:center}
+  .sumbar{display:flex;align-items:center;gap:14px;flex-wrap:wrap;background:#c3eede;border-radius:20px;padding:16px 20px;margin-top:18px}
+  .sumbar .n{width:52px;height:52px;border-radius:50%;background:#fff;display:grid;place-items:center;font-size:20px;font-weight:700;color:#0f5e4a}
+  .sumbar .spacer{flex:1}
+  .rgrid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .rcard{display:block;background:var(--card);border:1px solid var(--line);border-radius:18px;padding:18px;text-decoration:none;color:var(--ink)}
+  .rcard:hover{border-color:#c9d9ef}
+  .rnew{border:2px dashed #c9d2dd;border-radius:18px;display:grid;place-items:center;color:#0f5e4a;min-height:120px;background:none;cursor:pointer;font-weight:600;font-size:16px}
+  @media (max-width:1000px){ .mcards{grid-template-columns:repeat(3,1fr)} }
+  @media (max-width:640px){ .mcards{grid-template-columns:1fr 1fr} .rgrid{grid-template-columns:1fr} .dtitle{font-size:18px} }
   .kindrow{display:flex;align-items:center;gap:12px;padding:12px 2px;border-bottom:1px solid var(--line);cursor:pointer;font-size:15px}
   .kindrow:last-of-type{border-bottom:0}
   .kindrow input{width:18px;height:18px;min-height:0;accent-color:var(--primary)}
@@ -695,68 +718,87 @@ function slotCard(s, d){
     <input type="file" data-slot="${s.key}" accept="${s.accept}" hidden>
   </label>`;
 }
+const ICON = {
+  cloud: '<path d="M7 18a4 4 0 0 1 0-8 5 5 0 0 1 9.6-1.5A4.5 4.5 0 0 1 17 18z"/><path d="M12 12v6M9.5 14.5 12 12l2.5 2.5"/>',
+  spark: '<path d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8z"/><path d="M19 15l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8z"/>',
+  card: '<rect x="4" y="6" width="13" height="12" rx="2"/><path d="M8 3h11v12"/>',
+  keys: '<rect x="3" y="7" width="18" height="10" rx="2"/><path d="M7 11h.01M10 11h.01M13 11h.01M16 11h.01M8 14h8"/>',
+  pen: '<path d="M4 20l4-1 11-11-3-3L5 16z"/>',
+  bulb: '<path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.5.4.8 1 .8 1.6h5.4c0-.6.3-1.2.8-1.6A6 6 0 0 0 12 3z"/>',
+  check: '<rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4h6M8.5 12l2.5 2.5L16 10"/>'
+};
+const svgIcon = (k, size = 26) => `<svg viewBox="0 0 24 24" width="${size}" height="${size}" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICON[k]}</svg>`;
+const MODE_CARDS = [
+  ['card', 'Flashcard', '#e3dcfb', '#4b3fa3'],
+  ['keys', 'Viết từ', '#d4e6fb', '#1f5a99'],
+  ['pen', 'Viết câu', '#d3f0d1', '#2a6b2a'],
+  ['bulb', 'Ví dụ mở rộng', '#fbdfa5', '#7a4a00'],
+  ['check', 'Kiểm tra', '#fbd5e0', '#8a1f44']
+];
 function renderHome(main){
   const d = newDraft();
-  const recent = [...state.lessons].sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)).slice(0, 4);
   const n = d.words ? d.words.length : 0;
   const hasVocab = !!d.files.vocab;
-  const counts = {flash: n, write: n, sent: n, ext: Math.min(10, n)};
-  const row = (key, label, count, right = '') => `<label class="opt">
-      <input type="checkbox" data-opt="${key}" ${d.opts[key] ? 'checked' : ''}>
-      <span class="lbl">${label}</span>
-      ${right || `<span class="n">${count}</span>`}
-    </label>`;
-  const quizSel = `<select data-quizcount aria-label="Số câu trắc nghiệm">
-      ${[10, 20, 0].map(v => `<option value="${v}" ${d.quizCount === v ? 'selected' : ''}>${v ? v + ' câu' : 'Tất cả'}</option>`).join('')}
-    </select>`;
+  const recent = [...state.lessons].sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)).slice(0, 4);
+  const vocab = SLOTS[0];
   main.innerHTML = `
-    <h1>Tạo bài học mới</h1>
-    <p class="sub">Tải tài liệu của một bài lên — web tự đọc và tạo flashcard, bài viết và trắc nghiệm cho bạn.</p>
+    <div class="hhead">
+      <div class="hicon">${svgIcon('spark', 30)}</div>
+      <div>
+        <h1>Tạo bài học mới</h1>
+        <p class="sub">Tải tài liệu lên — Mèo xanh tự tạo đủ mọi dạng bài luyện cho bạn.</p>
+      </div>
+    </div>
 
-    <h3 class="step"><b>Bước 1</b> · Tải tài liệu</h3>
-    <div class="slots">${SLOTS.map(s => slotCard(s, d)).join('')}</div>
-    <p class="tip">Mẹo: sheet tổng hợp nên có cột Từ · Nghĩa để web nhận diện chính xác nhất.</p>
-    <div class="grid2" style="margin-top:14px">
+    <label class="drop2" data-drop="vocab">
+      <div class="dcloud">${svgIcon('cloud', 38)}</div>
+      <div class="dtitle">${d.files.vocab ? esc(d.files.vocab.name) : 'Kéo thả tài liệu vào đây'}</div>
+      <div class="dsub">${d.files.vocab ? 'Đã tải. Chạm để chọn file khác' : 'hoặc <u>chọn file từ máy</u>'}</div>
+      <div class="fmts"><span>Word</span><span>PDF</span><span>Excel</span><span>PowerPoint</span><span>TXT</span></div>
+      <div class="dtip">💡 Sheet nên có cột Từ · Nghĩa để nhận diện chính xác nhất</div>
+      ${d.files.vocab ? `<div style="margin-top:12px"><button type="button" class="ghost" data-act="clearSlot" data-v="vocab">Bỏ file</button></div>` : ''}
+      <input type="file" data-slot="vocab" accept="${vocab.accept}" hidden>
+    </label>
+    ${d.error ? `<p class="hint" style="color:var(--bad)">${esc(d.error)}</p>` : ''}
+
+    <div class="grid2" style="margin-top:20px">
       <label class="f">Tên bài<input id="draftName" value="${esc(d.name)}" placeholder="Ví dụ: Bài 4 · Mua sắm"></label>
-      <label class="f">Thư mục (không bắt buộc)<input id="draftFolder" list="folderOpts" value="${esc(d.folder)}" placeholder="Ví dụ: Giáo trình tuần 1"></label>
+      <label class="f">Thư mục<input id="draftFolder" list="folderOpts" value="${esc(d.folder)}" placeholder="Ví dụ: Giáo trình tuần 1"></label>
     </div>
     <datalist id="folderOpts">${[...new Set(state.lessons.map(l => l.folder))].map(f => `<option value="${esc(f)}">`).join('')}</datalist>
 
-    <h3 class="step"><b>Bước 2</b> · Chọn nội dung cần tạo</h3>
-    <div class="card checks">
-      ${row('flash', 'Flashcard từ vựng', counts.flash ? counts.flash + ' thẻ' : '—')}
-      ${row('write', 'Viết từ (nhìn nghĩa → gõ từ)', counts.write ? counts.write + ' câu' : '—')}
-      ${row('sent', 'Viết câu với từ', counts.sent ? counts.sent + ' câu' : '—')}
-      ${row('ext', 'Viết ví dụ mở rộng', counts.ext ? counts.ext + ' từ khó' : '—')}
-      ${row('quiz', 'Kiểm tra (trắc nghiệm, đúng/sai, tự luận)', '', quizSel)}
+    <h3 class="step" style="margin-top:14px">Mỗi bài học tự động gồm</h3>
+    <div class="mcards">
+      ${MODE_CARDS.map(([ic, t, bg, ink]) => `<div class="mcard2" style="background:${bg};color:${ink}">
+        <div class="mi">${svgIcon(ic)}</div>${t}</div>`).join('')}
     </div>
 
-    <div class="recog">
+    <div class="sumbar">
+      <div class="n">${busyText(d, n)}</div>
       <div>
-        ${d.busy ? '<div class="s">Đang đọc file…</div>'
-          : `<div class="s">Đã nhận diện: ${n} từ vựng</div>`}
-        <div class="meta">${d.error ? esc(d.error) : 'Bạn có thể xem và sửa danh sách từ sau khi tạo.'}</div>
+        <div style="font-weight:700;color:#0f5e4a">từ vựng đã nhận diện</div>
+        <div class="meta" style="color:#3d5a50">Sửa được danh sách sau khi tạo</div>
       </div>
-      <div class="row">
-        <button class="ghost" data-act="preview" ${hasVocab && n ? '' : 'disabled'}>Xem trước</button>
-        <button data-act="createLesson" ${hasVocab && n ? '' : 'disabled'}>Tạo bài học</button>
-      </div>
+      <div class="spacer"></div>
+      <button class="ghost" data-act="preview" ${hasVocab && n ? '' : 'disabled'}>Xem trước</button>
+      <button data-act="createLesson" ${hasVocab && n ? '' : 'disabled'}>Tạo bài học</button>
     </div>
+    ${d.error ? '' : ''}
 
-    ${recent.length ? `<h3 class="step">Bài học gần đây</h3>
-    <div class="lessongrid">${recent.map(l => `<div class="lcard">
-      <div class="row between">
-        <a class="ltitle" href="#/lesson/${l.id}/overview">${esc(l.name)}</a>
-        <span class="meta">${esc(l.folder)}</span>
-      </div>
-      <div class="meta" style="margin:6px 0 10px">${l.words.length} từ · đã học ${lessonPct(l)}%</div>
-      <div class="track"><div class="fill ok" style="width:${lessonPct(l)}%"></div></div>
-      <div class="row" style="justify-content:flex-end;margin-top:10px">
-        <button class="ghost" data-act="editLesson" data-id="${l.id}">Đổi tên</button>
-        <button class="ghost" data-act="delLesson" data-id="${l.id}">Xóa bài</button>
-      </div>
-    </div>`).join('')}</div>` : ''}`;
+    <h3 class="step" style="margin-top:28px">Bài học gần đây</h3>
+    <div class="rgrid">
+      ${recent.map(l => `<a class="rcard" href="#/lesson/${l.id}/overview">
+        <div class="row between"><strong style="font-size:17px">${esc(l.name)}</strong><span class="badge">${esc(l.folder)}</span></div>
+        <div class="meta" style="margin:6px 0 10px">${l.words.length} từ · đã học ${lessonPct(l)}%</div>
+        <div class="track"><div class="fill ok" style="width:${lessonPct(l)}%"></div></div>
+      </a>`).join('')}
+      <button class="rnew" data-act="upload">+ Bài mới</button>
+    </div>`;
   bindDraftInputs();
+}
+function busyText(d, n){
+  if(d.busy) return '…';
+  return String(n);
 }
 function bindDraftInputs(){
   const d = ui.draft;
