@@ -50,7 +50,11 @@
   .lessonlink{display:block;padding:7px 12px;border-radius:10px;text-decoration:none;color:var(--ink);font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .lessonlink:hover{background:#f1f3f6}
   .lessonlink.on{background:var(--soft);color:var(--primary);font-weight:600}
-  .folderlabel{font-size:12px;color:var(--muted);padding:8px 12px 2px}
+  .folderbtn{display:flex;align-items:center;gap:8px;width:100%;background:transparent;color:var(--ink);text-align:left;padding:8px 12px;margin-top:4px;border-radius:10px;font-size:14px;font-weight:600;min-height:0}
+  .folderbtn:hover{background:#f1f3f6}
+  .folderbtn .caret{color:var(--muted);width:12px;flex:none}
+  .folderbtn .count2{margin-left:auto;color:var(--muted);font-weight:500;font-size:12px}
+  .lessonlink{padding-left:30px!important}
 
   main{padding:28px 32px 60px;max-width:1080px;width:100%;min-width:0}
   h1{font-size:26px;margin:0 0 6px;font-weight:800}
@@ -99,6 +103,8 @@
   .lessongrid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
   .lcard{display:block;background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:16px;text-decoration:none}
   .lcard:hover{border-color:#c9d9ef}
+  .ltitle{font-weight:700;color:var(--ink);text-decoration:none;font-size:16px}
+  .ltitle:hover{color:var(--primary)}
 
   /* Chi tiết bài */
   .crumb{font-size:13px;color:var(--muted);margin-bottom:6px}
@@ -521,9 +527,17 @@ function renderSide(r){
   const link = (name, label, badge = '') =>
     `<a class="navlink ${r.name === name ? 'on' : ''}" href="#/${name}">${label}${badge}</a>`;
   const folders = [...new Set(state.lessons.map(l => l.folder))].sort((a, b) => a.localeCompare(b, 'vi'));
-  const lessonLinks = folders.map(f => `<div class="folderlabel">${esc(f)}</div>` +
-    state.lessons.filter(l => l.folder === f).map(l =>
-      `<a class="lessonlink ${r.id === l.id ? 'on' : ''}" href="#/lesson/${l.id}/overview" title="${esc(l.name)}">${esc(l.name)}</a>`).join('')).join('');
+  const openSet = ui.openFolders || (ui.openFolders = new Set());
+  const cur = r.name === 'lesson' && findLesson(r.id);
+  if(cur) openSet.add(cur.folder);
+  const lessonLinks = folders.map(f => {
+    const items = state.lessons.filter(l => l.folder === f);
+    const isOpen = openSet.has(f);
+    return `<button class="folderbtn" data-act="folderToggle" data-v="${esc(f)}" aria-expanded="${isOpen}">
+        <span class="caret">${isOpen ? '▾' : '▸'}</span>${esc(f)}<span class="count2">${items.length}</span>
+      </button>` + (isOpen ? items.map(l =>
+        `<a class="lessonlink ${r.id === l.id ? 'on' : ''}" href="#/lesson/${l.id}/overview" title="${esc(l.name)}">${esc(l.name)}</a>`).join('') : '');
+  }).join('');
   const due = dueWords();
   $('#side').innerHTML = `
     <div class="brand"><svg class="logo" viewBox="0 0 120 100" aria-hidden="true"><use href="#cat"/></svg>Mèo xanh</div>
@@ -628,11 +642,18 @@ function renderHome(main){
     </div>
 
     ${recent.length ? `<h3 class="step">Bài học gần đây</h3>
-    <div class="lessongrid">${recent.map(l => `<a class="lcard" href="#/lesson/${l.id}/overview">
-      <div class="row between"><strong>${esc(l.name)}</strong><span class="meta">${esc(l.folder)}</span></div>
+    <div class="lessongrid">${recent.map(l => `<div class="lcard">
+      <div class="row between">
+        <a class="ltitle" href="#/lesson/${l.id}/overview">${esc(l.name)}</a>
+        <span class="meta">${esc(l.folder)}</span>
+      </div>
       <div class="meta" style="margin:6px 0 10px">${l.words.length} từ · đã học ${lessonPct(l)}%</div>
       <div class="track"><div class="fill ok" style="width:${lessonPct(l)}%"></div></div>
-    </a>`).join('')}</div>` : ''}`;
+      <div class="row" style="justify-content:flex-end;margin-top:10px">
+        <button class="ghost" data-act="editLesson" data-id="${l.id}">Đổi tên</button>
+        <button class="ghost" data-act="delLesson" data-id="${l.id}">Xóa bài</button>
+      </div>
+    </div>`).join('')}</div>` : ''}`;
   bindDraftInputs();
 }
 function bindDraftInputs(){
@@ -702,7 +723,11 @@ function renderLesson(main, r){
         <h1>${esc(l.name)}</h1>
         <div class="files">${fileNames || '<span class="meta">Chưa có file gốc</span>'}</div>
       </div>
-      <a class="btn" href="#/lesson/${l.id}/${primary}">Học tiếp: ${{flash: 'Flashcard', write: 'Luyện viết', quiz: 'Kiểm tra', overview: 'Tổng quan'}[primary]}</a>
+      <div class="row">
+        <a class="btn" href="#/lesson/${l.id}/${primary}">Học tiếp: ${{flash: 'Flashcard', write: 'Luyện viết', quiz: 'Kiểm tra', overview: 'Tổng quan'}[primary]}</a>
+        <button class="ghost" data-act="editLesson" data-id="${l.id}">Đổi tên</button>
+        <button class="ghost" data-act="delLesson" data-id="${l.id}">Xóa bài</button>
+      </div>
     </div>
     <div class="tabs">${tabs.filter(t => t[2]).map(([k, t]) =>
       `<a class="tab ${r.tab === k ? 'on' : ''}" href="#/lesson/${l.id}/${k}">${t}</a>`).join('')}</div>
@@ -1641,6 +1666,7 @@ function act(name, d){
   switch(name){
     case 'clearSlot': setSlotFile(d.v, null); break;
     case 'upload': $('#fileInput').click(); break;
+    case 'folderToggle': { const set = ui.openFolders; if(set.has(d.v)) set.delete(d.v); else set.add(d.v); renderSide(route()); break; }
     case 'preview': openPreview(); break;
     case 'createLesson': createLesson(); break;
     case 'lv': flashLevel(+d.v); break;
