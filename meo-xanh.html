@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#2f63a8">
 <title>Mèo xanh – Học tiếng Hàn</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@500;700&family=Jua&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
@@ -39,7 +39,7 @@
 
   .app{display:grid;grid-template-columns:248px minmax(0,1fr);min-height:100vh}
   aside.side{background:var(--card);border-right:1px solid var(--line);padding:20px 14px;position:sticky;top:0;height:100vh;overflow-y:auto}
-  .brand{display:flex;align-items:center;gap:8px;font-weight:800;font-size:18px;color:var(--primary);padding:0 8px 16px}
+  .brand{font-family:'Jua','Noto Sans KR',sans-serif;font-weight:400;font-size:25px;letter-spacing:.3px;text-decoration:none;display:flex;align-items:center;gap:8px;font-weight:800;font-size:18px;color:var(--primary);padding:0 8px 16px}
   .logo{width:40px;height:32px;flex:none}
   .newbtn{width:100%;margin-bottom:14px}
   .navlink{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:9px 12px;border-radius:10px;text-decoration:none;color:var(--ink);margin-bottom:2px}
@@ -55,6 +55,10 @@
   .folderbtn .caret{color:var(--muted);width:12px;flex:none}
   .folderbtn .count2{margin-left:auto;color:var(--muted);font-weight:500;font-size:12px}
   .lessonlink{padding-left:30px!important}
+  .gcard{margin-bottom:12px}
+  .gko{font-size:22px;margin:8px 0 4px}
+  .gex{background:var(--soft);border-radius:12px;padding:10px 12px;margin:10px 0}
+  .gblock{font-size:14px;margin-top:8px;white-space:pre-line}
 
   main{padding:28px 32px 60px;max-width:1080px;width:100%;min-width:0}
   h1{font-size:26px;margin:0 0 6px;font-weight:800}
@@ -276,10 +280,7 @@ const PAGE_LIST = 10;
 const HANGUL = /[ᄀ-ᇿ㄰-㆏가-힯]/;
 const HANGUL_START = /^[ᄀ-ᇿ㄰-㆏가-힯]/;
 const SLOTS = [
-  {key: 'lecture', title: 'Bài giảng', types: 'PDF, Word, PowerPoint', accept: '.pdf,.docx,.pptx'},
-  {key: 'vocab', title: 'Từ vựng', types: 'Word, PDF, Excel', accept: '.docx,.pdf,.xlsx,.xls,.csv,.txt,.pptx'},
-  {key: 'grammar', title: 'Ngữ pháp', types: 'Word, PDF', accept: '.docx,.pdf,.txt,.pptx'},
-  {key: 'sheet', title: 'Sheet tổng hợp', types: 'Excel, Google Sheets, CSV', accept: '.xlsx,.xls,.csv,.ods'}
+  {key: 'vocab', title: 'Từ vựng', types: 'Word, PDF, Excel, PowerPoint, TXT', accept: '.docx,.pdf,.xlsx,.xls,.csv,.txt,.pptx'}
 ];
 const DEFAULT_MODES = {flash: true, write: true, sent: true, ext: true, quiz: true};
 
@@ -332,7 +333,7 @@ const lev = (a, b) => {
   }
   return prev[b.length];
 };
-const findLesson = id => state.lessons.find(l => l.id === id);
+const findLesson = id => (id && String(id).startsWith('G_')) ? grammarLesson(String(id).slice(2)) : state.lessons.find(l => l.id === id);
 const prog = id => state.progress[id] || {level: 0};
 const lvl = id => prog(id).level || 0;
 function setProg(id, patch){ state.progress[id] = {...prog(id), ...patch}; save(); }
@@ -484,6 +485,105 @@ async function fileToLines(file){
   throw new Error(`định dạng .${ext} chưa hỗ trợ; file .doc/.ppt cũ hãy lưu lại thành .docx/.pptx`);
 }
 
+/* ============ NGỮ PHÁP (từ Google Sheet) ============
+   Cột: STT (số tuần) · Ngữ pháp · Nghĩa tiếng Việt · Ví dụ · Nghĩa ví dụ · Chú ý · Mở rộng · So sánh
+   Web thử đọc sheet trước; nếu không đọc được thì dùng bản dữ liệu có sẵn bên dưới. */
+const GRAMMAR_SHEET_ID = '1l0w9iz4vGm9KPxF1t3QKaTUK6xTMlXx_CULmTiWsToI';
+const GRAMMAR_SNAPSHOT = [
+  {w: 1, ko: 'N(이)면 N, N(이)면 N', vi: 'Dù là A hay là B đều... · Bất kể là A hay là B....', ex: '이 식당은 찌개면 찌개, 구이면 구이. 다 맛있다.', exVi: 'Cho dù là món hầm hay món nướng, mọi thứ ở nhà hàng này đều ngon tuyệt.', note: 'Hay đi cùng các từ tích cực như 다, 못하는 게 없다, 완벽하다', expand: '', compare: ''},
+  {w: 1, ko: 'V-는 김에', vi: 'Nhân tiện V thì làm gì đó · Tiện thể... làm gì...', ex: '나무 심는 김에 예쁜 꽃도 심으면 좋지 않을까요?', exVi: 'Nhân tiện trồng cây thì trồng thêm những bông hoa xinh đẹp cũng sẽ thật tuyệt phải không?', note: '- 2 vế phải là 2 hành động làm cùng nhau được · =>Ví dụ như đang nấu mì thì tiện nấu luôn cho phần của bạn · - Khi sử dụng cùng các động từ như 가다, 오다, 나오다 thì có thể dùng ở dạng quá khứ V-(으)ㄴ 김에...', expand: '- 말이 나온 김에...: Nhân tiện nhắc tới việc đấy thì...', compare: 'V-는 길에 (Trên đường đi đâu đấy) => Chỉ có thể sử dụng với các động từ mang nghĩa di chuyển như 가다, 오다, 퇴근하다,...'},
+  {w: 1, ko: 'V-느니 차라리', vi: 'Thà... còn hơn là... · Thà là... chứ không đời nào...', ex: '이렇게 맛없는 요리를 먹느니 차라리 꿂겠다.', exVi: 'Tôi thà chết đói còn hơn ăn những món ăn nhạt nhẽo như vậy.', note: '- MĐ1 느니 차라리 MĐ2 (đỡ hơn) => Dịch từ dưới lên · - Có thể giản lược 차라리 => V-느니 · - MĐ sau thường đi với -게 낫다 (thà...tốt hơn); -겠다 (kiên quyết)', expand: '', compare: ''},
+  {w: 1, ko: 'N과/와 달리', vi: 'Khác với N.... · Không giống như N......', ex: '보통 아이들과 달리 우리 아들은 혼자 노는 것을 좋아한다.', exVi: 'Khác với những đứa trẻ khác, con trai tôi thích chơi một mình.', note: '', expand: '', compare: ''},
+  {w: 1, ko: '...에 소질이 있다/없다', vi: 'Có/Không có tố chất, năng khiếu về...', ex: '우리 언니는 수영 잘하지만 나는 언니와 달리 수영에 소질이 없다.', exVi: 'Chị gái tôi bơi rất giỏi, nhưng không giống như chị ấy, tôi không có năng khiếu gì về môn thể thao này.', note: '', expand: '', compare: ''},
+  {w: 1, ko: 'N에 따라(서)', vi: 'Tùy theo N.... · Dựa theo N.... · Phụ thuộc vào N......', ex: '너의 선택에 따라서 결과가 달라질 것이다.', exVi: 'Kết quả sẽ khác nhau tùy thuộc vào sự lựa chọn của bạn.', note: '- Cách diễn đạt tự nhiên khi dùng các động từ như 다르다, 차이가 있다/없다, 차이가 보이다... · - Khi kết hợp với A hoặc V thì câu sẽ dùng ở dạng nghi vấn: A-(으)냐에 따라(서), V-느냐에 따라(서)...', expand: 'Quán ngữ thường gặp: 새가하기에 따라(서) (Tùy theo suy nghĩ) · 보기에 따라(서) (Tùy theo góc nhìn) · 듣기에 따라(서) (Tùy theo cách nghe)', compare: ''},
+  {w: 1, ko: 'A-(으)ㄴ 데다(가) / V-는 데다(가)', vi: 'Không những... mà còn... · Vừa... lại còn...', ex: '내 동생은 공부를 잘하는 데다가 그림도 잘 그려서 칭찬을 많이 받아요.', exVi: 'Em trai tôi học giỏi và cũng vẽ giỏi, vì vậy em ấy nhận được rất nhiều lời khen ngợi.', note: '- Chủ ngữ 2 vế phải giống nhau · - Nội dung 2 mệnh đề phải tương đồng (cùng tích cực hoặc cùng tiêu cực) · - Sử dụng \'-(으)ㄴ/는 데다(가) N도...\' để câu tự nhiên hơn', expand: '', compare: ''},
+  {w: 1, ko: 'A -(으)ㄴ 셈이다 / V-는 셈이다', vi: 'Coi như là ... · Xem như là ...', ex: '이번 수학여행은 우리 반에서 한명 빼고 다 가기까 거의 다 가는 셈이 다.', exVi: 'Chuyến đi dã ngoại lần này của trường gần như toàn bộ học sinh trong lớp đều đi, trừ một người.', note: '', expand: '', compare: ''},
+  {w: 1, ko: 'N에 불과하다', vi: 'Chỉ...', ex: '한 달에 책을 한 권 이상 읽는 사람은 20%에 불과한 것으로 나타났다.', exVi: 'Người ta nhận thấy rằng chỉ có 20% người đọc ít nhất một cuốn sách mỗi tháng.', note: '', expand: '', compare: ''},
+  {w: 2, ko: 'N만 못하다', vi: 'Không bằng N · Kém hơn N · Không tốt bằng N · Không bằng được N', ex: '백 번 듣는 것이 한 번 보는 것만 못합니다.', exVi: 'Nghe đi nghe lại cả trăm lần vẫn không bằng việc nhìn thấy tận mắt một lần.', note: '- Chủ ngữ kém hơn N về một mặt nào đó. · - Cấu trúc này có thể = \'N보다 못하다\'', expand: '', compare: ''},
+  {w: 2, ko: 'V- (으)ㄹ 게 아니라', vi: 'Đừng làm A mà hãy làm B... · Thay vì làm A thì nên làm B...', ex: '살이 찐다고 밥을 꿇을 게 아니라 운동을 하세요.', exVi: 'Đừng bỏ bữa chỉ vì bạn đang tăng cân; hãy tập thể dục thay vào đó.', note: '- Diễn đạt ý: Việc phía trước không đúng/ không hợp lý/ không hiệu quả → nên thay bằng hành động phía sau.', expand: '- Vế sau thường là nd yêu cầu, ra lệnh, nhờ vả như:', compare: ''},
+  {w: 2, ko: 'N(으)로서', vi: 'Với tư cách là...... · Trên cương vị là ... · Là một ...', ex: '아이가 나쁜 행동을 하는 것을 보면 선생님으로서 책임을 느낀다.', exVi: 'Với tư cách là một giáo viên, tôi cảm thấy có trách nhiệm khi thấy một đứa trẻ cư xử không đúng mực.', note: '', expand: '', compare: ''},
+  {w: 2, ko: 'A-다기보다는 / V-ㄴ/는 다기보다는', vi: 'Không phải là ... mà đúng hơn là ... · Thay vì nói là ... thì đúng hơn là ...', ex: '음식이 맛이 없다기보다는 내 입에 안 맞아요.', exVi: 'Không phải là đồ ăn dở, chỉ là nó không hợp khẩu vị của tôi thôi.', note: '', expand: '', compare: ''},
+  {w: 2, ko: '설마 A/V-겠어요?', vi: 'Lẽ nào lại ...', ex: '', exVi: '', note: '', expand: '', compare: ''},
+  {w: 2, ko: 'N(으)로부터', vi: 'Từ (về mặt xuất phát) · Do, từ phía (khi nói về nguồn gốc ảnh hưởng)', ex: '', exVi: '', note: '', expand: '~을 바탕으로.../ ~에 기반하다: Dựa trên nguyên lý...', compare: ''},
+  {w: 2, ko: 'N에 의해(서)', vi: 'Bởi ... · Do ... · thông qua', ex: '', exVi: '', note: '', expand: '', compare: ''},
+  {w: 3, ko: 'A-다 싶다 / V-ㄴ/는다 싶다', vi: 'Tôi nghĩ là/ tưởng/ thấy là.... · có vẻ là...., hình như là.......', ex: '', exVi: '', note: '- Cấu trúc mang trạng thái mơ hồ, không chắc chắn. · - Hồi tưởng một điều gì xong đưa ra phỏng đoán nhẹ. · - Tự nói với bản thân or thể hiện sự cảm xúc nội tâm', expand: '', compare: ''}
+];
+
+const grammarItems = () => {
+  const src = state.grammar && state.grammar.items && state.grammar.items.length ? state.grammar.items : GRAMMAR_SNAPSHOT;
+  return src.map((x, i) => ({...x, i}));
+};
+const grammarCache = {};
+// Một "bài" ảo cho từng tuần (hoặc tất cả), dùng lại mọi chức năng học của bài từ vựng
+function grammarLesson(wk){
+  const key = wk + '|' + (state.grammar ? state.grammar.at : 0);
+  if(grammarCache[key]) return grammarCache[key];
+  const list = grammarItems().filter(x => wk === 'all' || String(x.w) === String(wk));
+  const l = {
+    id: 'G_' + wk, grammar: true, folder: 'Ngữ pháp', createdAt: 0,
+    name: wk === 'all' ? 'Tất cả các tuần' : `Tuần ${wk}`,
+    modes: {...DEFAULT_MODES}, quizCount: 20,
+    words: list.map(x => ({id: 'g' + x.i, ko: x.ko, vi: x.vi, grammar: true, week: x.w, ex: x.ex, exVi: x.exVi, note: x.note, expand: x.expand, compare: x.compare})),
+    sentences: list.filter(x => x.ex && x.exVi).map(x => ({id: 'gs' + x.i, ko: x.ex, vi: x.exVi}))
+  };
+  Object.keys(grammarCache).forEach(k => delete grammarCache[k]);
+  grammarCache[key] = l;
+  return l;
+}
+const weekNumbers = () => [...new Set(grammarItems().map(x => x.w))].sort((a, b) => a - b);
+
+// Đọc hàng từ sheet (mảng hàng) thành danh sách ngữ pháp
+function parseGrammarRows(rows){
+  const cell = v => String(v ?? '').split(/\r?\n/).map(s => s.replace(/\s+/g, ' ').trim()).filter(Boolean).join(' · ');
+  const bad = s => /#VALUE|#N\/A|#REF|#DIV/.test(s);
+  let week = 0;
+  const out = [];
+  rows.slice(1).forEach(r => {
+    const stt = parseInt(cell(r[0]), 10);
+    if(!isNaN(stt)) week = stt;
+    const ko = cell(r[1]);
+    const vi = cell(r[2]);
+    if(!ko || !vi || bad(vi)) return;
+    const clean = i => bad(cell(r[i])) ? '' : cell(r[i]);
+    out.push({w: week, ko, vi, ex: clean(3), exVi: clean(4), note: clean(5), expand: clean(6), compare: clean(7)});
+  });
+  return out;
+}
+async function refreshGrammar(){
+  const url = `https://docs.google.com/spreadsheets/d/${GRAMMAR_SHEET_ID}/gviz/tq?tqx=out:csv`;
+  const r = await fetch(url);
+  if(!r.ok) throw new Error('HTTP ' + r.status);
+  const text = await r.text();
+  const wb = XLSX.read(text, {type: 'string'});
+  const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {header: 1, defval: ''});
+  const items = parseGrammarRows(rows);
+  if(!items.length) throw new Error('không đọc được dòng ngữ pháp nào');
+  state.grammar = {items, at: Date.now(), src: 'sheet'};
+  save();
+}
+function grammarStatus(){
+  if(state.grammar && state.grammar.src === 'sheet') return `Đọc từ Google Sheet, cập nhật lúc ${new Date(state.grammar.at).toLocaleString('vi-VN')}`;
+  return 'Dữ liệu có sẵn trong web. Bấm "Cập nhật từ sheet" để lấy bản mới nhất.';
+}
+function grammarListView(l){
+  const cards = l.words.map(w => `<div class="card gcard">
+      <div class="row between"><span class="badge">Tuần ${w.week}</span></div>
+      <div class="gko ko">${esc(w.ko)}</div>
+      <div class="vi-line">${esc(w.vi)}</div>
+      ${w.ex ? `<div class="gex"><div class="ko">${esc(w.ex)}</div><div class="meta">${esc(w.exVi)}</div></div>` : ''}
+      ${w.note ? `<div class="gblock"><b>Chú ý:</b> ${esc(w.note)}</div>` : ''}
+      ${w.expand ? `<div class="gblock"><b>Mở rộng:</b> ${esc(w.expand)}</div>` : ''}
+      ${w.compare ? `<div class="gblock"><b>So sánh:</b> ${esc(w.compare)}</div>` : ''}
+    </div>`).join('');
+  return `<div class="card row between">
+      <span class="meta">${esc(grammarStatus())}</span>
+      <button class="ghost" data-act="gRefresh">Cập nhật từ sheet</button>
+    </div>
+    <div style="margin-top:14px">${cards || '<div class="card empty">Chưa có mẫu ngữ pháp nào.</div>'}</div>`;
+}
+// Tải lại sheet khi mở web; lỗi thì giữ dữ liệu có sẵn
+refreshGrammar().then(() => { if(route().name === 'lesson' && route().id.startsWith('G_')) render(); }).catch(() => {});
+
 /* ============ ĐIỀU HƯỚNG ============ */
 function route(){
   const p = location.hash.replace(/^#\/?/, '').split('/');
@@ -540,10 +640,12 @@ function renderSide(r){
   }).join('');
   const due = dueWords();
   $('#side').innerHTML = `
-    <div class="brand"><svg class="logo" viewBox="0 0 120 100" aria-hidden="true"><use href="#cat"/></svg>Mèo xanh</div>
+    <a class="brand" href="#/home"><svg class="logo" viewBox="0 0 120 100" aria-hidden="true"><use href="#cat"/></svg>Mèo xanh</a>
     <button class="newbtn" data-act="upload">+ Tải bài mới</button>
     ${link('home', 'Trang chủ')}
     ${link('review', 'Ôn tập hôm nay', due ? `<span class="count">${due}</span>` : '')}
+    <a class="navlink ${r.id && String(r.id).startsWith('G_') ? 'on' : ''}" href="#/lesson/G_all/list">Ngữ pháp</a>
+    ${r.id && String(r.id).startsWith('G_') ? weekNumbers().map(w => `<a class="lessonlink ${r.id === 'G_' + w ? 'on' : ''}" href="#/lesson/G_${w}/list">Tuần ${w}</a>`).join('') : ''}
     ${link('notes', 'Sổ từ của tôi')}
     ${link('stats', 'Thống kê')}
     <div class="sec">BÀI HỌC</div>
@@ -559,7 +661,7 @@ async function draftWords(){
   if(d.words) return d.words;
   const seen = new Set(), words = [];
   d.error = '';
-  for(const k of ['sheet', 'vocab']){
+  for(const k of ['vocab']){
     const f = d.files[k];
     if(!f) continue;
     try{
@@ -597,7 +699,7 @@ function renderHome(main){
   const d = newDraft();
   const recent = [...state.lessons].sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)).slice(0, 4);
   const n = d.words ? d.words.length : 0;
-  const hasVocab = !!(d.files.vocab || d.files.sheet);
+  const hasVocab = !!d.files.vocab;
   const counts = {flash: n, write: n, sent: n, ext: Math.min(10, n)};
   const row = (key, label, count, right = '') => `<label class="opt">
       <input type="checkbox" data-opt="${key}" ${d.opts[key] ? 'checked' : ''}>
@@ -632,7 +734,7 @@ function renderHome(main){
     <div class="recog">
       <div>
         ${d.busy ? '<div class="s">Đang đọc file…</div>'
-          : `<div class="s">Đã nhận diện: ${n} từ vựng · ${d.files.grammar ? '1 file ngữ pháp' : 'chưa có file ngữ pháp'} · ${d.files.lecture ? '1 bài giảng' : 'chưa có bài giảng'}</div>`}
+          : `<div class="s">Đã nhận diện: ${n} từ vựng</div>`}
         <div class="meta">${d.error ? esc(d.error) : 'Bạn có thể xem và sửa danh sách từ sau khi tạo.'}</div>
       </div>
       <div class="row">
@@ -678,9 +780,9 @@ function openPreview(){
 async function createLesson(){
   const d = ui.draft;
   const words = await draftWords();
-  if(!words.length){ toast('Cần file từ vựng hoặc sheet có cột Từ · Nghĩa'); return; }
+  if(!words.length){ toast('Cần file từ vựng có cột Từ · Nghĩa'); return; }
   const id = 'L' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
-  const base = (d.files.vocab || d.files.sheet).name.replace(/\.[^.]+$/, '');
+  const base = d.files.vocab.name.replace(/\.[^.]+$/, '');
   const files = {};
   for(const s of SLOTS){
     const f = d.files[s.key];
@@ -703,9 +805,17 @@ async function createLesson(){
 function renderLesson(main, r){
   const l = findLesson(r.id);
   if(!l){ go('#/home'); return; }
+  const isG = !!l.grammar;
+  if(isG && r.tab === 'overview') r.tab = 'list';
   const m = l.modes || DEFAULT_MODES;
-  const tabs = [['overview', 'Tổng quan', true], ['flash', 'Flashcard', m.flash], ['match', 'Ghép thẻ', true], ['write', 'Luyện viết', m.write || m.sent || m.ext],
-    ['quiz', 'Kiểm tra', m.quiz], ['source', 'Tài liệu gốc', Object.keys(l.files || {}).length > 0]];
+  const tabs = isG
+    ? [['list', 'Danh sách', true], ['flash', 'Flashcard', true], ['match', 'Ghép thẻ', true], ['write', 'Luyện viết', true], ['quiz', 'Kiểm tra', true]]
+    : [['overview', 'Tổng quan', true], ['flash', 'Flashcard', m.flash], ['match', 'Ghép thẻ', true], ['write', 'Luyện viết', m.write || m.sent || m.ext],
+      ['quiz', 'Kiểm tra', m.quiz], ['source', 'Tài liệu gốc', Object.keys(l.files || {}).length > 0]];
+  const weekBar = isG ? `<div class="chips" style="margin-bottom:6px">${[['all', 'Tất cả'], ...weekNumbers().map(w => [String(w), 'Tuần ' + w])]
+    .map(([k, t]) => `<a class="chip ${l.id === 'G_' + k ? 'on' : ''}" href="#/lesson/G_${k}/${r.tab}">${t}</a>`).join('')}</div>` : '';
+  const ownBtns = isG ? '' : `<button class="ghost" data-act="editLesson" data-id="${l.id}">Đổi tên</button>
+        <button class="ghost" data-act="delLesson" data-id="${l.id}">Xóa bài</button>`;
   const known = l.words.filter(w => lvl(w.id) === 2).length;
   const primary = m.flash ? 'flash' : m.write ? 'write' : m.quiz ? 'quiz' : 'overview';
   const fileNames = Object.entries(l.files || {}).map(([k, v]) => `<span class="file">${esc(v)}</span>`).join('');
@@ -713,6 +823,7 @@ function renderLesson(main, r){
   if(r.tab === 'overview') body = overviewView(l);
   else if(r.tab === 'flash') body = flashBody(l.words.map(w => ({w, l})), l.name);
   else if(r.tab === 'write') body = writeView(l, r.sub);
+  else if(r.tab === 'list') body = grammarListView(l);
   else if(r.tab === 'match') body = matchView(l);
   else if(r.tab === 'quiz') body = quizView(l);
   else if(r.tab === 'source') body = '<div id="srcBody" class="card"><p class="empty">Đang mở file…</p></div>';
@@ -725,10 +836,10 @@ function renderLesson(main, r){
       </div>
       <div class="row">
         <a class="btn" href="#/lesson/${l.id}/${primary}">Học tiếp: ${{flash: 'Flashcard', write: 'Luyện viết', quiz: 'Kiểm tra', overview: 'Tổng quan'}[primary]}</a>
-        <button class="ghost" data-act="editLesson" data-id="${l.id}">Đổi tên</button>
-        <button class="ghost" data-act="delLesson" data-id="${l.id}">Xóa bài</button>
+        ${ownBtns}
       </div>
     </div>
+    ${weekBar}
     <div class="tabs">${tabs.filter(t => t[2]).map(([k, t]) =>
       `<a class="tab ${r.tab === k ? 'on' : ''}" href="#/lesson/${l.id}/${k}">${t}</a>`).join('')}</div>
     <div id="lessonBody">${body}</div>
@@ -882,7 +993,7 @@ function flashLevel(level){
   } else flashStep(1);
 }
 function saveNote(wordId){
-  const owner = state.lessons.find(l => l.words.some(w => w.id === wordId));
+  const owner = state.lessons.find(l => l.words.some(w => w.id === wordId)) || findLesson(route().id);
   const w = owner && owner.words.find(x => x.id === wordId);
   if(!w) return;
   if(state.notes.some(n => n.wordId === wordId)){ toast('Từ này đã có trong sổ từ'); return; }
@@ -940,6 +1051,12 @@ const inkPad = () => `<div class="inkwrap">
   <canvas id="ink" class="ink" aria-label="Khung viết tay"></canvas>
 </div>`;
 function judgeWord(w, v, dir){
+  if(dir === 'vi-ko' && w.grammar){
+    const toks = w.ko.match(/[\uAC00-\uD7AF]+/g) || [];
+    const vv = v.replace(/\s/g, '');
+    const hit = toks.length ? toks.filter(t => vv.includes(t)).length / toks.length : 0;
+    return {verdict: hit === 1 ? 'ok' : hit >= 0.5 ? 'near' : 'bad', dist: 0};
+  }
   if(dir === 'vi-ko'){
     const a = v.replace(/\s/g, ''), s = w.ko.replace(/\s/g, '');
     const dist = lev(a, s);
@@ -1013,7 +1130,7 @@ function writeWord(l, pool){
 }
 function writeSent(l){
   const list = sentPool(l);
-  if(!list.length) return `<div class="card empty">
+  if(!list.length) return l.grammar ? '<div class="card empty"><p>Chưa có câu ví dụ cho mục này.</p></div>' : `<div class="card empty">
     <p>Bài này chưa có file câu. Gắn file gồm mỗi dòng: <b>câu tiếng Hàn - nghĩa tiếng Việt</b>.</p>
     <button data-act="attachSent" data-id="${l.id}">Gắn file câu</button>
   </div>`;
@@ -1026,7 +1143,7 @@ function writeSent(l){
     s.cur = nid;
     cur = nid ? byId.get(nid) : null;
   }
-  const fileBar = `<div class="row between" style="margin-bottom:12px">
+  const fileBar = l.grammar ? '' : `<div class="row between" style="margin-bottom:12px">
     <span class="meta">File câu: <b>${esc(l.sentFile || '')}</b> · ${list.length} câu</span>
     <button class="ghost" data-act="attachSent" data-id="${l.id}">Gắn file khác</button>
   </div>`;
@@ -1173,6 +1290,17 @@ $('#sentInput').addEventListener('change', async e => {
 function writeExt(l, pool){
   const hard = pool.filter(w => lvl(w.id) < 2);
   const w = pickId(hard.length ? hard : pool, 'eId');
+  if(l.grammar) return `<div class="wcard card">
+    <div class="qhead"><span class="eyebrow">3 · Ví dụ mở rộng</span><span class="meta">Mẫu ngữ pháp</span></div>
+    <div class="meta">Viết 2 câu dùng mẫu <b class="ko">${esc(w.ko)}</b> (${esc(w.vi)}) trong 2 tình huống khác nhau.</div>
+    <div class="writebox"><label class="f">Câu 1<textarea rows="2" placeholder="Câu 1…"></textarea></label></div>
+    <div class="writebox"><label class="f">Câu 2<textarea rows="2" placeholder="Câu 2…"></textarea></label></div>
+    <div class="row actions" style="justify-content:space-between;margin-top:14px">
+      <button class="ghost" data-act="eNext">Mẫu khác →</button>
+      <button data-act="eDone">Xong, mẫu khác →</button>
+    </div>
+    <p class="hint">Mẫu ngữ pháp không tự chấm được; hãy tự so với ví dụ ở mục Danh sách.</p>
+  </div>`;
   if(ui.ink) return `<div class="wcard card">
     <div class="qhead"><span class="eyebrow">3 · Ví dụ mở rộng</span><span class="meta">Từ khó</span></div>
     <div class="meta">Viết bằng bút 2 câu dùng từ <b class="ko">${esc(w.ko)}</b> (${w.vi ? esc(w.vi) : 'chưa có nghĩa'}) trong 2 tình huống khác nhau.</div>
@@ -1666,6 +1794,7 @@ function act(name, d){
   switch(name){
     case 'clearSlot': setSlotFile(d.v, null); break;
     case 'upload': $('#fileInput').click(); break;
+    case 'gRefresh': refreshGrammar().then(() => { toast('Đã cập nhật ngữ pháp'); render(); }).catch(e => toast('Không đọc được sheet (' + e.message + '). Hãy bật "Bất kỳ ai có đường liên kết đều xem được" trong sheet.')); break;
     case 'folderToggle': { const set = ui.openFolders; if(set.has(d.v)) set.delete(d.v); else set.add(d.v); renderSide(route()); break; }
     case 'preview': openPreview(); break;
     case 'createLesson': createLesson(); break;
@@ -1832,48 +1961,12 @@ document.addEventListener('drop', e => {
   if(f) setSlotFile(s.dataset.drop, f);
 });
 
-// Tải file: với mỗi file, hỏi loại tài liệu rồi xếp vào ô tương ứng
-let uploadQueue = [];
-const KIND_LABEL = [['vocab', 'Từ vựng'], ['grammar', 'Ngữ pháp'], ['sheet', 'Sheet tổng hợp'], ['lecture', 'Bài giảng']];
-function guessKind(name){
-  const n = name.toLowerCase();
-  return /giảng|giang|lecture|slide/.test(n) ? 'lecture'
-    : /ngữ|ngu|grammar/.test(n) ? 'grammar'
-    : /sheet|xlsx|csv/.test(n) ? 'sheet' : 'vocab';
-}
-function askFileKind(){
-  const f = uploadQueue.shift();
-  if(!f){
-    const d = newDraft();
-    d.words = null;
-    d.busy = true;
-    go('#/home');
-    draftWords().then(() => { d.busy = false; render(); });
-    return;
-  }
-  const guess = guessKind(f.name);
-  const dlg = $('#dlg');
-  dlg.innerHTML = `<form class="dlgbox"><h2>Loại tài liệu</h2>
-    <p class="hint" style="margin-top:0;word-break:break-all">${esc(f.name)}</p>
-    ${KIND_LABEL.map(([k, t]) => `<label class="kindrow"><input type="radio" name="kind" value="${k}" ${k === guess ? 'checked' : ''}> ${t}</label>`).join('')}
-    <div class="row actions" style="justify-content:flex-end">
-      <button type="button" class="ghost" data-cancel>Bỏ qua</button>
-      <button type="submit">Thêm</button>
-    </div></form>`;
-  const form = dlg.querySelector('form');
-  dlg.querySelector('[data-cancel]').onclick = () => { dlg.close(); askFileKind(); };
-  form.onsubmit = e => {
-    e.preventDefault();
-    newDraft().files[form.kind.value] = f;
-    dlg.close();
-    askFileKind();
-  };
-  dlg.showModal();
-}
 $('#fileInput').addEventListener('change', e => {
-  uploadQueue = [...e.target.files];
+  const f = e.target.files[0];
   e.target.value = '';
-  if(uploadQueue.length) askFileKind();
+  if(!f) return;
+  setSlotFile('vocab', f);
+  go('#/home');
 });
 $('#pdfInput').addEventListener('change', async e => {
   const f = e.target.files[0];
