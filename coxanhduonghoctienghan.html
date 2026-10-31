@@ -549,6 +549,16 @@ body.sb-collapsed .sb-streak{padding:10px 4px}
 .sent .lang-tag{font-size:9px;padding:2px 4px}
 .add-row:has(.add-lang){grid-template-columns:1fr 1fr 1.3fr auto}
 .tr-dir{font-size:13px;font-weight:700;display:inline-flex;gap:6px;align-items:center}
+.sheet-row{display:flex;gap:10px;align-items:center}.sheet-row .input{flex:1;min-width:0}
+@media (max-width:640px){.sheet-row{flex-direction:column;align-items:stretch}}
+.sheet-ok{display:flex;gap:10px;align-items:flex-start;padding:12px 14px;border-radius:14px;background:color-mix(in srgb,var(--success,#16a34a) 10%,transparent);border:1px solid color-mix(in srgb,var(--success,#16a34a) 30%,transparent)}
+.sheet-ok>svg{color:var(--success,#16a34a);flex:none;margin-top:2px}
+.lesson-meta{display:flex;gap:6px;flex-wrap:wrap;margin:-4px 0 10px}
+.sheet-sec{border:1px solid var(--border);border-radius:14px;padding:12px 14px;margin-bottom:14px;background:color-mix(in srgb,var(--primary) 4%,var(--surface))}
+.sheet-sec>b{display:flex;gap:6px;align-items:center}
+.sheet-note{white-space:pre-wrap;margin-top:8px;line-height:1.6;font-size:15px}
+.sheet-sub{font-size:14px;color:var(--muted);margin:4px 0 10px;font-weight:600}
+.vcard .lvl{font-size:11px}
 .sub-hide{color:var(--muted);font-size:14px;padding:10px;display:flex;gap:8px;align-items:center}
 .lesson-bar{display:flex;align-items:center;gap:6px;padding:8px;flex-wrap:nowrap;border-radius:16px;min-width:0}
 .lesson-bar>*{flex:none}
@@ -2469,7 +2479,7 @@ function renderNav() {
     <button class="icon-btn menu-btn" data-act="sb-open" title="Menu">${ic("menu")}</button>
     <label class="gsearch">${ic("search")}<input id="gSearch" placeholder="${esc(t("search"))}" value="${esc(cur.search || "")}" autocomplete="off"></label>
     <span class="grow"></span>
-    <button class="btn add-video" data-act="add-video">${ic("yt")}<span>${esc(t("add_video"))}</span></button>
+    <button class="btn add-video" data-act="add-video">${ic("repeat")}<span>${esc(t("add_video"))}</span></button>
     <button class="icon-btn fire-btn ${st ? "hot" : ""}" data-nav="progress" title="${esc(t("streak"))}: ${st}">${ic("flame")}<b>${st}</b></button>
     ${langButton()}
     <button class="icon-btn" id="themeBtn" data-act="theme-toggle" title="Sáng / tối"></button>
@@ -2484,6 +2494,7 @@ function renderNav() {
 ACT["sb-collapse"] = () => { if (innerWidth <= 720) { document.body.classList.remove("sb-open"); return; } DB.settings.sbCollapsed = !DB.settings.sbCollapsed; save(); renderNav(); };
 ACT["sb-open"] = () => document.body.classList.add("sb-open");
 ACT["add-video"] = () => {
+  if (DB.settings.sheetUrl) { syncSheet(); return; }
   const focus = () => { const u = $("#fUrl"); if (u) { u.scrollIntoView({ behavior: "smooth", block: "center" }); setTimeout(() => u.focus(), 300); } };
   if (cur.view === "home") focus(); else { go("home"); setTimeout(focus, 150); }
 };
@@ -2507,10 +2518,10 @@ function lessonCard(l) {
     </div>
     <div class="vbody">
       <div class="row" style="gap:6px;flex-wrap:nowrap;justify-content:space-between">
-        <span class="cat-badge">${ic(cic)} ${esc(cname)}</span>
+        <span class="cat-badge">${ic(cic)} ${esc(l.topic || cname)}</span>${l.level ? `<span class="badge green lvl">${esc(l.level)}</span>` : ""}<span class="grow"></span>
         <button class="btn ghost sm" data-act="del-lesson" data-id="${l.id}" title="Xoá bài học">${ic("trash")}</button>
       </div>
-      <h3 data-go="lesson/${l.id}/script">${esc(l.title)}</h3>
+      <h3 data-go="lesson/${l.id}/script">${l.stt != null ? `<span class="faint">Bài ${l.stt} · </span>` : ""}${esc(l.title)}</h3>
       ${l.summary ? `<p class="vsum">${esc(l.summary)}</p>` : ""}
       <div class="progress"><span style="width:${pct}%"></span></div>
       <div class="row small muted between"><span>${d}/${n} câu đã luyện</span><span>${esc(l.src.label || "")}</span></div>
@@ -2528,7 +2539,7 @@ function filterLessons(cat, kind, q) {
   q = (q || "").toLowerCase();
   return DB.lessons.filter(l => (cat === "all" || (l.cat || "other") === cat) && (kind === "all" || (kind === "shorts" ? isShort(l) : !isShort(l)))
     && (!q || l.title.toLowerCase().includes(q) || l.sentences.some(s => s.ko.includes(q) || (s.vi || "").toLowerCase().includes(q))))
-    .sort((a, b) => (b.opened || b.created) - (a.opened || a.created));
+    .sort((a, b) => (a.stt != null && b.stt != null ? a.stt - b.stt : a.stt != null ? -1 : b.stt != null ? 1 : (b.opened || b.created) - (a.opened || a.created)));
 }
 function kindSeg(kind, act) {
   return `<div class="seg">${[["all", "Tất cả"], ["video", "Video"], ["shorts", "Shorts"]].map(([k, n]) => `<button class="${kind === k ? "active" : ""}" data-act="${act}" data-k="${k}">${n}</button>`).join("")}</div>`;
@@ -2540,52 +2551,13 @@ function renderHome() {
   const subMode = DB.settings.subMode || (DB.settings.aiKey ? "ai" : "manual");
   const list = filterLessons(cur.homeCat, cur.homeKind, "");
   $("#view-home").innerHTML = `
-  <div class="page-head"><h1>Học qua video</h1></div>
-  <section class="add-hero">
-    <div class="add-main">
-      <h2>Biến mọi video yêu thích thành bài học tiếng Hàn.</h2>
-      <div class="add-tabs">
-        <button class="${cur.addTab === "link" ? "active" : ""}" data-act="add-tab" data-t="link">${ic("yt")} YouTube / Link</button>
-        <button class="${cur.addTab === "upload" ? "active" : ""}" data-act="add-tab" data-t="upload">${ic("upload")} Tải lên</button>
-      </div>
-      <div class="add-box">
-        <div class="${cur.addTab === "link" ? "" : "hidden"}" id="addLink">
-          <label class="lbl" for="fUrl">Link video</label>
-          <input class="input" id="fUrl" placeholder="Dán link YouTube, TikTok, Facebook, Instagram…" autocomplete="off">
-        </div>
-        <div class="${cur.addTab === "upload" ? "" : "hidden"}" id="addUpload">
-          <button class="dropzone" data-act="pick-file">${ic("upload")}<b>Chọn video hoặc file âm thanh trong máy</b><small>mp4, mov, mp3, m4a… — dưới 19MB thì AI tự chép được phụ đề</small></button>
-        </div>
-        <div class="src-detect small" id="srcDetect" style="margin-top:8px"></div>
-        <div id="srcPreview"></div>
-        <div class="add-row">
-          <div><label class="lbl" for="fCat">Chủ đề</label><select class="select input" id="fCat">${CATS.map(([k, n]) => `<option value="${k}" ${k === (DB.settings.lastCat || "daily") ? "selected" : ""}>${esc(n)}</option>`).join("")}</select></div>
-          <div><label class="lbl" for="fSub">Phụ đề tiếng Hàn</label><select class="select input" id="fSub"><option value="ai" ${subMode === "ai" ? "selected" : ""}>Tự động bằng AI</option><option value="manual" ${subMode === "manual" ? "selected" : ""}>Tự dán phụ đề</option></select></div>
-          <div class="add-lang"><label class="lbl" for="fLang">Ngôn ngữ âm thanh</label><select class="select input" id="fLang"><option value="ko" ${DB.settings.lastLang !== "bi" ? "selected" : ""}>Tiếng Hàn</option><option value="bi" ${DB.settings.lastLang === "bi" ? "selected" : ""}>Hàn + Việt xen kẽ (phiên dịch)</option></select></div>
-          <button class="btn primary lg add-go" data-act="create-lesson">${ic("plus")} Tạo bài học</button>
-        </div>
-        ${subMode === "ai" && !DB.settings.aiKey ? `<div class="note info" style="margin-top:12px">${ic("spark")} Để AI tự lấy phụ đề tiếng Hàn cần <b>mã AI miễn phí</b> (nhập 1 lần, mất 2 phút). <button class="btn sm primary" data-go="settings">Nhập mã AI</button></div>` : ""}
-        <div id="autoStatus" style="margin-top:12px"></div>
-        <div class="field" style="margin:12px 0 0"><label class="lbl" for="fTitle">Tên bài học <span class="faint" style="font-weight:400">(tự điền theo tên video, sửa được)</span></label><input class="input" id="fTitle" placeholder="VD: Vlog đi chợ ở Seoul"></div>
-        <div class="field" style="margin:12px 0 0"><label class="lbl" for="fSum">Tóm tắt nội dung / tình huống video <span class="faint" style="font-weight:400">(tự ghi, không bắt buộc)</span></label>
-          <textarea class="input" id="fSum" rows="3" style="min-height:80px;font-family:var(--font)" placeholder="VD: Hai người bạn gặp nhau ở quán cà phê, hỏi thăm nhau rồi rủ cuối tuần đi Seoul chơi…"></textarea></div>
-        <div id="manualBox" class="${subMode === "manual" ? "" : "hidden"}" style="margin-top:12px">
-          <div class="row between"><label class="lbl" for="fText" style="margin:0">Phụ đề tiếng Hàn <span class="faint" style="font-weight:400">(mỗi câu 1 dòng, có thể kèm giờ và bản dịch sau dấu |)</span></label>
-            <button class="btn ghost sm" data-act="ai-transcribe-form" id="btnAiForm">${ic("spark")} AI lấy lại</button></div>
-          <textarea class="input" id="fText" rows="6" style="margin-top:6px" placeholder="0:05 안녕하세요 여러분\n0:09 오늘은 시장에 가 볼 거예요 | Hôm nay mình sẽ đi chợ thử"></textarea>
-          <details class="guide" style="margin-top:8px"><summary>Lấy phụ đề ở đâu?</summary><ol>
-            <li><b>YouTube trên máy tính:</b> mở video → <b>…Xem thêm</b> ở phần mô tả → <b>Hiện bản chép lời</b> → chọn tiếng Hàn → bôi đen → Copy → dán vào đây.</li>
-            <li><b>TikTok / Facebook:</b> tải video về máy rồi dùng tab <b>Tải lên</b> để AI nghe giúp.</li>
-            <li>Kèm bản dịch: viết sau dấu <b>|</b>, ví dụ <span class="ko">감사합니다 | Cảm ơn</span>.</li></ol></details>
-        </div>
-      </div>
-    </div>
-    <div class="add-art" aria-hidden="true"><div class="art-screen">${ic("yt")}<span class="ko">안녕하세요!</span></div>${MASCOT}</div>
-  </section>
+  <div class="page-head"><h1>Bài học của tôi</h1></div>
+  ${sheetHero()}
   ${catChips(cur.homeCat, "home-cat")}
   <div class="row between" style="margin:22px 0 14px"><h2 class="sec-title">Video của tôi <span class="faint">(${list.length})</span></h2>${kindSeg(cur.homeKind, "home-kind")}</div>
-  ${list.length ? `<div class="vgrid">${list.map(lessonCard).join("")}</div>` : `<div class="card empty"><div class="big">🎬</div>${DB.lessons.length ? "Chưa có video nào trong mục này." : "Chưa có bài học nào. Dán link video ở trên để bắt đầu nhé!"}</div>`}`;
+  ${list.length ? `<div class="vgrid">${list.map(lessonCard).join("")}</div>` : `<div class="card empty"><div class="big">🎬</div>${DB.lessons.length ? "Chưa có video nào trong mục này." : "Chưa có bài học nào. Dán link Google Sheet ở trên để tải bài nhé!"}</div>`}`;
   const u = $("#fUrl"); let tmr;
+  if (!u) return;
   u.addEventListener("input", () => { updateDetect(); clearTimeout(tmr); tmr = setTimeout(onUrlChange, 500); });
   $("#fTitle").addEventListener("input", () => { cur.form.titleTouched = true; });
   $("#fSub").onchange = e => { DB.settings.subMode = e.target.value; save(); $("#manualBox").classList.toggle("hidden", e.target.value !== "ai" ? false : !$("#fText").value.trim()); if (e.target.value === "ai") { cur.form.lastUrl = ""; onUrlChange(); if (cur.formFile) autoTranscribeForm(true); } else { cur.form.job++; setFormBusy(false); setAutoStatus(""); } };
@@ -2614,7 +2586,7 @@ function renderVideos() {
   if (v.dataset.ready === "1" && $("#vidGrid", v)) { $("#vidGrid", v).innerHTML = grid; $("#vidCount", v).textContent = `(${list.length})`; return; }
   v.innerHTML = `
     <div class="page-head"><h1>Video của tôi <span class="faint" id="vidCount">(${list.length})</span></h1>
-      <div class="row"><button class="btn primary" data-act="add-video">${ic("plus")} Thêm video</button></div></div>
+      <div class="row"><button class="btn primary" data-act="sheet-sync">${ic("repeat")} Cập nhật sheet</button></div></div>
     ${cur.search ? `<div class="note info" style="margin-bottom:12px">Đang tìm: <b>${esc(cur.search)}</b> <button class="btn ghost sm" data-act="clear-search">${ic("x")} Bỏ tìm</button></div>` : ""}
     ${catChips(cur.vidCat, "vid-cat")}
     <div class="row between" style="margin:18px 0 14px"><span class="muted small">Bấm vào video để học</span>${kindSeg(cur.vidKind, "vid-kind")}</div>
@@ -2640,7 +2612,7 @@ function renderSpeak() {
     <div class="speak-modes">${SPEAK_MODES.map(([k, i, n, d]) => `<button class="speak-mode ${k === m[0] ? "active" : ""}" data-act="speak-mode" data-m="${k}">${ic(i)}<b>${n}</b><span>${d}</span></button>`).join("")}</div>
     <div class="note" style="margin:16px 0">${m[0] === "pron" ? "Cách luyện: bấm <b>Nghe câu</b> → bấm <b>Ghi âm</b> và đọc theo → bấm <b>So sánh</b> để nghe mẫu rồi nghe giọng bạn. Lặp lại tới khi giống." : m[0] === "shadow" ? "Cách luyện: bật <b>Lặp</b> cho câu, nghe và nói đuổi theo cùng lúc với video; khi trôi chảy thì chuyển câu tiếp theo." : "Cách luyện: bấm <b>Nghe</b>, rồi chọn từ đúng hoặc gõ lại câu. Trang chấm điểm ngay."}</div>
     <h2 class="sec-title" style="margin-bottom:14px">Chọn video để ${esc(m[2].toLowerCase())}</h2>
-    ${list.length ? `<div class="vgrid">${list.map(l => lessonCard(l).replace(/data-go="lesson\/([^/]+)\/script"/g, `data-go="lesson/$1/${m[4]}" data-speak="${m[0]}"`)).join("")}</div>` : `<div class="card empty"><div class="big">🎙️</div>Chưa có video nào có phụ đề. <button class="btn primary sm" data-act="add-video">Thêm video</button></div>`}`;
+    ${list.length ? `<div class="vgrid">${list.map(l => lessonCard(l).replace(/data-go="lesson\/([^/]+)\/script"/g, `data-go="lesson/$1/${m[4]}" data-speak="${m[0]}"`)).join("")}</div>` : `<div class="card empty"><div class="big">🎙️</div>Chưa có video nào có phụ đề. <button class="btn primary sm" data-act="add-video">Cập nhật sheet</button></div>`}`;
 }
 ACT["speak-mode"] = el => { cur.speakMode = el.dataset.m; history.replaceState(null, "", "#speak/" + cur.speakMode); renderSpeak(); };
 document.addEventListener("click", e => { const s = e.target.closest("[data-speak]"); if (s && s.dataset.speak === "pron") setTimeout(() => toast("Bấm “Ghi âm” để nói theo, rồi “So sánh” với giọng mẫu nhé!"), 500); }, true);
@@ -3016,6 +2988,7 @@ function openLesson(id, tab) {
         <button class="btn sm" data-act="edit-script">${ic("list")} Sửa lời thoại</button>
       </div>
     </div>
+    <div id="lessonMeta"></div>
     <div id="lessonSum"></div>
     <div class="mode-bar" id="modeBar"></div>
     <div class="lesson-grid">
@@ -3037,7 +3010,7 @@ function openLesson(id, tab) {
     $("#lessonTitle").textContent = l.title;
     if (!PL || PL.lessonId !== id) buildPlayer(l);
   }
-  applyPanel(); closeWordPop(); renderLessonSum();
+  applyPanel(); closeWordPop(); renderLessonSum(); renderLessonMeta(l);
   renderTabs(); renderShadow(); renderTab();
 }
 const TABS = [["script", "list", "Lời thoại"], ["analysis", "search", "Phân tích câu"], ["vocab", "book", "Từ vựng"], ["grammar", "spark", "Ngữ pháp"], ["listen", "ear", "Luyện nghe"]];
@@ -3054,6 +3027,7 @@ function renderTab() {
   const body = $("#tabBody");
   if (!l.sentences.length && LEARN_TABS.includes(cur.tab) && cur.tab !== "script") { cur.tab = "script"; renderTabs(); }
   ({ script: renderScriptTab, analysis: renderAnalysisTab, vocab: renderVocabTab, grammar: renderGrammarTab, listen: renderListenTab, pron: renderPronTab, review: renderReviewTab, quiz: renderQuizTab })[cur.tab](l, body);
+  sheetExtras(l, body);
 }
 function setIdx(i, opt = {}) {
   const l = curLesson(); if (!l || i < 0 || i >= l.sentences.length) return;
@@ -3398,7 +3372,7 @@ function renderLessonSum() {
   const el = $("#lessonSum"), l = curLesson(); if (!el || !l) return;
   el.innerHTML = l.summary
     ? `<div class="lesson-sum">${ic("book")}<div class="grow"><b>Tình huống:</b> ${esc(l.summary)}</div><button class="btn ghost sm" data-act="rename-lesson" title="Sửa tóm tắt">${ic("edit")}</button></div>`
-    : `<button class="btn ghost sm lesson-sum-add" data-act="rename-lesson">${ic("plus")} Thêm tóm tắt nội dung / tình huống video</button>`;
+    : l.fromSheet ? "" : `<button class="btn ghost sm lesson-sum-add" data-act="rename-lesson">${ic("plus")} Thêm tóm tắt nội dung / tình huống video</button>`;
 }
 ACT["rename-lesson"] = () => {
   const l = curLesson();
@@ -4181,6 +4155,7 @@ $("[data-act='modal-close']", $("#modal")).innerHTML = ic("x");
 window.addEventListener("hashchange", route);
 document.addEventListener("DOMContentLoaded", route);
 { const r = checkAllLessonTimes(); if (r.fixed.length || r.sus.length) setTimeout(() => showTimeReport(r), 700); }
+setTimeout(() => syncSheet({ quiet: true }), 400);
 </script>
 
 <script>
@@ -4237,11 +4212,11 @@ const I18N = {
 };
 const LANGS = ["vi", "en", "ko", "ja", "zh"];
 const SHELL_I18N = {
-  vi: { nav_home: "Trang chủ", nav_speak: "Luyện nói", nav_videos: "Video của tôi", nav_videos_s: "Video", nav_cards: "Từ vựng", nav_progress: "Tiến độ", nav_settings: "Cài đặt", streak: "Chuỗi ngày", search: "Nhập từ khoá để tìm kiếm", add_video: "Thêm video", days: "Th2,Th3,Th4,Th5,Th6,Th7,CN" },
-  en: { nav_home: "Home", nav_speak: "Speaking", nav_videos: "My videos", nav_videos_s: "Videos", nav_cards: "Vocabulary", nav_progress: "Progress", nav_settings: "Settings", streak: "Streak", search: "Search keywords", add_video: "Add video", days: "Mo,Tu,We,Th,Fr,Sa,Su" },
-  ko: { nav_home: "홈", nav_speak: "말하기 연습", nav_videos: "내 영상", nav_videos_s: "영상", nav_cards: "단어", nav_progress: "진도", nav_settings: "설정", streak: "연속 학습", search: "검색어를 입력하세요", add_video: "영상 추가", days: "월,화,수,목,금,토,일" },
-  ja: { nav_home: "ホーム", nav_speak: "スピーキング", nav_videos: "マイ動画", nav_videos_s: "動画", nav_cards: "単語", nav_progress: "進捗", nav_settings: "設定", streak: "連続記録", search: "キーワードで検索", add_video: "動画を追加", days: "月,火,水,木,金,土,日" },
-  zh: { nav_home: "首页", nav_speak: "口语练习", nav_videos: "我的视频", nav_videos_s: "视频", nav_cards: "词汇", nav_progress: "进度", nav_settings: "设置", streak: "连续学习", search: "输入关键词搜索", add_video: "添加视频", days: "一,二,三,四,五,六,日" },
+  vi: { nav_home: "Trang chủ", nav_speak: "Luyện nói", nav_videos: "Video của tôi", nav_videos_s: "Video", nav_cards: "Từ vựng", nav_progress: "Tiến độ", nav_settings: "Cài đặt", streak: "Chuỗi ngày", search: "Nhập từ khoá để tìm kiếm", add_video: "Cập nhật sheet", days: "Th2,Th3,Th4,Th5,Th6,Th7,CN" },
+  en: { nav_home: "Home", nav_speak: "Speaking", nav_videos: "My videos", nav_videos_s: "Videos", nav_cards: "Vocabulary", nav_progress: "Progress", nav_settings: "Settings", streak: "Streak", search: "Search keywords", add_video: "Sync sheet", days: "Mo,Tu,We,Th,Fr,Sa,Su" },
+  ko: { nav_home: "홈", nav_speak: "말하기 연습", nav_videos: "내 영상", nav_videos_s: "영상", nav_cards: "단어", nav_progress: "진도", nav_settings: "설정", streak: "연속 학습", search: "검색어를 입력하세요", add_video: "시트 업데이트", days: "월,화,수,목,금,토,일" },
+  ja: { nav_home: "ホーム", nav_speak: "スピーキング", nav_videos: "マイ動画", nav_videos_s: "動画", nav_cards: "単語", nav_progress: "進捗", nav_settings: "設定", streak: "連続記録", search: "キーワードで検索", add_video: "シート更新", days: "月,火,水,木,金,土,日" },
+  zh: { nav_home: "首页", nav_speak: "口语练习", nav_videos: "我的视频", nav_videos_s: "视频", nav_cards: "词汇", nav_progress: "进度", nav_settings: "设置", streak: "连续学习", search: "输入关键词搜索", add_video: "更新表格", days: "一,二,三,四,五,六,日" },
 };
 for (const k in SHELL_I18N) Object.assign(I18N[k], SHELL_I18N[k]);
 const HTML_LANG = { vi: "vi", en: "en", ko: "ko", ja: "ja", zh: "zh-CN" };
@@ -5029,7 +5004,9 @@ ACT["listen-next"] = ACT["listen-skip"] = () => { const L = cur.listen; L.pos++;
 /* ---------- Tab: ÔN TẬP từ vựng của video ---------- */
 const RV_TYPES = [["mean", "Chọn nghĩa đúng"], ["listen", "Nghe và chép từ"], ["speak", "Phát âm từ"], ["write", "Viết câu ví dụ"]];
 const shortMean = m => String(m || "").split(/[;(]/)[0].trim();
-function reviewWords(l) { return lessonVocab(l).filter(v => v.meaning && v.pos !== "num" && HG.isHangul(v.base)); }
+function reviewWords(l) {
+  if (l.sheetVocab && l.sheetVocab.length >= 4) return l.sheetVocab.filter(x => x.vi).map(x => { const ex = vocabExample(l, x.ko); return { base: x.ko, meaning: x.vi, pos: "n", surface: x.ko, si: ex.ex ? l.sentences.findIndex(s => s.ko === ex.ex) : 0 }; });
+  return lessonVocab(l).filter(v => v.meaning && v.pos !== "num" && HG.isHangul(v.base)); }
 function newReview(l, only) {
   const words = shuffle(reviewWords(l)).slice(0, 10);
   let types = RV_TYPES.map(x => x[0]).filter(t => t !== "speak" || SRec);
@@ -5235,6 +5212,250 @@ Trả về JSON: {"questions":[{"q":"","qVi":"","options":["","","",""],"options
   } catch (e) { toast(e.message, "err"); if (!Q.items) { Q.items = offlineQuiz(l); Q.offline = true; } }
   Q.busy = false; clearInterval(tk); renderTab();
 };
+
+</script>
+
+<script>
+"use strict";
+/* =========================================================
+   BÀI HỌC TỪ GOOGLE SHEET
+   Cột: STT · Tiêu đề video · Chủ đề · Cấp độ · Transcript · Link Video · Từ vựng cần nhớ · Điểm ngữ pháp · Ghi chú phát âm
+   ========================================================= */
+const SHEET = { busy: false, status: "" };
+const SHEET_URL = "https://docs.google.com/spreadsheets/d/1GbPx5ipZKJ9dOPWEbGyeinKtf2qdQMl7_cL0Ay13NmQ/edit";
+DB.settings.sheetUrl = SHEET_URL;
+const normHead = s => String(s || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/đ/g, "d").replace(/\s+/g, " ").trim();
+function sheetCsvUrls(link) {
+  link = String(link || "").trim();
+  let m = link.match(/\/spreadsheets\/d\/e\/([\w-]+)/);
+  const gidM = link.match(/[#?&]gid=(\d+)/), gid = gidM ? gidM[1] : null;
+  if (m) return [`https://docs.google.com/spreadsheets/d/e/${m[1]}/pub?output=csv${gid ? "&gid=" + gid : ""}`];
+  m = link.match(/\/spreadsheets\/d\/([\w-]{20,})/) || link.match(/^([\w-]{30,})$/);
+  if (!m) return null;
+  const id = m[1];
+  return [`https://docs.google.com/spreadsheets/d/${id}/gviz/tq?tqx=out:csv&headers=1${gid ? "&gid=" + gid : ""}`,
+          `https://docs.google.com/spreadsheets/d/${id}/export?format=csv${gid ? "&gid=" + gid : ""}`];
+}
+function parseCSV(t) {
+  const rows = []; let row = [], f = "", q = false;
+  t = String(t || "").replace(/^﻿/, "");
+  for (let i = 0; i < t.length; i++) {
+    const c = t[i];
+    if (q) { if (c === '"') { if (t[i + 1] === '"') { f += '"'; i++; } else q = false; } else f += c; }
+    else if (c === '"') q = true;
+    else if (c === ",") { row.push(f); f = ""; }
+    else if (c === "\n") { row.push(f); rows.push(row); row = []; f = ""; }
+    else if (c !== "\r") f += c;
+  }
+  if (f !== "" || row.length) { row.push(f); rows.push(row); }
+  return rows;
+}
+const SHEET_COLS = [
+  ["stt", h => /^stt$|^so thu tu|^#$/.test(h)],
+  ["title", h => /tieu de|ten bai|ten video|^title/.test(h)],
+  ["topic", h => /chu de|topic/.test(h)],
+  ["level", h => /cap do|trinh do|level/.test(h)],
+  ["transcript", h => /trans|loi thoai|script|phu de/.test(h)],
+  ["link", h => /link|url/.test(h)],
+  ["vocab", h => /tu vung|vocab/.test(h)],
+  ["grammar", h => /ngu phap|grammar/.test(h)],
+  ["pron", h => /phat am|pronun/.test(h)],
+];
+function sheetColumns(rows) {
+  for (let r = 0; r < Math.min(rows.length, 6); r++) {
+    const heads = rows[r].map(normHead), col = {};
+    SHEET_COLS.forEach(([k, test]) => { const i = heads.findIndex((h, j) => test(h) && !Object.values(col).includes(j)); if (i >= 0) col[k] = i; });
+    if (col.transcript != null && (col.title != null || col.stt != null)) return { col, headerRow: r };
+  }
+  return null;
+}
+const hangulRatio = s => { const h = (s.match(/[가-힣]/g) || []).length, a = (s.match(/[\p{L}]/gu) || []).length; return a ? h / a : 0; };
+function splitKoVi(body) {
+  body = body.trim();
+  const bar = body.split(/\s+\|\s+/);
+  if (bar.length >= 2 && HG.isHangul(bar[0])) return { ko: bar[0].trim(), vi: bar.slice(1).join(" ").trim() };
+  if (/[)）]$/.test(body)) {
+    let depth = 0;
+    for (let i = body.length - 1; i >= 0; i--) {
+      const c = body[i];
+      if (c === ")" || c === "）") depth++;
+      else if (c === "(" || c === "（") { depth--; if (depth === 0) {
+        const group = body.slice(i + 1, -1).trim(), before = body.slice(0, i).trim();
+        if (before && HG.isHangul(before) && hangulRatio(group) < 0.3) return { ko: before, vi: group };
+        break;
+      } }
+    }
+  }
+  return { ko: body, vi: "" };
+}
+function sheetTranscript(text) {
+  const out = [];
+  const TS = /^[\[(（]?\s*((?:\d{1,2}:)?\d{1,2}:\d{2}(?:[.,]\d+)?)\s*[\])）]?\s*[-–:]?\s*(.*)$/;
+  for (let line of String(text || "").replace(/\r/g, "").split("\n")) {
+    line = line.trim(); if (!line) continue;
+    const m = line.match(TS);
+    let t = null, body = line;
+    if (m && m[2] !== undefined) { t = parseTime(m[1]); body = m[2]; }
+    if (!body.trim()) continue;
+    const { ko, vi } = splitKoVi(body);
+    if (!HG.isHangul(ko)) { const p = out[out.length - 1]; if (p) p.vi = (p.vi ? p.vi + " " : "") + body.replace(/^\(|\)$/g, ""); continue; }
+    out.push({ ko, vi, start: t, end: null, done: false });
+  }
+  for (let i = 0; i < out.length; i++) if (out[i].start != null) {
+    const nx = out.slice(i + 1).find(s => s.start != null);
+    out[i].end = nx ? nx.start : out[i].start + Math.max(3, speechDur(out[i]) + 1.5);
+  }
+  return out;
+}
+function sheetVocab(text) {
+  const items = [];
+  for (const raw of String(text || "").replace(/\r/g, "").split("\n")) {
+    const line = raw.trim().replace(/^[-•*·]\s*/, ""); if (!line) continue;
+    const m = line.match(/^([^:：]{1,40}?)\s*[:：]\s*(.*)$/);
+    if (m && HG.isHangul(m[1])) {
+      let ko = m[1].trim(), vi = m[2].trim();
+      const pm = ko.match(/^(.*?)\s*[(（]([^)）]*)[)）]\s*$/);
+      if (pm && HG.isHangul(pm[1])) { ko = pm[1].trim(); vi = `(${pm[2]}) ${vi}`; }
+      items.push({ ko, vi });
+    } else if (HG.isHangul(line.split(/\s/)[0]) && line.length < 30 && !/[:：]/.test(line)) items.push({ ko: line, vi: "" });
+    else if (items.length) items[items.length - 1].vi = (items[items.length - 1].vi + " " + line).trim();
+  }
+  return items;
+}
+function topicToCat(topic) {
+  const n = normHead(topic); if (!n) return "other";
+  const c = CATS.find(([k, name]) => normHead(name) === n || n.includes(normHead(name)) || normHead(name).includes(n));
+  return c ? c[0] : "other";
+}
+const strHash = s => { let h = 0; s = String(s || ""); for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0; return (h >>> 0).toString(36); };
+async function fetchSheetRows(link) {
+  const urls = sheetCsvUrls(link);
+  if (!urls) throw new Error("Link sheet chưa đúng. Hãy copy link trên thanh địa chỉ khi đang mở Google Sheet (dạng docs.google.com/spreadsheets/d/…).");
+  let lastErr = null;
+  for (const u of urls) {
+    try {
+      const r = await fetch(u, { cache: "no-store" });
+      const txt = await r.text();
+      if (!r.ok || /^\s*<(!doctype|html)/i.test(txt)) { lastErr = new Error("private"); continue; }
+      const rows = parseCSV(txt);
+      if (sheetColumns(rows)) return rows;
+      lastErr = new Error("cols");
+    } catch (e) { lastErr = lastErr || e; }
+  }
+  if (lastErr && lastErr.message === "cols") throw new Error("Đọc được sheet nhưng không thấy cột “Transcript” và “Tiêu đề video”/“STT”. Kiểm tra dòng tiêu đề của sheet nhé.");
+  if (lastErr && lastErr.message === "private") throw new Error("Sheet chưa mở quyền xem. Trong Google Sheet bấm Chia sẻ → “Bất kỳ ai có đường liên kết” → Người xem, rồi cập nhật lại.");
+  throw new Error("Không tải được sheet (kiểm tra mạng, hoặc sheet chưa mở quyền “Bất kỳ ai có đường liên kết”).");
+}
+async function syncSheet(opt = {}) {
+  const link = DB.settings.sheetUrl;
+  if (SHEET.busy) return;
+  SHEET.busy = true; SHEET.status = "loading"; refreshSheetUI();
+  try {
+    const rows = await fetchSheetRows(link);
+    const { col, headerRow } = sheetColumns(rows);
+    const cell = (r, k) => (col[k] != null ? String(r[col[k]] || "").trim() : "");
+    const seen = new Set(); let added = 0, updated = 0;
+    rows.slice(headerRow + 1).forEach((r, k) => {
+      const tr = cell(r, "transcript"), title = cell(r, "title"), sttRaw = cell(r, "stt");
+      if (!tr && !title) return;
+      const stt = parseInt(sttRaw, 10) || k + 1;
+      const id = "sh-" + stt; if (seen.has(id)) return; seen.add(id);
+      const link = cell(r, "link"), src = detectSource(link) || { type: "none", label: "Không có video" };
+      const topic = cell(r, "topic"), level = cell(r, "level");
+      const data = { title: title || `Bài ${stt}`, url: link, src: src.type === "invalid" ? { type: "none", label: "Không có video" } : src, stt, topic, level, cat: topicToCat(topic),
+        sheetVocab: sheetVocab(cell(r, "vocab")), sheetGrammar: cell(r, "grammar"), sheetPron: cell(r, "pron"), fromSheet: true,
+        thumb: src.type === "youtube" ? `https://i.ytimg.com/vi/${src.id}/hqdefault.jpg` : "" };
+      const h = strHash(tr), old = lessonById(id);
+      if (!old) {
+        DB.lessons.push({ id, ...data, sentences: sheetTranscript(tr), trHash: h, created: Date.now(), opened: 0, idx: 0, tchk: TCHK });
+        added++;
+      } else {
+        const before = JSON.stringify([old.title, old.url, old.topic, old.level, old.sheetVocab, old.sheetGrammar, old.sheetPron, old.trHash]);
+        Object.assign(old, data);
+        if (old.trHash !== h) {
+          const doneSet = new Set(old.sentences.filter(s => s.done).map(s => s.ko));
+          old.sentences = sheetTranscript(tr).map(s => ({ ...s, done: doneSet.has(s.ko) }));
+          old.trHash = h; delete old.quiz; delete old.healthOk; old.idx = 0;
+          if (cur.lessonId === id) { cur.idx = 0; cur.listen = null; cur.qz = null; }
+        }
+        if (before !== JSON.stringify([old.title, old.url, old.topic, old.level, old.sheetVocab, old.sheetGrammar, old.sheetPron, old.trHash])) updated++;
+      }
+    });
+    const gone = DB.lessons.filter(l => l.fromSheet && !seen.has(l.id));
+    if (gone.length) { DB.lessons = DB.lessons.filter(l => !gone.includes(l)); if (gone.some(l => l.id === cur.lessonId)) { destroyPlayer(); cur.lessonId = null; } }
+    DB.sheetSync = { at: Date.now(), n: seen.size };
+    save();
+    SHEET.status = "";
+    const msg = added || updated || gone.length ? `Đã cập nhật sheet: ${added ? added + " bài mới" : ""}${added && updated ? ", " : ""}${updated ? updated + " bài thay đổi" : ""}${gone.length ? `${added || updated ? ", " : ""}bỏ ${gone.length} bài đã xoá khỏi sheet` : ""}` : `Sheet không có gì mới (${seen.size} bài)`;
+    if (!opt.quiet || added || updated || gone.length) toast(msg, "ok");
+  } catch (e) {
+    SHEET.status = "err:" + e.message;
+    if (!opt.quiet) toast(e.message, "err");
+  }
+  SHEET.busy = false;
+  if (cur.view === "home") renderHome(); else if (cur.view === "videos") { $("#view-videos").dataset.ready = ""; renderVideos(); }
+  else if (cur.view === "lesson" && cur.lessonId && lessonById(cur.lessonId)) openLesson(cur.lessonId, cur.tab);
+  else refreshSheetUI();
+}
+function refreshSheetUI() {
+  const b = $("#sheetBox"); if (b) b.outerHTML = sheetBoxHTML();
+  $$('[data-act="sheet-sync"]').forEach(x => { x.disabled = SHEET.busy; });
+}
+function sheetBoxHTML() {
+  const st = DB.settings, sy = DB.sheetSync;
+  const err = SHEET.status.startsWith("err:") ? SHEET.status.slice(4) : "";
+  return `<div id="sheetBox">
+    <div class="sheet-ok">${ic("check")} <div class="grow"><b>Google Sheet “Tổng hợp Video”</b><div class="small muted">${sy ? `${sy.n} bài · cập nhật lúc ${new Date(sy.at).toLocaleString("vi-VN", { hour: "2-digit", minute: "2-digit", day: "2-digit", month: "2-digit" })}` : "Chưa tải lần nào"} · <a href="${esc(st.sheetUrl)}" target="_blank" rel="noopener">Mở sheet</a></div></div></div>
+    <div class="row" style="margin-top:12px;gap:8px">
+      <button class="btn primary lg" data-act="sheet-sync" ${SHEET.busy ? "disabled" : ""}>${SHEET.busy ? `<span class="spinner"></span> Đang tải sheet…` : `${ic("repeat")} Cập nhật sheet`}</button>
+    </div>
+    ${err ? `<div class="note warn" style="margin-top:10px">${esc(err)}</div>` : `<p class="hint" style="margin:10px 0 0">Thêm hoặc sửa bài trong sheet xong, bấm <b>Cập nhật sheet</b>. Trang cũng tự cập nhật mỗi lần mở.</p>`}
+  </div>`;
+}
+function sheetHero() {
+  return `<section class="add-hero">
+    <div class="add-main">
+      <h2>Bài học từ Google Sheet của bạn</h2>
+      <div class="add-box">${sheetBoxHTML()}</div>
+    </div>
+    <div class="add-art" aria-hidden="true"><div class="art-screen">${ic("list")}<span class="ko">안녕하세요!</span></div>${MASCOT}</div>
+  </section>`;
+}
+ACT["sheet-sync"] = () => syncSheet();
+
+/* ---------- Nội dung riêng từ sheet trong từng bài ---------- */
+function renderLessonMeta(l) {
+  const el = $("#lessonMeta"); if (!el) return;
+  el.innerHTML = l.fromSheet ? `<div class="lesson-meta">${l.stt ? `<span class="badge blue">Bài ${l.stt}</span>` : ""}${l.topic ? `<span class="badge">${esc(l.topic)}</span>` : ""}${l.level ? `<span class="badge green">${esc(l.level)}</span>` : ""}</div>` : "";
+}
+function vocabExample(l, ko) {
+  const stem = ko.replace(/다$/, "");
+  const s = l.sentences.find(x => x.ko.includes(ko)) || (stem.length >= 1 && l.sentences.find(x => x.ko.includes(stem)));
+  return s ? { ex: s.ko, exVi: s.vi || "" } : {};
+}
+const hasCard = ko => DB.cards.some(c => c.type === "word" && c.front === ko);
+function sheetVocabHTML(l) {
+  const v = l.sheetVocab || []; if (!v.length) return "";
+  const todo = v.filter(x => !hasCard(x.ko)).length;
+  return `<div class="sheet-sec">
+    <div class="row between" style="margin-bottom:8px"><b>${ic("star")} Từ vựng cần nhớ <span class="faint">(${v.length})</span></b>
+      <button class="btn sm primary" data-act="sv-card-all" ${todo ? "" : "disabled"}>${ic("plus")} ${todo ? `Thêm ${todo} từ vào flashcard` : "Đã có thẻ hết"}</button></div>
+    <table class="vlist">${v.map((x, i) => `<tr>
+      <td class="k"><span class="ko">${esc(x.ko)}</span><div class="rom">${esc(Rom.text(x.ko))}</div></td>
+      <td>${esc(x.vi)}</td>
+      <td style="white-space:nowrap;text-align:right"><button class="btn ghost sm" data-act="sv-speak" data-i="${i}" title="Nghe">${ic("vol")}</button>${hasCard(x.ko) ? `<span class="badge green" title="Đã có thẻ">${ic("check")}</span>` : `<button class="btn ghost sm" data-act="sv-card" data-i="${i}" title="Thêm vào flashcard">${ic("plus")}</button>`}</td></tr>`).join("")}</table>
+  </div><h3 class="sheet-sub">Tất cả từ trong lời thoại</h3>`;
+}
+ACT["sv-speak"] = el => { const x = curLesson().sheetVocab[+el.dataset.i]; if (x) speak(x.ko); };
+ACT["sv-card"] = el => { const l = curLesson(), x = l.sheetVocab[+el.dataset.i]; if (!x) return; if (addCard({ type: "word", front: x.ko, back: x.vi, lessonId: l.id, ...vocabExample(l, x.ko) })) { save(); toast(`Đã thêm “${x.ko}” vào flashcard`, "ok"); } renderTab(); renderNav(); };
+ACT["sv-card-all"] = () => { const l = curLesson(); let n = 0; (l.sheetVocab || []).forEach(x => { if (addCard({ type: "word", front: x.ko, back: x.vi, lessonId: l.id, ...vocabExample(l, x.ko) })) n++; }); save(); toast(`Đã thêm ${n} từ vào flashcard`, "ok"); renderTab(); renderNav(); };
+const noteBlock = (title, icon, text) => `<div class="sheet-sec"><b>${ic(icon)} ${title}</b><div class="sheet-note">${esc(text).replace(/(\[[^\]]+\])/g, '<span class="ko">$1</span>')}</div></div>`;
+function sheetExtras(l, body) {
+  if (!l.fromSheet || !body) return;
+  if (cur.tab === "vocab" && l.sheetVocab && l.sheetVocab.length) body.insertAdjacentHTML("afterbegin", sheetVocabHTML(l));
+  if (cur.tab === "grammar" && l.sheetGrammar) body.insertAdjacentHTML("afterbegin", noteBlock("Điểm ngữ pháp của bài", "spark", l.sheetGrammar) + `<h3 class="sheet-sub">Ngữ pháp máy tìm thấy trong lời thoại</h3>`);
+  if (cur.tab === "pron" && l.sheetPron) body.insertAdjacentHTML("afterbegin", noteBlock("Ghi chú phát âm", "mic", l.sheetPron));
+}
 
 </script>
 </body>
