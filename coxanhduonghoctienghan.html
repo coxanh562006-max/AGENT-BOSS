@@ -892,6 +892,25 @@ h1,h2,h3,.page-head h1,.sec-title,.modal-head h2,.lesson-head h1{font-family:var
 .cal-foot{font-size:11.5px;color:var(--muted);text-align:center;margin-top:6px;font-weight:700}
 body.sb-collapsed .sb-cal{display:none}
 @media (min-width:721px) and (max-width:1100px){body:not(.sb-open) .sb-cal{display:none}}
+
+.fc-nav{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:-4px 0 12px}
+.fc-nav span{text-align:center}
+@media (max-width:520px){.fc-nav span{display:none}}
+.flash{touch-action:pan-y}
+.flash.in-next .flash-inner{animation:fcInNext .28s ease}
+.flash.in-prev .flash-inner{animation:fcInPrev .28s ease}
+@keyframes fcInNext{from{transform:translateX(40px);opacity:0}to{transform:none;opacity:1}}
+@keyframes fcInPrev{from{transform:translateX(-40px);opacity:0}to{transform:none;opacity:1}}
+
+/* Từ vựng trên thẻ to gấp đôi */
+.flash{height:420px}
+.fc-main{font-size:min(80px,15vw);line-height:1.15;overflow-wrap:anywhere}
+.fc-main.long{font-size:min(60px,11vw)}
+.fc-main.vi{font-size:min(40px,8vw)}
+.fc-main.back-word{font-size:min(60px,12vw)}
+.fc-main.back-word.long{font-size:min(44px,9vw)}
+.fc-sub{font-size:18px}
+@media (max-width:640px){.flash{height:380px}}
 </style>
 </head>
 <body>
@@ -4128,35 +4147,58 @@ ACT["deck-review"] = el => {
 ACT["card-dir"] = el => { DB.settings.dir = el.dataset.d; save(); renderCards(); };
 ACT["review-start"] = () => { CS.queue = dueCards(CS.deck).sort(() => Math.random() - .5); startReview(false); };
 ACT["review-free"] = () => { CS.queue = shuffle(DB.cards.filter(c => cardDeckId(c) === CS.deck)).slice(0, 50); startReview(true); };
-function startReview(free) { CS.mode = "review"; CS.free = free; CS.done = 0; CS.total = CS.queue.length; nextCard(); }
-function nextCard() { CS.card = CS.queue.shift() || null; CS.flipped = false; renderCards(); if (CS.card && DB.settings.dir === "ko" && DB.settings.autoSpeak) speak(CS.card.front); }
+function startReview(free) { CS.mode = "review"; CS.free = free; CS.done = 0; CS.hist = []; CS.card = null; nextCard(); }
+/* Chuyển thẻ: thẻ đã xem lưu vào CS.hist để quay lại được (nút Trước / vuốt phải / phím ←) */
+function nextCard(anim) {
+  if (CS.card) CS.hist.push(CS.card);
+  CS.card = CS.queue.shift() || null; CS.flipped = false; CS.anim = anim || "next"; renderCards();
+  if (CS.card && DB.settings.dir === "ko" && DB.settings.autoSpeak) speak(CS.card.front);
+}
+function prevCard() {
+  if (!CS.hist || !CS.hist.length) { toast("Đây là thẻ đầu tiên"); return; }
+  if (CS.card) CS.queue.unshift(CS.card);
+  CS.card = CS.hist.pop(); CS.flipped = false; CS.anim = "prev"; renderCards();
+  if (DB.settings.dir === "ko" && DB.settings.autoSpeak) speak(CS.card.front);
+}
+ACT["fc-prev"] = () => prevCard();
+ACT["fc-next"] = () => { if (CS.card) nextCard("next"); };
+function bindSwipe(el) {
+  if (!el) return; let x0 = null, y0 = 0;
+  el.addEventListener("touchstart", e => { const t = e.touches[0]; x0 = t.clientX; y0 = t.clientY; }, { passive: true });
+  el.addEventListener("touchend", e => {
+    if (x0 == null) return; const t = e.changedTouches[0], dx = t.clientX - x0, dy = t.clientY - y0; x0 = null;
+    if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.3) { CS.swiped = Date.now(); dx < 0 ? ACT["fc-next"]() : prevCard(); }
+  });
+}
 function renderReview(v) {
   const c = CS.card;
   if (!c) {
-    v.innerHTML = `<div class="fc-wrap"><div class="card empty"><div class="big">🎉</div><h2>Xong rồi!</h2><p>Bạn vừa ôn ${CS.done} thẻ. Chuỗi học: ${streak()} ngày.</p><button class="btn primary" data-act="review-exit">Về bộ thẻ</button></div></div>`;
+    v.innerHTML = `<div class="fc-wrap"><div class="card empty"><div class="big">🎉</div><h2>Xong rồi!</h2><p>Bạn vừa ôn ${CS.done} thẻ. Chuỗi học: ${streak()} ngày.</p><div class="row" style="justify-content:center">${CS.hist && CS.hist.length ? `<button class="btn" data-act="fc-prev">${ic("left")} Xem lại thẻ trước</button>` : ""}<button class="btn primary" data-act="review-exit">Về bộ thẻ</button></div></div></div>`;
     renderNav(); return;
   }
   const koFront = DB.settings.dir === "ko";
-  const front = koFront ? `<div class="fc-main">${esc(c.front)}</div>${c.type !== "sentence" ? `<div class="fc-sub">${esc(Rom.text(c.front))}</div>` : ""}` : `<div class="fc-main vi">${esc(c.back)}</div><div class="fc-sub">${{ word: "Từ tiếng Hàn là gì?", grammar: "Cấu trúc ngữ pháp nào?", sentence: "Nói câu này bằng tiếng Hàn?" }[c.type] || ""}</div>`;
-  const back = `<div class="fc-main" style="font-size:30px">${esc(c.front)}</div><div class="fc-sub">${esc(Rom.text(c.front))}</div>
+  const front = koFront ? `<div class="fc-main ${c.front.length > 6 ? "long" : ""}">${esc(c.front)}</div>${c.type !== "sentence" ? `<div class="fc-sub">${esc(Rom.text(c.front))}</div>` : ""}` : `<div class="fc-main vi">${esc(c.back)}</div><div class="fc-sub">${{ word: "Từ tiếng Hàn là gì?", grammar: "Cấu trúc ngữ pháp nào?", sentence: "Nói câu này bằng tiếng Hàn?" }[c.type] || ""}</div>`;
+  const back = `<div class="fc-main back-word ${c.front.length > 6 ? "long" : ""}">${esc(c.front)}</div><div class="fc-sub">${esc(Rom.text(c.front))}</div>
     <div style="font-size:20px;font-weight:600;margin-top:4px">${esc(c.back)}</div>
     ${c.note ? `<div class="fc-ex">${esc(c.note)}</div>` : ""}
     ${c.ex && c.ex !== c.front ? `<div class="fc-ex"><div class="ko">${esc(c.ex)}</div>${esc(c.exVi || "")}</div>` : ""}`;
   const pv = [1, 2, 3, 4].map(q => schedulePreview(c, q));
   v.innerHTML = `<div class="fc-wrap">
-    <div class="row between"><button class="btn ghost sm" data-act="review-exit">${ic("x")} Dừng</button><span class="muted small">${CS.done + 1}/${CS.total}${CS.free ? " · ôn tự do" : ""}</span>
+    <div class="row between"><button class="btn ghost sm" data-act="review-exit">${ic("x")} Dừng</button><span class="muted small">${CS.hist.length + 1}/${CS.hist.length + 1 + CS.queue.length}${CS.free ? " · ôn tự do" : ""}</span>
       <button class="btn ghost sm" data-act="say" data-text="${esc(c.front)}">${ic("vol")} Nghe</button></div>
-    <div class="progress" style="margin-top:10px"><span style="width:${CS.done / Math.max(1, CS.total) * 100}%"></span></div>
-    <div class="flash ${CS.flipped ? "flipped" : ""}" data-act="flip"><div class="flash-inner"><div class="face">${front}<div class="faint small" style="margin-top:12px">Bấm để lật thẻ <span class="kbd">Space</span></div></div><div class="face back">${back}</div></div></div>
+    <div class="progress" style="margin-top:10px"><span style="width:${CS.hist.length / Math.max(1, CS.hist.length + 1 + CS.queue.length) * 100}%"></span></div>
+    <div class="flash ${CS.flipped ? "flipped" : ""} ${CS.anim ? "in-" + CS.anim : ""}" data-act="flip" id="flashCard"><div class="flash-inner"><div class="face">${front}<div class="faint small" style="margin-top:12px">Bấm để lật thẻ <span class="kbd">Space</span></div></div><div class="face back">${back}</div></div></div>
+    <div class="fc-nav"><button class="btn sm" data-act="fc-prev" ${CS.hist.length ? "" : "disabled"}>${ic("left")} Trước</button><span class="faint small">Vuốt ← → hoặc phím ← → để chuyển thẻ</span><button class="btn sm" data-act="fc-next">Sau ${ic("right")}</button></div>
     ${CS.flipped ? `<div class="rate-row">
       <button class="btn r1" data-act="rate" data-q="1">Quên<small>${ivlLabel(pv[0])}</small></button>
       <button class="btn r2" data-act="rate" data-q="2">Khó<small>${ivlLabel(pv[1])}</small></button>
       <button class="btn r3" data-act="rate" data-q="3">Nhớ<small>${ivlLabel(pv[2])}</small></button>
       <button class="btn r4" data-act="rate" data-q="4">Dễ<small>${ivlLabel(pv[3])}</small></button>
-    </div><p class="hint" style="text-align:center">Phím tắt: 1 Quên · 2 Khó · 3 Nhớ · 4 Dễ</p>` : `<button class="btn primary lg" style="width:100%" data-act="flip">Lật thẻ</button>`}
+    </div><p class="hint" style="text-align:center">Phím tắt: 1 Quên · 2 Khó · 3 Nhớ · 4 Dễ · ← → chuyển thẻ</p>` : `<button class="btn primary lg" style="width:100%" data-act="flip">Lật thẻ</button>`}
   </div>`;
+  bindSwipe($("#flashCard"));
 }
-ACT.flip = () => { if (!CS.card) return; CS.flipped = !CS.flipped; renderCards(); if (CS.flipped && DB.settings.dir === "vi" && DB.settings.autoSpeak) speak(CS.card.front); };
+ACT.flip = () => { if (!CS.card || (CS.swiped && Date.now() - CS.swiped < 400)) return; CS.anim = ""; CS.flipped = !CS.flipped; renderCards(); if (CS.flipped && DB.settings.dir === "vi" && DB.settings.autoSpeak) speak(CS.card.front); };
 ACT.rate = el => {
   const q = +el.dataset.q, c = CS.card; if (!c) return;
   schedule(c, q); CS.done++; logAct("r");
@@ -4307,6 +4349,8 @@ document.addEventListener("keydown", e => {
   if (cur.view === "cards" && CS.mode === "review" && CS.card) {
     if (e.key === " " || e.key === "Enter") { e.preventDefault(); ACT.flip(); }
     else if (CS.flipped && ["1", "2", "3", "4"].includes(e.key)) ACT.rate({ dataset: { q: e.key } });
+    else if (e.key === "ArrowLeft") { e.preventDefault(); prevCard(); }
+    else if (e.key === "ArrowRight") { e.preventDefault(); ACT["fc-next"](); }
   } else if (cur.view === "lesson" && curLesson()?.sentences.length) {
     if (e.key === "ArrowLeft") { e.preventDefault(); ACT["prev-sent"](); }
     else if (e.key === "ArrowRight") { e.preventDefault(); ACT["next-sent"](); }
