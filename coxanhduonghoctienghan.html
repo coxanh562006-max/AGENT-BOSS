@@ -838,6 +838,60 @@ h1,h2,h3,.page-head h1,.sec-title,.modal-head h2,.lesson-head h1{font-family:var
 .land-logo-bubble{position:absolute;left:3%;bottom:18px;z-index:1;animation:floaty 6s ease-in-out infinite;width:clamp(110px,13vw,170px);height:clamp(110px,13vw,170px);border-radius:50%;background:#fff;padding:10px;box-shadow:0 14px 34px rgba(74,155,224,.3);border:4px solid var(--p-blue)}
 @media (max-width:640px){.land-logo-bubble{width:96px;height:96px;bottom:10px}}
 .land-logo-bubble img{width:100%;height:100%;object-fit:contain;border-radius:50%}
+
+/* Bộ thẻ theo bài */
+.deck-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:16px}
+.deck{background:var(--surface);border:1.5px solid var(--border);border-radius:22px;padding:16px;cursor:pointer;box-shadow:var(--shadow);transition:transform .15s,box-shadow .15s;position:relative;overflow:hidden}
+.deck::before{content:"";position:absolute;inset:0 0 auto 0;height:6px;background:var(--tbg)}
+.deck:hover{transform:translateY(-3px);box-shadow:0 14px 30px rgba(74,155,224,.18)}
+.deck-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.deck-ic{width:40px;height:40px;border-radius:14px;display:grid;place-items:center;background:var(--tbg);color:var(--tfg);font-family:var(--font-round);font-weight:800;font-size:18px}
+.deck-due{background:var(--p-pink);color:#b8466f;font-weight:800;font-size:12px;border-radius:999px;padding:3px 10px}
+.deck-ok{display:inline-flex;gap:4px;align-items:center;background:var(--p-mint);color:var(--success);font-weight:800;font-size:12px;border-radius:999px;padding:3px 10px}
+.deck-ok svg{width:14px;height:14px}
+.deck h3{font-size:16.5px;line-height:1.3;margin:0 0 4px}
+.deck-nums{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.deck-nums div{background:var(--surface-2);border-radius:16px;padding:10px 12px;display:flex;flex-direction:column}
+.deck-nums b{font-family:var(--font-round);font-size:24px;line-height:1.1}
+.deck-nums span{font-size:12.5px;color:var(--muted);font-weight:700}
+@media (max-width:640px){.deck-nums{grid-template-columns:repeat(2,1fr)}}
+/* Tiến độ tối giản */
+.pg-top{display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:14px}
+.pg-tile{display:flex;align-items:center;gap:14px;padding:16px 18px;background:linear-gradient(135deg,var(--surface),color-mix(in srgb,var(--tbg,var(--p-blue)) 55%,var(--surface)))}
+.pg-tile[data-nav]{cursor:pointer}
+.pg-tile span{display:block;font-size:13px;color:var(--muted);font-weight:700}
+.pg-num{display:block;font-family:var(--font-round);font-size:30px;line-height:1.05}
+.pg-num small{font-size:14px;color:var(--muted);font-weight:700}
+.pg-ic{width:48px;height:48px;border-radius:16px;display:grid!important;place-items:center;background:var(--surface);color:var(--primary-strong)!important;flex:none}
+.pg-ic svg{width:24px;height:24px}
+.pg-goal .ring{width:78px;height:78px;flex:none}
+.pg-goal .ring>div{width:60px;height:60px}
+.pg-goal .ring b{font-size:17px}
+.pg-goal-sel{width:auto!important;padding:3px 8px!important;font-size:12.5px!important;margin-top:6px;border-radius:999px!important}
+.pg-list{display:flex;flex-direction:column;gap:10px}
+.pg-row{display:flex;align-items:center;gap:14px;padding:12px 16px}
+.pg-badge{width:42px;height:42px;border-radius:14px;display:grid;place-items:center;background:var(--tbg);color:var(--tfg);font-family:var(--font-round);font-weight:800;font-size:18px;flex:none}
+.pg-main{flex:1;min-width:0}
+.pg-title{font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:6px}
+.pg-main .progress{margin-bottom:4px}
+.pg-pct{font-family:var(--font-round);font-size:20px;color:var(--tfg);min-width:52px;text-align:right}
+@media (max-width:820px){.pg-top{grid-template-columns:1fr 1fr}.pg-goal{grid-column:1/-1}}
+@media (max-width:520px){.pg-row{display:grid;grid-template-columns:42px minmax(0,1fr);align-items:start}.pg-title{white-space:normal}.pg-pct{display:none}.pg-row .btn{grid-column:2;justify-self:start}}
+/* Lịch tháng ở thanh bên */
+.sb-cal{border-radius:18px;background:var(--surface);border:1.5px solid var(--border);padding:10px 10px 8px;margin:-4px 0 16px}
+.cal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+.cal-head b{font-family:var(--font-round);font-size:14.5px}
+.cal-head button{width:26px;height:26px;border-radius:50%;border:0;background:var(--surface-2);color:var(--muted);display:grid;place-items:center;cursor:pointer}
+.cal-head button:disabled{opacity:.35;cursor:default}
+.cal-head svg{width:14px;height:14px}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;text-align:center}
+.cal-grid span{font-size:10.5px;font-weight:800;color:var(--faint);padding-bottom:2px}
+.cal-grid i{font-style:normal;font-size:12px;font-weight:700;color:var(--muted);height:24px;display:grid;place-items:center;border-radius:50%}
+.cal-grid i.on{background:var(--p-blue);color:var(--primary-strong)}
+.cal-grid i.today{box-shadow:inset 0 0 0 2px #f39bba;color:var(--text)}
+.cal-foot{font-size:11.5px;color:var(--muted);text-align:center;margin-top:6px;font-weight:700}
+body.sb-collapsed .sb-cal{display:none}
+@media (min-width:721px) and (max-width:1100px){body:not(.sb-open) .sb-cal{display:none}}
 </style>
 </head>
 <body>
@@ -2548,6 +2602,25 @@ function weekStars() {
   }
   return html;
 }
+/* Lịch tháng ở thanh bên: ngày đã học được tô màu */
+cur.calOff = 0;
+function monthCal() {
+  const now = new Date(), base = new Date(now.getFullYear(), now.getMonth() + cur.calOff, 1);
+  const y = base.getFullYear(), m = base.getMonth(), days = new Date(y, m + 1, 0).getDate(), lead = (base.getDay() + 6) % 7;
+  const names = ["T2", "T3", "T4", "T5", "T6", "T7", "CN"];
+  let cells = "", learned = 0;
+  for (let i = 0; i < lead; i++) cells += "<i></i>";
+  for (let d = 1; d <= days; d++) {
+    const dt = new Date(y, m, d), x = DB.stats.days[dayKey(dt)] || {};
+    const on = (x.r || 0) + (x.s || 0) + (x.l || 0) + (x.w || 0) > 0; if (on) learned++;
+    const today = dt.toDateString() === now.toDateString();
+    cells += `<i class="${on ? "on" : ""} ${today ? "today" : ""}" title="${d}/${m + 1}${on ? " · đã học" : ""}">${d}</i>`;
+  }
+  return `<div class="cal-head"><button data-act="cal-move" data-d="-1" title="Tháng trước">${ic("left")}</button><b>Tháng ${m + 1}/${y}</b><button data-act="cal-move" data-d="1" title="Tháng sau" ${cur.calOff >= 0 ? "disabled" : ""}>${ic("right")}</button></div>
+    <div class="cal-grid">${names.map(n => `<span>${n}</span>`).join("")}${cells}</div>
+    <div class="cal-foot">${learned} ngày đã học trong tháng</div>`;
+}
+ACT["cal-move"] = el => { cur.calOff = Math.min(0, cur.calOff + +el.dataset.d); const b = $(".sb-cal"); if (b) b.innerHTML = monthCal(); };
 function renderNav() {
   const av = navActive(cur.view);
   const due = dueCards().length;
@@ -2562,6 +2635,7 @@ function renderNav() {
       <div class="sb-label">${esc(t("streak"))} <span class="sb-fire">${ic("flame")}${st}</span></div>
       <div class="week">${weekStars()}</div>
     </div>
+    <div class="sb-cal">${monthCal()}</div>
     <nav class="sb-nav">${NAV_MAIN.map(x => item(x)).join("")}</nav>
     <div class="sb-foot">${NAV_SUB.map(x => item(x, true)).join("")}</div>`;
   $("#appbar").innerHTML = `
@@ -3957,7 +4031,7 @@ ACT["card-ai-grammar"] = el => {
 };
 
 function cardLevel(c) { return c.reps === 0 ? "new" : c.ivl >= 21 ? "known" : "learning"; }
-function deckFilter(c, deck) { return deck === "all" || (deck === "word" && c.type === "word") || (deck === "grammar" && c.type === "grammar") || (deck === "sentence" && c.type === "sentence") || c.lessonId === deck; }
+function deckFilter(c, deck) { if (deck === MINE) return cardDeckId(c) === MINE; return deck === "all" || deck === "" || (deck === "word" && c.type === "word") || (deck === "grammar" && c.type === "grammar") || (deck === "sentence" && c.type === "sentence") || c.lessonId === deck; }
 function newAllowance() { const d = DB.stats.days[dayKey()] || {}; return Math.max(0, (DB.settings.newPerDay || 20) - (d.nw || 0)); }
 function dueCards(deck = "all") {
   const now = Date.now();
@@ -3979,57 +4053,87 @@ function schedule(c, q, dry) {
   c.reps++; c.due = startOfToday() + c.ivl * DAY + 3 * 3600 * 1000;
 }
 const ivlLabel = c => c.reps === 0 && c.ivl === 0 ? "1 phút" : c.ivl === 1 ? "1 ngày" : c.ivl < 30 ? c.ivl + " ngày" : c.ivl < 365 ? Math.round(c.ivl / 30) + " tháng" : Math.round(c.ivl / 365) + " năm";
-const CS = { mode: "overview", deck: "all", queue: [], card: null, flipped: false, done: 0, search: "" };
+const CS = { mode: "overview", deck: "", queue: [], card: null, flipped: false, done: 0, search: "" };
+/* Bộ thẻ theo bài: thẻ thêm từ bài nào thuộc bài đó; thẻ tự thêm nằm ở bộ "Thẻ tự thêm" */
+const MINE = "_mine";
+const cardDeckId = c => (c.lessonId && lessonById(c.lessonId) ? c.lessonId : MINE);
+function deckList() {
+  const ids = new Set(DB.cards.map(cardDeckId));
+  const out = DB.lessons.filter(l => ids.has(l.id)).sort((a, b) => (a.stt ?? 1e9) - (b.stt ?? 1e9)).map(l => ({ id: l.id, l, title: l.title, stt: l.stt }));
+  if (ids.has(MINE)) out.push({ id: MINE, title: "Thẻ tự thêm" });
+  return out;
+}
+function deckStats(id) {
+  const cs = DB.cards.filter(c => cardDeckId(c) === id), lv = { new: 0, learning: 0, known: 0 };
+  cs.forEach(c => lv[cardLevel(c)]++);
+  return { n: cs.length, due: dueCards(id).length, ...lv };
+}
 function renderCards() {
   const v = $("#view-cards");
   if (CS.mode === "review") return renderReview(v);
-  const lv = { new: 0, learning: 0, known: 0 }; DB.cards.forEach(c => lv[cardLevel(c)]++);
-  const due = dueCards(CS.deck);
-  const decks = [["all", "Tất cả thẻ"], ["word", "Chỉ từ vựng"], ["grammar", "Chỉ ngữ pháp"], ["sentence", "Chỉ câu"]].concat(DB.lessons.filter(l => DB.cards.some(c => c.lessonId === l.id)).map(l => [l.id, "Bài: " + l.title]));
+  const decks = deckList();
+  if (CS.deck && !decks.some(d => d.id === CS.deck)) CS.deck = "";
+  if (!CS.deck) {
+    v.innerHTML = `
+      <div class="row between" style="margin-bottom:6px"><h1>Từ vựng · Flashcard</h1>
+        <button class="btn" data-act="card-new">${ic("plus")} Tự thêm thẻ</button></div>
+      <p class="muted" style="margin:0 0 16px">Mỗi bài là một bộ thẻ riêng — chọn bài muốn ôn nhé.</p>
+      ${decks.length ? `<div class="deck-grid">${decks.map((d, i) => {
+        const st = deckStats(d.id), [bg, fg] = d.l ? topicColor(topicOf(d.l)) : ["var(--p-peach)", "#b0602a"];
+        return `<div class="deck" style="--tbg:${bg};--tfg:${fg}" data-act="deck-open" data-id="${esc(d.id)}">
+          <div class="deck-top"><span class="deck-ic">${d.l ? (d.stt != null ? d.stt : ic("book")) : ic("edit")}</span>${st.due ? `<span class="deck-due">${st.due} cần ôn</span>` : `<span class="deck-ok">${ic("check")} Đã ôn xong</span>`}</div>
+          <h3>${esc(d.title)}</h3>
+          <div class="small muted">${st.n} thẻ · ${st.known} đã thuộc</div>
+          <div class="progress" style="margin:8px 0 12px"><span style="width:${st.n ? Math.round(st.known / st.n * 100) : 0}%"></span></div>
+          <button class="btn ${st.due ? "primary" : ""} sm" data-act="deck-review" data-id="${esc(d.id)}">${ic("play")} ${st.due ? `Ôn ${st.due} thẻ` : "Ôn tự do"}</button>
+        </div>`; }).join("")}</div>`
+      : `<div class="card empty"><div class="big">📚</div>Chưa có thẻ nào. Mở một bài học → tab <b>Từ vựng</b> → bấm <b>+</b> để thêm từ của bài đó.</div>`}`;
+    return;
+  }
+  const d = decks.find(x => x.id === CS.deck), st = deckStats(CS.deck), due = dueCards(CS.deck);
   const q = CS.search.trim().toLowerCase();
-  const list = DB.cards.filter(c => deckFilter(c, CS.deck) && (!q || c.front.toLowerCase().includes(q) || (c.back || "").toLowerCase().includes(q))).sort((a, b) => b.created - a.created);
+  const list = DB.cards.filter(c => cardDeckId(c) === CS.deck && (!q || c.front.toLowerCase().includes(q) || (c.back || "").toLowerCase().includes(q))).sort((a, b) => a.created - b.created);
   v.innerHTML = `
-    <div class="row between" style="margin-bottom:14px"><h1>Từ vựng · Flashcard</h1>
-      <button class="btn" data-act="card-new">${ic("plus")} Tự thêm thẻ</button></div>
-    <div class="tiles" style="margin-bottom:16px">
-      <div class="card stat accent"><span class="num">${due.length}</span><span class="lab">thẻ cần học hôm nay</span></div>
-      <div class="card stat"><span class="num">${lv.new}</span><span class="lab">thẻ mới</span></div>
-      <div class="card stat"><span class="num">${lv.learning}</span><span class="lab">đang học</span></div>
-      <div class="card stat"><span class="num">${lv.known}</span><span class="lab">đã thuộc (≥ 21 ngày)</span></div>
-    </div>
-    <div class="card card-pad" style="margin-bottom:16px">
-      <div class="row" style="align-items:flex-end">
-        <div style="min-width:200px;flex:1"><label class="lbl">Bộ thẻ</label><select class="select input" id="deckSel">${decks.map(([k, n]) => `<option value="${esc(k)}" ${k === CS.deck ? "selected" : ""}>${esc(n)}</option>`).join("")}</select></div>
-        <div><label class="lbl">Mặt trước</label><div class="seg"><button class="${DB.settings.dir === "ko" ? "active" : ""}" data-act="card-dir" data-d="ko">Tiếng Hàn</button><button class="${DB.settings.dir === "vi" ? "active" : ""}" data-act="card-dir" data-d="vi">Tiếng Việt</button></div></div>
-      </div>
-      <div class="row" style="margin-top:14px">
+    <button class="btn ghost sm" data-act="deck-back" style="margin-bottom:8px">${ic("left")} Tất cả bộ thẻ</button>
+    <div class="row between" style="margin-bottom:12px"><h1>${d.stt != null ? `<span class="faint">Bài ${d.stt} · </span>` : ""}${esc(d.title)}</h1>
+      <div class="row">${d.l ? `<button class="btn sm" data-go="lesson/${d.id}/vocab">${ic("book")} Mở bài học</button>` : ""}<button class="btn sm" data-act="card-new">${ic("plus")} Thêm thẻ</button></div></div>
+    <div class="card card-pad deck-panel" style="margin-bottom:16px">
+      <div class="deck-nums"><div><b>${st.n}</b><span>thẻ</span></div><div><b>${st.due}</b><span>cần ôn hôm nay</span></div><div><b>${st.learning}</b><span>đang học</span></div><div><b>${st.known}</b><span>đã thuộc</span></div></div>
+      <div class="row" style="margin-top:14px;align-items:center">
         <button class="btn primary lg" data-act="review-start" ${due.length ? "" : "disabled"}>${ic("play")} Bắt đầu ôn (${due.length} thẻ)</button>
-        <button class="btn lg" data-act="review-free" ${list.length ? "" : "disabled"}>${ic("repeat")} Ôn tự do (xáo trộn)</button>
+        <button class="btn lg" data-act="review-free" ${list.length ? "" : "disabled"}>${ic("repeat")} Ôn tự do</button>
+        <span class="grow"></span>
+        <div class="row" style="gap:6px"><span class="small muted">Mặt trước</span><div class="seg"><button class="${DB.settings.dir === "ko" ? "active" : ""}" data-act="card-dir" data-d="ko">Tiếng Hàn</button><button class="${DB.settings.dir === "vi" ? "active" : ""}" data-act="card-dir" data-d="vi">Tiếng Việt</button></div></div>
       </div>
-      ${!due.length && DB.cards.length ? `<p class="hint" style="margin-bottom:0">🎉 Bạn đã ôn hết thẻ của hôm nay. Có thể “Ôn tự do” hoặc thêm từ mới từ bài học.</p>` : ""}
-      ${!DB.cards.length ? `<p class="hint" style="margin-bottom:0">Chưa có thẻ nào. Mở một bài học → tab <b>Phân tích câu</b> hoặc <b>Từ vựng</b> → bấm <b>+</b> để thêm từ.</p>` : ""}
+      ${!due.length && list.length ? `<p class="hint" style="margin-bottom:0">🎉 Bộ này đã ôn xong hôm nay. Có thể bấm “Ôn tự do”.</p>` : ""}
     </div>
     <div class="card card-pad">
       <div class="row between" style="margin-bottom:8px"><h3>Danh sách thẻ (${list.length})</h3>
         <input class="input" id="cardSearch" placeholder="Tìm thẻ…" value="${esc(CS.search)}" style="max-width:240px"></div>
       ${list.length ? `<table class="vlist">${list.slice(0, 300).map(c => `<tr>
         <td class="k">${esc(c.front)}</td>
-        <td>${esc(c.back)}<div class="faint small">${{ word: "Từ vựng", grammar: "Ngữ pháp", sentence: "Câu" }[c.type] || ""} · ${{ new: "Mới", learning: "Đang học", known: "Đã thuộc" }[cardLevel(c)]}${c.reps ? " · ôn lại " + (c.due <= Date.now() ? "hôm nay" : "sau " + Math.max(1, Math.ceil((c.due - Date.now()) / DAY)) + " ngày") : ""}</div></td>
+        <td>${esc(c.back)}<div class="faint small">${{ new: "Mới", learning: "Đang học", known: "Đã thuộc" }[cardLevel(c)]}${c.reps ? " · ôn lại " + (c.due <= Date.now() ? "hôm nay" : "sau " + Math.max(1, Math.ceil((c.due - Date.now()) / DAY)) + " ngày") : ""}</div></td>
         <td style="text-align:right;white-space:nowrap"><button class="btn ghost sm" data-act="say" data-text="${esc(c.front)}">${ic("vol")}</button><button class="btn ghost sm" data-act="card-edit" data-id="${c.id}">${ic("edit")}</button><button class="btn ghost sm danger" data-act="card-del" data-id="${c.id}">${ic("trash")}</button></td>
       </tr>`).join("")}</table>` : `<div class="empty">Không có thẻ.</div>`}
     </div>`;
-  $("#deckSel").onchange = e => { CS.deck = e.target.value; renderCards(); };
   const si = $("#cardSearch"); si.oninput = () => { CS.search = si.value; const pos = si.selectionStart; renderCards(); const n = $("#cardSearch"); n.focus(); n.setSelectionRange(pos, pos); };
 }
+ACT["deck-open"] = (el, e) => { if (e.target.closest('[data-act="deck-review"]')) return; CS.deck = el.dataset.id; CS.search = ""; renderCards(); scrollTo(0, 0); };
+ACT["deck-back"] = () => { CS.deck = ""; CS.search = ""; renderCards(); };
+ACT["deck-review"] = el => {
+  CS.deck = el.dataset.id; const due = dueCards(CS.deck);
+  CS.queue = due.length ? due.sort(() => Math.random() - .5) : shuffle(DB.cards.filter(c => cardDeckId(c) === CS.deck)).slice(0, 50);
+  startReview(!due.length);
+};
 ACT["card-dir"] = el => { DB.settings.dir = el.dataset.d; save(); renderCards(); };
 ACT["review-start"] = () => { CS.queue = dueCards(CS.deck).sort(() => Math.random() - .5); startReview(false); };
-ACT["review-free"] = () => { CS.queue = shuffle(DB.cards.filter(c => deckFilter(c, CS.deck))).slice(0, 50); startReview(true); };
+ACT["review-free"] = () => { CS.queue = shuffle(DB.cards.filter(c => cardDeckId(c) === CS.deck)).slice(0, 50); startReview(true); };
 function startReview(free) { CS.mode = "review"; CS.free = free; CS.done = 0; CS.total = CS.queue.length; nextCard(); }
 function nextCard() { CS.card = CS.queue.shift() || null; CS.flipped = false; renderCards(); if (CS.card && DB.settings.dir === "ko" && DB.settings.autoSpeak) speak(CS.card.front); }
 function renderReview(v) {
   const c = CS.card;
   if (!c) {
-    v.innerHTML = `<div class="fc-wrap"><div class="card empty"><div class="big">🎉</div><h2>Xong rồi!</h2><p>Bạn vừa ôn ${CS.done} thẻ. Chuỗi học: ${streak()} ngày.</p><button class="btn primary" data-act="review-exit">Về danh sách thẻ</button></div></div>`;
+    v.innerHTML = `<div class="fc-wrap"><div class="card empty"><div class="big">🎉</div><h2>Xong rồi!</h2><p>Bạn vừa ôn ${CS.done} thẻ. Chuỗi học: ${streak()} ngày.</p><button class="btn primary" data-act="review-exit">Về bộ thẻ</button></div></div>`;
     renderNav(); return;
   }
   const koFront = DB.settings.dir === "ko";
@@ -4072,7 +4176,7 @@ function cardForm(c) {
     const f = $("#cfFront").value.trim(), b = $("#cfBack").value.trim();
     if (!f || !b) { toast("Hãy nhập đủ 2 mặt thẻ", "err"); return; }
     if (c) Object.assign(c, { front: f, back: b, ex: $("#cfEx").value.trim(), exVi: $("#cfExVi").value.trim() });
-    else if (!addCard({ type: "word", front: f, back: b, ex: $("#cfEx").value.trim(), exVi: $("#cfExVi").value.trim() })) { toast("Thẻ này đã có", "err"); return; }
+    else if (!addCard({ type: "word", front: f, back: b, ex: $("#cfEx").value.trim(), exVi: $("#cfExVi").value.trim(), ...(CS.deck && CS.deck !== MINE ? { lessonId: CS.deck } : {}) })) { toast("Thẻ này đã có", "err"); return; }
     save(); closeModal(); renderCards(); renderNav();
   };
 }
@@ -4083,60 +4187,35 @@ ACT["card-edit"] = el => cardForm(DB.cards.find(c => c.id === el.dataset.id));
    TIẾN ĐỘ
    ========================================================= */
 function renderProgress() {
-  const days = DB.stats.days;
-  const totalDays = Object.values(days).filter(x => (x.r || 0) + (x.s || 0) + (x.l || 0) + (x.w || 0) > 0).length;
-  const lv = { new: 0, learning: 0, known: 0 }; DB.cards.forEach(c => lv[cardLevel(c)]++);
-  const tot = Math.max(1, DB.cards.length);
   const pts = todayPoints(), goal = DB.settings.goal || 30, pct = Math.min(100, Math.round(pts / goal * 100));
-  const td = days[dayKey()] || {};
-  const weeks = 17; const end = new Date(); end.setHours(0, 0, 0, 0);
-  const startD = new Date(end); startD.setDate(end.getDate() - (weeks * 7 - 1) - ((end.getDay() + 6) % 7 === 6 ? 0 : 0));
-  startD.setDate(startD.getDate() - ((startD.getDay() + 6) % 7));
-  let heat = ""; const d = new Date(startD);
-  while (d <= end) {
-    const x = days[dayKey(d)] || {}; const p = (x.r || 0) + (x.s || 0) * 2 + (x.l || 0) * 2 + (x.w || 0);
-    const lvl = p === 0 ? "" : p < 10 ? "l1" : p < 25 ? "l2" : p < 50 ? "l3" : "l4";
-    heat += `<i class="${lvl}" title="${d.getDate()}/${d.getMonth() + 1}: ${p} điểm"></i>`;
-    d.setDate(d.getDate() + 1);
-  }
-  const acc = DB.stats.listenTotal ? Math.round(DB.stats.listenOk / DB.stats.listenTotal * 100) : 0;
+  const due = dueCards().length;
+  const lessons = [...DB.lessons].sort((a, b) => (a.stt ?? 1e9) - (b.stt ?? 1e9));
   $("#view-progress").innerHTML = `
     <h1 style="margin-bottom:14px">Tiến độ học</h1>
-    <div class="prog-hero">
-      <div class="card card-pad goal-card">
-        <div class="ring" style="--p:${pct}"><div><b style="font-size:24px">${pct}%</b><span class="small muted">hôm nay</span></div></div>
-        <div class="stack" style="gap:6px">
-          <h3>Mục tiêu hôm nay: ${goal} điểm</h3>
-          <div class="small muted">Ôn 1 thẻ = 1 điểm · Shadowing 1 câu = 2 · Luyện nghe 1 câu = 2 · Thêm 1 thẻ = 1</div>
-          <div class="small">Hôm nay: <b>${td.r || 0}</b> thẻ đã ôn · <b>${td.s || 0}</b> câu shadowing · <b>${td.l || 0}</b> câu luyện nghe · <b>${td.w || 0}</b> thẻ mới</div>
-          <div class="row"><label class="small">Đổi mục tiêu:</label><select class="select input" id="goalSel" style="width:auto;padding:5px 8px">${[15, 30, 50, 80, 120].map(g => `<option ${g === goal ? "selected" : ""}>${g}</option>`).join("")}</select></div>
+    <div class="pg-top">
+      <div class="card pg-tile pg-goal">
+        <div class="ring" style="--p:${pct}"><div><b>${pct}%</b></div></div>
+        <div><b class="pg-num">${pts}<small>/${goal} điểm</small></b><span>Mục tiêu hôm nay</span>
+          <select class="select input pg-goal-sel" id="goalSel" title="Đổi mục tiêu">${[15, 30, 50, 80, 120].map(g => `<option value="${g}" ${g === goal ? "selected" : ""}>Mục tiêu ${g}</option>`).join("")}</select></div>
+      </div>
+      <div class="card pg-tile" style="--tbg:var(--p-peach)"><span class="pg-ic">${ic("flame")}</span><div><b class="pg-num">${streak()}<small> ngày</small></b><span>Chuỗi ngày học</span></div></div>
+      <div class="card pg-tile" style="--tbg:var(--p-pink)" data-nav="cards"><span class="pg-ic">${ic("book")}</span><div><b class="pg-num">${due}<small> thẻ</small></b><span>Cần ôn hôm nay</span></div></div>
+    </div>
+    <h2 class="sec-title" style="margin:22px 0 12px">Tiến độ từng bài</h2>
+    ${lessons.length ? `<div class="pg-list">${lessons.map(l => {
+      const n = l.sentences.length, dn = l.sentences.filter(s => s.done).length, p = n ? Math.round(dn / n * 100) : 0;
+      const cs = DB.cards.filter(c => c.lessonId === l.id), kn = cs.filter(c => cardLevel(c) === "known").length;
+      const [bg, fg] = topicColor(topicOf(l));
+      return `<div class="card pg-row" style="--tbg:${bg};--tfg:${fg}">
+        <span class="pg-badge">${l.stt != null ? l.stt : ic("book")}</span>
+        <div class="pg-main">
+          <div class="pg-title">${esc(l.title)}</div>
+          <div class="progress"><span style="width:${p}%"></span></div>
+          <div class="small muted">${dn}/${n} câu đã luyện${cs.length ? ` · ${kn}/${cs.length} thẻ đã thuộc` : ""}</div>
         </div>
-      </div>
-      <div class="tiles">
-        <div class="card stat accent"><span class="num">${ic("flame")} ${streak()}</span><span class="lab">ngày liên tiếp</span></div>
-        <div class="card stat"><span class="num">${totalDays}</span><span class="lab">tổng số ngày đã học</span></div>
-        <div class="card stat"><span class="num">${DB.stats.shadow}</span><span class="lab">câu đã shadowing</span></div>
-        <div class="card stat"><span class="num">${acc}%</span><span class="lab">luyện nghe đúng (${DB.stats.listenOk}/${DB.stats.listenTotal})</span></div>
-        <div class="card stat"><span class="num">${DB.cards.filter(c => c.type === "word").length}</span><span class="lab">từ vựng đã lưu</span></div>
-        <div class="card stat"><span class="num">${lv.known}</span><span class="lab">thẻ đã thuộc</span></div>
-      </div>
-    </div>
-    <div class="card card-pad" style="margin-bottom:16px">
-      <h3 style="margin-bottom:10px">Lịch học ${weeks} tuần gần đây</h3>
-      <div class="heat">${heat}</div>
-      <div class="row small muted" style="margin-top:8px;gap:6px">Ít <span class="heat" style="display:inline-grid;grid-template-rows:14px;grid-auto-flow:column"><i></i><i class="l1"></i><i class="l2"></i><i class="l3"></i><i class="l4"></i></span> Nhiều</div>
-    </div>
-    <div class="settings-grid">
-      <div class="card card-pad">
-        <h3 style="margin-bottom:10px">Mức độ nhớ flashcard</h3>
-        <div class="levels"><span style="width:${lv.new / tot * 100}%;background:var(--faint)"></span><span style="width:${lv.learning / tot * 100}%;background:var(--warn)"></span><span style="width:${lv.known / tot * 100}%;background:var(--success)"></span></div>
-        <div class="row small" style="margin-top:8px;gap:14px"><span>⚪ Mới: <b>${lv.new}</b></span><span style="color:var(--warn)">● Đang học: <b>${lv.learning}</b></span><span style="color:var(--success)">● Đã thuộc: <b>${lv.known}</b></span></div>
-      </div>
-      <div class="card card-pad">
-        <h3 style="margin-bottom:10px">Tiến độ từng bài</h3>
-        ${DB.lessons.length ? DB.lessons.map(l => { const n = l.sentences.length, dn = l.sentences.filter(s => s.done).length; return `<div style="margin-bottom:10px"><div class="row between small"><a href="#lesson/${l.id}/script">${esc(l.title)}</a><span class="muted">${dn}/${n}</span></div><div class="progress"><span style="width:${n ? dn / n * 100 : 0}%"></span></div></div>`; }).join("") : `<p class="muted">Chưa có bài học.</p>`}
-      </div>
-    </div>`;
+        <b class="pg-pct">${p}%</b>
+        <button class="btn sm ${p < 100 ? "primary" : ""}" data-go="lesson/${l.id}/script">${p ? (p < 100 ? "Học tiếp" : "Ôn lại") : "Bắt đầu"}</button>
+      </div>`; }).join("")}</div>` : `<div class="card empty">Chưa có bài học.</div>`}`;
   $("#goalSel").onchange = e => { DB.settings.goal = +e.target.value; save(); renderProgress(); };
 }
 
