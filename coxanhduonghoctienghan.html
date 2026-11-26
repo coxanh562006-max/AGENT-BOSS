@@ -3372,7 +3372,9 @@ function renderScriptTab(l, body) {
       ${missingVi && DB.settings.aiKey ? `<button class="btn sm soft" data-act="ai-translate-all">${ic("spark")} AI dịch ${missingVi} câu</button>` : ""}
     </div>
     ${scriptHealthNote(l)}
-    ${PL && PL.ctrl && untimed === l.sentences.length ? `<div class="note" style="margin-bottom:10px">Lời thoại chưa có giờ nên chưa tự nhảy theo video. Bạn có thể tua video tới đầu câu rồi bấm <b>Gắn giờ</b> ở khung bên trái, hoặc dán bản chép lời có giờ của YouTube.</div>` : ""}
+    ${untimed && ["drive", "direct"].includes(l.src.type) ? `<div class="note info" style="margin-bottom:10px">${ic("ear")} Lời thoại chưa có mốc giờ nên chưa chạy theo file ghi âm. Bấm nút dưới rồi chọn đúng file ghi âm này trong máy — AI sẽ nghe và gắn giờ cho từng câu (nội dung câu giữ nguyên).
+      <div class="row" style="margin-top:8px"><button class="btn sm primary" data-act="ai-retime-pick">${ic("spark")} AI căn giờ từ file ghi âm</button></div></div>` : ""}
+    ${PL && PL.ctrl && untimed === l.sentences.length && !["drive", "direct"].includes(l.src.type) ? `<div class="note" style="margin-bottom:10px">Lời thoại chưa có giờ nên chưa tự nhảy theo video. Bạn có thể tua video tới đầu câu rồi bấm <b>Gắn giờ</b> ở khung bên trái, hoặc dán bản chép lời có giờ của YouTube.</div>` : ""}
     <div class="sent-list" id="sentList">${l.sentences.map((s, i) => sentRow(l, s, i)).join("")}</div>`;
   $$("[data-set]", body).forEach(cb => cb.onchange = () => { DB.settings[cb.dataset.set] = cb.checked; save(); renderTab(); renderShadow(); });
   setTimeout(() => scrollRowInList($(`.sent[data-i="${cur.idx}"]`)), 50);
@@ -3799,9 +3801,10 @@ function noteDuration(l, d) {
     if (cur.lessonId === l.id) { renderShadow(); if (cur.tab === "script") renderTab(); }
   } else if (first) save();
 }
-async function aiRetime(l) {
+async function aiRetime(l, pickedFile) {
   let parts;
-  if (l.src.type === "file") {
+  if (pickedFile) parts = [await mediaPart(pickedFile)];   // file ghi âm chọn trong máy (file lớn tự tải lên AI)
+  else if (l.src.type === "file") {
     const u = await lessonFileURL(l); if (!u) throw new Error("Hãy chọn lại file video trước");
     const file = await fetch(u).then(r => r.blob());
     if (file.size > 19 * 1024 * 1024) throw new Error("File lớn hơn 19MB nên AI không nhận được.");
@@ -3810,6 +3813,7 @@ async function aiRetime(l) {
   else throw new Error("AI chỉ căn giờ được video YouTube hoặc file trong máy.");
   parts.push({ text: `Dưới đây là lời thoại tiếng Hàn của video, mỗi câu có số thứ tự [i]. Hãy nghe kỹ video và ghi đúng thời điểm BẮT ĐẦU và KẾT THÚC của từng câu.
 Ghi thời gian dạng "phút:giây" (ví dụ "0:05.2", "1:21.0", "12:03.5") — KHÔNG được viết "121" thay cho 1:21. Không đổi nội dung câu.
+Lưu ý: âm thanh có thể có những khoảng lặng dài (để người học dịch), hãy bỏ qua khoảng lặng và ghi đúng lúc câu thật sự được nói.
 Chỉ trả về JSON mảng cho TẤT CẢ các câu: [{"i":0,"start":"0:01.2","end":"0:03.4"}]
 ${l.sentences.map((s, i) => `[${i}] ${s.lang === "vi" ? "(câu nói tiếng Việt) " + s.vi : s.ko}`).join("\n")}` });
   const res = await gemini(parts, { long: true });
@@ -3823,8 +3827,29 @@ ${l.sentences.map((s, i) => `[${i}] ${s.lang === "vi" ? "(câu nói tiếng Vi�
   l.sentences.sort((a, b) => (a.start ?? 0) - (b.start ?? 0));
   save(); return got;
 }
+/* Bài từ file ghi âm (Drive/mp3) có lời thoại nhưng chưa có giờ: AI nghe file trong máy để gắn giờ cho từng câu */
+ACT["ai-retime-pick"] = el => {
+  const l = curLesson(); if (!l) return;
+  if (!DB.settings.aiKey) { toast("Hãy thêm mã AI trong Cài đặt trước nhé", "err"); return; }
+  const f = $("#hiddenFile"); f.accept = "audio/*,video/*"; f.value = "";
+  f.onchange = async () => {
+    const file = f.files[0]; if (!file) return;
+    if ($("#modal").classList.contains("open")) closeModal();
+    const btn = el && el.isConnected ? el : null;
+    busy(btn, true, "AI đang nghe để căn giờ…"); aiProgress = "";
+    const tk = setInterval(() => { const b = btn && btn.isConnected ? btn : null; if (b) b.innerHTML = `<span class="spinner"></span> ${esc(aiProgress || "AI đang nghe để căn giờ…")}`; }, 500);
+    try {
+      const n = await aiRetime(l, file); clearInterval(tk); aiProgress = ""; busy(btn, false); l.aiScript = true; save();
+      toast(`Đã gắn giờ cho ${n} câu — lời thoại sẽ chạy theo file ghi âm`, "ok");
+      if (cur.lessonId === l.id && cur.view === "lesson") { renderShadow(); renderTab(); }
+      showSheetTranscript(l);
+    } catch (e) { clearInterval(tk); aiProgress = ""; busy(btn, false); toast(e.message, "err"); }
+  };
+  f.click();
+};
 ACT["ai-retime"] = async el => {
   const l = curLesson(); if (!l) return;
+  if (["drive", "direct"].includes(l.src.type)) return ACT["ai-retime-pick"](el);
   if (!DB.settings.aiKey) { toast("Hãy thêm mã AI trong Cài đặt trước nhé", "err"); return; }
   busy(el, true, "AI đang nghe để căn giờ…");
   try { const n = await aiRetime(l); busy(el, false); toast(`Đã căn lại giờ cho ${n} câu`, "ok"); renderShadow(); if (cur.tab === "script") renderTab(); }
@@ -4043,7 +4068,7 @@ function showSheetTranscript(l) {
   const tabTxt = l.sentences.map((s, i) => [i === 0 ? (l.stt ?? "") : "", fmtTime(s.start || 0), s.ko || "", s.vi || "", s.lang === "vi" ? "VI" : "KO"].map(x => String(x).replace(/[\t\n]/g, " ")).join("\t")).join("\n");
   let mode = "tab";
   const hint = () => mode === "tab"
-    ? `<p class="hint" style="margin-top:0">Dán vào tab <b>Lời thoại</b> của sheet: bấm vào ô cột <b>Bài</b> ở dòng trống đầu tiên rồi dán — mỗi câu tự nằm 1 dòng, đủ 5 cột <b>Bài · Thời gian · Tiếng Hàn · Tiếng Việt · Nói</b> (Nói = KO hoặc VI: câu đó được nói bằng tiếng nào). Ô Transcript của bài này ở tab chính để trống.</p>`
+    ? `<p class="hint" style="margin-top:0">Dán vào tab <b>Lời thoại</b> của sheet: bấm vào ô cột <b>Bài</b> ở dòng trống đầu tiên rồi dán — mỗi câu tự nằm 1 dòng, đủ 5 cột <b>Bài · Thời gian · Tiếng Hàn · Tiếng Việt · Nói</b> (Nói = KO hoặc VI: câu đó được nói bằng tiếng nào). Nếu tab đã có các dòng của bài này thì chạm vào ô <b>Bài</b> ở dòng đầu tiên của bài rồi dán đè lên. Ô Transcript của bài này ở tab chính để trống.</p>`
     : `<p class="hint" style="margin-top:0">Dán thẳng vào ô <b>Transcript</b> của bài <b>${esc(l.title)}</b> ở tab chính.</p>`;
   openModal("Lời thoại để dán vào sheet", `<div class="seg" id="trMode" style="margin-bottom:10px"><button class="active" data-m="tab">Dạng bảng (tab Lời thoại)</button><button data-m="cell">Dạng 1 ô</button></div><div id="trHint">${hint()}</div>
     <textarea class="input" id="sheetTr" rows="12" style="min-height:260px;white-space:pre;overflow:auto" readonly>${esc(tabTxt)}</textarea>`,
@@ -4700,7 +4725,7 @@ function renderLessonSettings() {
     time: `<p class="hint" style="margin-top:0">Phụ đề thiếu câu, sai chữ hoặc hiện sớm/muộn hơn lời nói? Chọn cách sửa:</p>
       <div class="ls-row"><span><b>AI chép lại cả bài</b><small>Nghe lại cả video theo từng đoạn 2 phút — đầy đủ câu và đúng giờ hơn</small></span>${canAIListen(curLesson()) ? `<button class="btn primary sm" data-act="ai-redo-all">${ic("spark")} Chép lại</button>` : `<small class="muted">Cần mã AI + video YouTube/file</small>`}</div>
       <div class="ls-row"><span><b>AI nghe lại đoạn này</b><small>Chỉ sửa ~30 giây quanh câu đang chọn (câu ${cur.idx + 1})</small></span>${canAIListen(curLesson()) ? `<button class="btn soft sm" data-act="ai-redo-part">${ic("spark")} Nghe lại</button>` : `<small class="muted">Cần mã AI</small>`}</div>
-      <div class="ls-row"><span><b>AI căn lại giờ</b><small>AI nghe lại video và ghi đúng giờ cho từng câu (giữ nguyên lời thoại)</small></span>${DB.settings.aiKey && ["youtube", "file"].includes((curLesson() || {}).src?.type) ? `<button class="btn soft sm" data-act="ai-retime">${ic("spark")} Căn giờ</button>` : `<small class="muted">Cần mã AI + video YouTube/file</small>`}</div>
+      <div class="ls-row"><span><b>AI căn lại giờ</b><small>AI nghe lại video và ghi đúng giờ cho từng câu (giữ nguyên lời thoại)</small></span>${DB.settings.aiKey && ["youtube", "file", "drive", "direct"].includes((curLesson() || {}).src?.type) ? `<button class="btn soft sm" data-act="ai-retime">${ic("spark")} Căn giờ</button>` : `<small class="muted">Cần mã AI + video YouTube/file</small>`}</div>
       <div class="ls-row"><span><b>Dời tất cả câu</b><small>Khi cả bài lệch đều một khoảng</small></span><div class="seg">${[-1, -0.5, 0.5, 1].map(d => `<button data-act="shift-all" data-d="${d}">${d > 0 ? "+" : ""}${d}s</button>`).join("")}</div></div>
       <div class="ls-row"><span><b>Kiểm tra tất cả bài</b><small>Tìm và tự sửa lỗi AI ghi nhầm giờ (vd “121” thay cho 1:21)</small></span><button class="btn sm" data-act="check-times">Kiểm tra</button></div>
       <p class="hint">Sửa từng câu: tua video tới đúng lúc câu bắt đầu → bấm <b>Căn câu này + các câu sau</b> dưới phần luyện câu.</p>`,
