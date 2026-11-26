@@ -911,6 +911,15 @@ body.sb-collapsed .sb-cal{display:none}
 .fc-main.back-word.long{font-size:min(44px,9vw)}
 .fc-sub{font-size:18px}
 @media (max-width:640px){.flash{height:380px}}
+
+/* File ghi âm (Google Drive / mp3): thẻ nghe pastel thay cho khung video đen */
+.player-wrap.audio-only{aspect-ratio:auto;background:linear-gradient(135deg,var(--p-blue),var(--p-lav));display:flex;flex-direction:column;align-items:stretch;gap:12px;padding:22px 18px 16px}
+.player-wrap.audio-only>.audio-art{position:static;display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center;height:auto}
+.player-wrap.audio-only video{position:static;height:54px;background:transparent;border-radius:999px}
+.audio-logo{width:96px;height:96px;border-radius:50%;background:#fff;padding:6px;box-shadow:0 8px 20px rgba(74,155,224,.25);border:3px solid #fff}
+.audio-logo img{width:100%;height:100%;object-fit:contain;border-radius:50%}
+.audio-art b{font-family:var(--font-round);font-size:18px;color:#24344d;line-height:1.3}
+.audio-art small{display:inline-flex;gap:5px;align-items:center;font-weight:700;color:#4b6382}
 </style>
 </head>
 <body>
@@ -2529,6 +2538,7 @@ function detectSource(url) {
   if ((m = url.match(/tiktok\.com\/.*\/video\/(\d+)/) || url.match(/tiktok\.com\/(?:embed\/v2\/|embed\/|v\/)(\d+)/))) return { type: "tiktok", id: m[1], label: "TikTok", tall: true };
   if (/vm\.tiktok\.com|vt\.tiktok\.com|tiktok\.com\/t\//i.test(url)) return { type: "tiktok-short", label: "TikTok (link rút gọn)" };
   if ((m = url.match(/instagram\.com\/(?:[\w.]+\/)?(?:p|reel|reels|tv)\/([\w-]+)/))) return { type: "instagram", id: m[1], label: "Instagram", tall: true };
+  if ((m = url.match(/drive\.google\.com\/(?:file\/d\/|open\?(?:.*&)?id=|uc\?(?:.*&)?id=)([\w-]{20,})/) || url.match(/drive\.usercontent\.google\.com\/.*[?&]id=([\w-]{20,})/))) return { type: "drive", id: m[1], label: "Google Drive" };
   if (/\.(mp4|webm|ogg|m4v|mov|mp3|m4a|wav|aac)(\?|#|$)/i.test(url)) return { type: "direct", label: "File video/âm thanh trực tiếp" };
   if (/^https?:\/\//i.test(url)) return { type: "link", label: "Link khác (không nhúng được)" };
   return { type: "invalid", label: "Link chưa đúng" };
@@ -3019,8 +3029,8 @@ function buildPlayer(l) {
       iframe(`https://www.youtube.com/embed/${s.id}?playsinline=1&rel=0`, s.short);
       note.innerHTML = isWebOrigin() ? `<div class="note warn">Không tải được bộ điều khiển YouTube (kiểm tra mạng). Video vẫn xem được nhưng không tự phát từng câu.</div>` : localFileWarn(l);
     });
-  } else if (s.type === "direct" || s.type === "file") {
-    const src = s.type === "file" ? SESSION_FILES[l.id] : l.url;
+  } else if (s.type === "direct" || s.type === "file" || s.type === "drive") {
+    const src = s.type === "file" ? SESSION_FILES[l.id] : s.type === "drive" ? `https://drive.google.com/uc?export=download&id=${s.id}` : l.url;
     if (!src && s.type === "file" && l.stored) {
       wrap.className = "player-wrap novideo";
       wrap.innerHTML = `<div class="novideo-inner">${ic("upload")}<div>Đang mở video đã lưu…</div></div>`;
@@ -3033,8 +3043,22 @@ function buildPlayer(l) {
       const v = $("#vid");
       v.playbackRate = cur.rate;
       v.addEventListener("play", renderPlayIcon); v.addEventListener("pause", renderPlayIcon);
-      v.addEventListener("loadedmetadata", () => noteDuration(l, v.duration));
-      v.addEventListener("error", () => { note.innerHTML = `<div class="note warn">Không phát được file này. Hãy thử file .mp4 khác hoặc kiểm tra link.</div>`; });
+      v.addEventListener("loadedmetadata", () => {
+        noteDuration(l, v.duration);
+        if (!v.videoWidth && !wrap.classList.contains("audio-only")) {   // file ghi âm: hiện thẻ nghe thay khung đen
+          wrap.classList.add("audio-only");
+          wrap.insertAdjacentHTML("afterbegin", `<div class="audio-art"><span class="audio-logo">${LOGO_IMG}</span><b>${esc(l.title)}</b><small>${ic("ear")} Bài nghe · lời thoại chạy theo giờ</small></div>`);
+        }
+      });
+      v.addEventListener("error", () => {
+        if (s.type === "drive") {
+          PL.ctrl = false; renderPlayerBar();
+          iframe(`https://drive.google.com/file/d/${s.id}/preview`, false);
+          note.innerHTML = `<div class="note warn">Không phát trực tiếp được file Google Drive này nên lời thoại không tự chạy theo. Kiểm tra: file đã chia sẻ <b>“Bất kỳ ai có đường liên kết”</b> chưa, và file nên nhỏ hơn 100MB (mp3/m4a là tốt nhất).</div>`;
+          return;
+        }
+        note.innerHTML = `<div class="note warn">Không phát được file này. Hãy thử file .mp4 khác hoặc kiểm tra link.</div>`;
+      });
       Object.assign(PL, { ctrl: true, ready: true, play: () => v.play().catch(() => { }), pause: () => v.pause(), seek: t => { v.currentTime = t; }, time: () => v.currentTime || 0, setRate: r => { v.playbackRate = r; }, playing: () => !v.paused && !v.ended, destroy: () => { v.pause(); v.removeAttribute("src"); v.load(); } });
       startPoll();
     }
@@ -3257,7 +3281,7 @@ function renderShadow() {
     </div>
     <div class="hint" style="margin-bottom:2px">${listening ? "Đang luyện nghe — phụ đề được ẩn." : "Bấm vào từng từ trong phụ đề để xem nghĩa. Luyện nói:"}</div>
     <div class="shadow-actions">
-      <button class="btn primary" data-act="play-sent">${ic("play")} <span class="lbl">Nghe câu${vid ? " (video)" : ""}</span></button>
+      <button class="btn primary" data-act="play-sent">${ic("play")} <span class="lbl">Nghe câu${vid ? " (bản gốc)" : ""}</span></button>
       ${s.lang === "vi" ? (s.ko ? `<button class="btn" data-act="tts-ko" title="Giọng máy đọc câu tiếng Hàn tương ứng">${ic("vol")} <span class="lbl">Câu Hàn</span></button>` : "") : vid ? `<button class="btn" data-act="tts-sent" title="Giọng máy đọc">${ic("vol")} <span class="lbl">Giọng máy</span></button>` : `<button class="btn" data-act="tts-slow" title="Đọc chậm">${ic("slow")} <span class="lbl">Đọc chậm</span></button>`}
       <button class="btn ${recording ? "rec" : ""}" data-act="rec">${ic(recording ? "stop" : "mic")} <span class="lbl">${recording ? "Dừng ghi" : "Ghi âm"}</span></button>
     </div>
@@ -3324,11 +3348,13 @@ function refreshSentenceRow(i) {
 }
 function renderScriptTab(l, body) {
   if (!l.sentences.length) {
-    const canAI = ["youtube", "file"].includes(l.src.type);
+    const canAI = ["youtube", "file"].includes(l.src.type), audioLink = ["drive", "direct"].includes(l.src.type);
     body.innerHTML = `<div class="empty"><div class="big">📝</div><p>Bài học chưa có lời thoại.</p>
       <div class="row" style="justify-content:center"><button class="btn primary" data-act="edit-script">${ic("edit")} Dán lời thoại</button>
-      ${canAI ? `<button class="btn soft" data-act="ai-transcribe-lesson">${ic("spark")} AI lấy lời thoại</button>` : ""}</div>
-      ${canAI ? "" : `<p class="hint" style="margin-top:12px">Video ${esc(l.src.label)}: hãy gõ/dán lời thoại tiếng Hàn vào. Muốn AI nghe giúp, tải video về máy rồi tạo bài mới bằng nút <b>File</b>.</p>`}</div>`;
+      ${canAI ? `<button class="btn soft" data-act="ai-transcribe-lesson">${ic("spark")} AI lấy lời thoại</button>` : ""}
+      ${audioLink ? `<button class="btn soft" data-act="ai-transcribe-pick">${ic("spark")} AI chép lời từ file ghi âm</button>` : ""}</div>
+      ${audioLink ? `<p class="hint" style="margin-top:12px">Chọn đúng file ghi âm này trong máy (dưới 19MB) — AI sẽ chép lời kèm giờ và bản dịch, rồi cho bạn bản để dán vào cột Transcript của sheet.</p>` : ""}
+      ${canAI || audioLink ? "" : `<p class="hint" style="margin-top:12px">Video ${esc(l.src.label)}: hãy gõ/dán lời thoại tiếng Hàn vào. Muốn AI nghe giúp, tải video về máy rồi tạo bài mới bằng nút <b>File</b>.</p>`}</div>`;
     return;
   }
   const missingVi = l.sentences.filter(s => s.lang === "vi" ? !s.ko : !s.vi).length;
@@ -3339,6 +3365,7 @@ function renderScriptTab(l, body) {
       <label class="switch small"><input type="checkbox" data-set="showVi" ${DB.settings.showVi ? "checked" : ""}> Bản dịch</label>
       ${PL && PL.ctrl ? `<label class="switch small"><input type="checkbox" data-set="follow" ${DB.settings.follow ? "checked" : ""}> Tự cuộn theo video</label>` : ""}
       <span class="grow"></span>
+      ${l.aiScript ? `<button class="btn sm" data-act="sheet-transcript" title="Lấy bản lời thoại để dán vào cột Transcript của sheet">${ic("list")} Bản cho sheet</button>` : ""}
       ${missingVi && DB.settings.aiKey ? `<button class="btn sm soft" data-act="ai-translate-all">${ic("spark")} AI dịch ${missingVi} câu</button>` : ""}
     </div>
     ${scriptHealthNote(l)}
@@ -3971,6 +3998,31 @@ ACT["ai-redo-part"] = async el => {
     cur.listen = null; cur.qz = null; setIdx(ni); renderShadow(); if (cur.tab === "script") renderTab();
     toast(`Đã sửa đoạn ${fmtTime(a)}–${fmtTime(b)}: ${old.length} câu cũ → ${out.length} câu mới`, "ok");
   } catch (e) { busy(el, false); toast(e.message, "err"); }
+};
+const sheetLine = s => `(${fmtTime(s.start || 0)}) ${s.ko}${s.vi ? ` (${s.vi})` : ""}`;
+function showSheetTranscript(l) {
+  const txt = l.sentences.map(sheetLine).join("\n");
+  openModal("Lời thoại để dán vào sheet", `<p class="hint" style="margin-top:0">Copy rồi dán vào ô <b>Transcript</b> của bài <b>${esc(l.title)}</b> trong Google Sheet, để lời thoại được lưu lâu dài.</p>
+    <textarea class="input" id="sheetTr" rows="12" style="min-height:260px" readonly>${esc(txt)}</textarea>`,
+    `<button class="btn" data-act="modal-close">Đóng</button><button class="btn primary" id="copyTr">${ic("check")} Sao chép</button>`);
+  $("#copyTr").onclick = async () => { const ta = $("#sheetTr"); try { await navigator.clipboard.writeText(ta.value); } catch (e) { ta.select(); document.execCommand("copy"); } toast("Đã sao chép — dán vào cột Transcript trong sheet nhé", "ok"); };
+}
+ACT["sheet-transcript"] = () => { const l = curLesson(); if (l && l.sentences.length) showSheetTranscript(l); };
+ACT["ai-transcribe-pick"] = el => {
+  const l = curLesson(); if (!l) return;
+  if (!DB.settings.aiKey) { toast("Hãy thêm mã AI trong Cài đặt trước nhé", "err"); return; }
+  const f = $("#hiddenFile"); f.accept = "audio/*,video/*"; f.value = "";
+  f.onchange = async () => {
+    const file = f.files[0]; if (!file) return;
+    busy(el, true, "AI đang nghe file ghi âm…");
+    try {
+      const out = await aiTranscribe({ file, src: { type: "file" }, summary: l.summary, bi: l.bi });
+      l.sentences = out.map(s => ({ ...s, done: false })); l.tchk = TCHK; l.aiScript = true; delete l.quiz; cur.idx = 0; save();
+      renderTab(); renderShadow(); toast(`AI đã chép ${out.length} câu`, "ok");
+      showSheetTranscript(l);
+    } catch (e) { busy(el, false); toast(e.message, "err"); }
+  };
+  f.click();
 };
 ACT["ai-transcribe-lesson"] = async el => {
   const l = curLesson();
@@ -5142,7 +5194,7 @@ function renderListenTab(l, body) {
     <div class="progress" style="margin:8px 0 12px"><span style="width:${L.pos / L.order.length * 100}%"></span></div>
     <div class="listen-box">
       <div class="row" style="justify-content:center">
-        <button class="btn primary lg" data-act="listen-play">${ic("play")} Nghe${vid ? " (video)" : ""}</button>
+        <button class="btn primary lg" data-act="listen-play">${ic("play")} Nghe${vid ? " (bản gốc)" : ""}</button>
         <button class="btn lg" data-act="listen-slow">${ic("slow")} Nghe chậm</button>
         ${vid ? `<button class="btn lg" data-act="listen-tts" title="Giọng máy đọc">${ic("vol")}</button>` : ""}
       </div>
@@ -5587,7 +5639,7 @@ async function syncSheet(opt = {}) {
         if (old.trHash !== h) {
           const doneSet = new Set(old.sentences.filter(s => s.done).map(s => s.ko));
           old.sentences = sheetTranscript(tr).map(s => ({ ...s, done: doneSet.has(s.ko) }));
-          old.trHash = h; delete old.quiz; delete old.healthOk; old.idx = 0;
+          old.trHash = h; delete old.quiz; delete old.healthOk; delete old.aiScript; old.idx = 0;
           if (cur.lessonId === id) { cur.idx = 0; cur.listen = null; cur.qz = null; }
         }
         if (before !== JSON.stringify([old.title, old.url, old.topic, old.level, old.sheetVocab, old.sheetGrammar, old.sheetPron, old.trHash])) updated++;
