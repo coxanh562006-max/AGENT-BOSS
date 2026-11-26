@@ -3030,7 +3030,7 @@ function buildPlayer(l) {
       note.innerHTML = isWebOrigin() ? `<div class="note warn">Không tải được bộ điều khiển YouTube (kiểm tra mạng). Video vẫn xem được nhưng không tự phát từng câu.</div>` : localFileWarn(l);
     });
   } else if (s.type === "direct" || s.type === "file" || s.type === "drive") {
-    const src = s.type === "file" ? SESSION_FILES[l.id] : s.type === "drive" ? `https://drive.google.com/uc?export=download&id=${s.id}` : l.url;
+    const src = s.type === "file" ? SESSION_FILES[l.id] : s.type === "drive" ? `https://drive.usercontent.google.com/download?id=${s.id}&export=download&confirm=t` : l.url;
     if (!src && s.type === "file" && l.stored) {
       wrap.className = "player-wrap novideo";
       wrap.innerHTML = `<div class="novideo-inner">${ic("upload")}<div>Đang mở video đã lưu…</div></div>`;
@@ -3051,10 +3051,13 @@ function buildPlayer(l) {
         }
       });
       v.addEventListener("error", () => {
+        if (s.type === "drive" && !v.dataset.retry) {   // thử link Drive kiểu cũ trước khi chuyển sang khung xem
+          v.dataset.retry = "1"; v.src = `https://drive.google.com/uc?export=download&id=${s.id}`; return;
+        }
         if (s.type === "drive") {
           PL.ctrl = false; renderPlayerBar();
           iframe(`https://drive.google.com/file/d/${s.id}/preview`, false);
-          note.innerHTML = `<div class="note warn">Không phát trực tiếp được file Google Drive này nên lời thoại không tự chạy theo. Kiểm tra: file đã chia sẻ <b>“Bất kỳ ai có đường liên kết”</b> chưa, và file nên nhỏ hơn 100MB (mp3/m4a là tốt nhất).</div>`;
+          note.innerHTML = `<div class="note warn">Không phát trực tiếp được file Google Drive này nên lời thoại không tự chạy theo. Kiểm tra: file đã chia sẻ <b>“Bất kỳ ai có đường liên kết”</b> chưa, rồi tải lại trang.</div>`;
           return;
         }
         note.innerHTML = `<div class="note warn">Không phát được file này. Hãy thử file .mp4 khác hoặc kiểm tra link.</div>`;
@@ -3353,7 +3356,7 @@ function renderScriptTab(l, body) {
       <div class="row" style="justify-content:center"><button class="btn primary" data-act="edit-script">${ic("edit")} Dán lời thoại</button>
       ${canAI ? `<button class="btn soft" data-act="ai-transcribe-lesson">${ic("spark")} AI lấy lời thoại</button>` : ""}
       ${audioLink ? `<button class="btn soft" data-act="ai-transcribe-pick">${ic("spark")} AI chép lời từ file ghi âm</button>` : ""}</div>
-      ${audioLink ? `<p class="hint" style="margin-top:12px">Chọn đúng file ghi âm này trong máy (dưới 19MB) — AI sẽ chép lời kèm giờ và bản dịch, rồi cho bạn bản để dán vào cột Transcript của sheet.</p>` : ""}
+      ${audioLink ? `<p class="hint" style="margin-top:12px">Chọn đúng file ghi âm này trong máy — AI sẽ chép lời kèm giờ và bản dịch, rồi cho bạn bản để dán vào cột Transcript của sheet.</p>` : ""}
       ${canAI || audioLink ? "" : `<p class="hint" style="margin-top:12px">Video ${esc(l.src.label)}: hãy gõ/dán lời thoại tiếng Hàn vào. Muốn AI nghe giúp, tải video về máy rồi tạo bài mới bằng nút <b>File</b>.</p>`}</div>`;
     return;
   }
@@ -3861,9 +3864,44 @@ function ytDuration(id) {
     loadYT().then(() => { pl = new YT.Player(inner, { videoId: id, playerVars: { mute: 1, playsinline: 1 }, events: { onReady: () => { try { fin(pl.getDuration()); } catch (e) { fin(null); } }, onError: () => fin(null) } }); }).catch(() => fin(null));
   });
 }
+/* File lớn: tải lên Gemini File API (tối đa 2GB), chờ xử lý xong rồi dùng fileData */
+async function geminiUpload(file) {
+  const key = (DB.settings.aiKey || "").trim(), type = file.type || "video/mp4";
+  if (file.size > 1900 * 1024 * 1024) throw new Error("File lớn hơn 2GB nên AI không nhận được.");
+  aiProgress = "Đang chuẩn bị tải file lên AI…";
+  let start;
+  try {
+    start = await fetch("https://generativelanguage.googleapis.com/upload/v1beta/files", {
+      method: "POST",
+      headers: { "x-goog-api-key": key, "X-Goog-Upload-Protocol": "resumable", "X-Goog-Upload-Command": "start", "X-Goog-Upload-Header-Content-Length": String(file.size), "X-Goog-Upload-Header-Content-Type": type, "Content-Type": "application/json" },
+      body: JSON.stringify({ file: { display_name: (file.name || "ghi-am").slice(0, 100) } }),
+    });
+  } catch (e) { throw new Error("Không kết nối được tới AI để tải file lên. Kiểm tra mạng Internet."); }
+  if (!start.ok) { let m = ""; try { m = (await start.json()).error?.message || ""; } catch (e) { } throw new Error("AI không nhận file (" + start.status + (m ? ": " + m : "") + ")."); }
+  const url = start.headers.get("x-goog-upload-url");
+  if (!url) throw new Error("Trình duyệt không lấy được địa chỉ tải file lên AI. Hãy thử Chrome bản mới.");
+  const info = await new Promise((res, rej) => {
+    const x = new XMLHttpRequest();
+    x.open("POST", url);
+    x.setRequestHeader("X-Goog-Upload-Command", "upload, finalize"); x.setRequestHeader("X-Goog-Upload-Offset", "0");
+    x.upload.onprogress = e => { if (e.lengthComputable) aiProgress = `Đang tải file lên AI: ${Math.round(e.loaded / e.total * 100)}% (${Math.round(e.total / 1048576)}MB)`; };
+    x.onload = () => { try { const d = JSON.parse(x.responseText); d.file ? res(d.file) : rej(new Error("AI không nhận file.")); } catch (e) { rej(new Error("AI không nhận file.")); } };
+    x.onerror = () => rej(new Error("Mất mạng khi đang tải file lên AI. Thử lại nhé."));
+    x.send(file);
+  });
+  let f = info;
+  for (let i = 0; f.state === "PROCESSING" && i < 120; i++) {
+    aiProgress = "AI đang mở file video… (" + (i * 3) + " giây)";
+    await sleepMs(3000);
+    const r = await fetch("https://generativelanguage.googleapis.com/v1beta/" + f.name, { headers: { "x-goog-api-key": key } });
+    if (r.ok) f = await r.json();
+  }
+  if (f.state && f.state !== "ACTIVE") throw new Error("AI chưa xử lý xong file (trạng thái " + f.state + "). Thử lại sau ít phút.");
+  return { fileData: { fileUri: f.uri, mimeType: f.mimeType || type } };
+}
 async function mediaPart(file, src) {
   if (file) {
-    if (file.size > 19 * 1024 * 1024) throw new Error("File lớn hơn 19MB nên AI không nhận được. Hãy cắt ngắn video hoặc dùng file âm thanh (mp3/m4a).");
+    if (file.size > 19 * 1024 * 1024) return geminiUpload(file);
     return { inlineData: { mimeType: file.type || "video/mp4", data: await fileToBase64(file) } };
   }
   if (src && src.type === "youtube") return { fileData: { fileUri: "https://www.youtube.com/watch?v=" + src.id, mimeType: "video/*" } };
@@ -3999,13 +4037,13 @@ ACT["ai-redo-part"] = async el => {
     toast(`Đã sửa đoạn ${fmtTime(a)}–${fmtTime(b)}: ${old.length} câu cũ → ${out.length} câu mới`, "ok");
   } catch (e) { busy(el, false); toast(e.message, "err"); }
 };
-const sheetLine = s => `(${fmtTime(s.start || 0)}) ${s.ko}${s.vi ? ` (${s.vi})` : ""}`;
+const sheetLine = s => `(${fmtTime(s.start || 0)}) ${s.lang === "vi" ? `[VI] ${s.vi}${s.ko ? ` | ${s.ko}` : ""}` : `${s.ko}${s.vi ? ` (${s.vi})` : ""}`}`;
 function showSheetTranscript(l) {
   const cellTxt = l.sentences.map(sheetLine).join("\n");
-  const tabTxt = l.sentences.map((s, i) => [i === 0 ? (l.stt ?? "") : "", fmtTime(s.start || 0), s.ko, s.vi || ""].map(x => String(x).replace(/[\t\n]/g, " ")).join("\t")).join("\n");
+  const tabTxt = l.sentences.map((s, i) => [i === 0 ? (l.stt ?? "") : "", fmtTime(s.start || 0), s.ko || "", s.vi || "", s.lang === "vi" ? "VI" : "KO"].map(x => String(x).replace(/[\t\n]/g, " ")).join("\t")).join("\n");
   let mode = "tab";
   const hint = () => mode === "tab"
-    ? `<p class="hint" style="margin-top:0">Dán vào tab <b>Lời thoại</b> của sheet: bấm vào ô cột <b>Bài</b> ở dòng trống đầu tiên rồi dán — mỗi câu tự nằm 1 dòng, đủ 4 cột <b>Bài · Thời gian · Tiếng Hàn · Tiếng Việt</b>. Ô Transcript của bài này ở tab chính để trống.</p>`
+    ? `<p class="hint" style="margin-top:0">Dán vào tab <b>Lời thoại</b> của sheet: bấm vào ô cột <b>Bài</b> ở dòng trống đầu tiên rồi dán — mỗi câu tự nằm 1 dòng, đủ 5 cột <b>Bài · Thời gian · Tiếng Hàn · Tiếng Việt · Nói</b> (Nói = KO hoặc VI: câu đó được nói bằng tiếng nào). Ô Transcript của bài này ở tab chính để trống.</p>`
     : `<p class="hint" style="margin-top:0">Dán thẳng vào ô <b>Transcript</b> của bài <b>${esc(l.title)}</b> ở tab chính.</p>`;
   openModal("Lời thoại để dán vào sheet", `<div class="seg" id="trMode" style="margin-bottom:10px"><button class="active" data-m="tab">Dạng bảng (tab Lời thoại)</button><button data-m="cell">Dạng 1 ô</button></div><div id="trHint">${hint()}</div>
     <textarea class="input" id="sheetTr" rows="12" style="min-height:260px;white-space:pre;overflow:auto" readonly>${esc(tabTxt)}</textarea>`,
@@ -4017,19 +4055,34 @@ ACT["sheet-transcript"] = () => { const l = curLesson(); if (l && l.sentences.le
 ACT["ai-transcribe-pick"] = el => {
   const l = curLesson(); if (!l) return;
   if (!DB.settings.aiKey) { toast("Hãy thêm mã AI trong Cài đặt trước nhé", "err"); return; }
+  const guessBi = l.bi || /phiên dịch|phien dich|통역/i.test(`${l.title} ${l.topic || ""} ${l.url || ""}`);
+  openModal("File ghi âm này nói bằng gì?", `<p class="hint" style="margin-top:0">Chọn đúng loại để AI chép đủ cả câu tiếng Việt khi là bài phiên dịch.</p>
+    <div class="stack" style="gap:10px">
+      <button class="btn lg ${guessBi ? "" : "primary"}" data-pick="ko">Chỉ tiếng Hàn</button>
+      <button class="btn lg ${guessBi ? "primary" : ""}" data-pick="bi">Hàn + Việt xen kẽ (phiên dịch)</button>
+    </div><p class="hint">Sau đó chọn đúng file này trong máy. File lớn (vd 100MB+) sẽ được tải lên AI trước — cần mạng ổn định, có thể mất vài phút.</p>`,
+    `<button class="btn" data-act="modal-close">Huỷ</button>`);
+  $$("#modal [data-pick]").forEach(b => b.onclick = () => { const bi = b.dataset.pick === "bi"; closeModal(); pickAndTranscribe(el, l, bi); });
+};
+function pickAndTranscribe(el, l, bi) {
   const f = $("#hiddenFile"); f.accept = "audio/*,video/*"; f.value = "";
   f.onchange = async () => {
     const file = f.files[0]; if (!file) return;
     busy(el, true, "AI đang nghe file ghi âm…");
+    aiProgress = "";
+    const tk = setInterval(() => { if (el && el.isConnected) el.innerHTML = `<span class="spinner"></span> ${esc(aiProgress || "AI đang nghe file ghi âm…")}`; }, 500);
     try {
-      const out = await aiTranscribe({ file, src: { type: "file" }, summary: l.summary, bi: l.bi });
-      l.sentences = out.map(s => ({ ...s, done: false })); l.tchk = TCHK; l.aiScript = true; delete l.quiz; cur.idx = 0; save();
-      renderTab(); renderShadow(); toast(`AI đã chép ${out.length} câu`, "ok");
+      const out = await aiTranscribe({ file, src: { type: "file" }, summary: l.summary, bi });
+      clearInterval(tk);
+      l.sentences = out.map(s => ({ ...s, done: false })); l.tchk = TCHK; l.aiScript = true; l.aiBi = bi; l.bi = bi || out.some(s => s.lang === "vi");
+      delete l.quiz; cur.idx = 0; cur.listen = null; save();
+      if (cur.lessonId === l.id && cur.view === "lesson") { renderTab(); renderShadow(); }
+      toast(`AI đã chép ${out.length} câu`, "ok");
       showSheetTranscript(l);
-    } catch (e) { busy(el, false); toast(e.message, "err"); }
+    } catch (e) { clearInterval(tk); aiProgress = ""; busy(el, false); toast(e.message, "err"); }
   };
   f.click();
-};
+}
 ACT["ai-transcribe-lesson"] = async el => {
   const l = curLesson();
   if (!DB.settings.aiKey) { toast("Hãy thêm mã AI trong Cài đặt trước nhé", "err"); return; }
@@ -5567,6 +5620,14 @@ function sheetTranscript(text) {
     let t = null, body = line;
     if (m && m[2] !== undefined) { t = parseTime(m[1]); body = m[2]; }
     if (!body.trim()) continue;
+    const vm = body.match(/^\[(VI|VN|VIỆT|VIET)\]\s*(.*)$/i);
+    if (vm) {   // câu nói bằng tiếng Việt (bài phiên dịch): "[VI] câu Việt | câu Hàn"
+      let vTxt = vm[2].trim(), kTxt = "";
+      const bar = vTxt.split(/\s+\|\s+/);
+      if (bar.length >= 2) { vTxt = bar[0].trim(); kTxt = bar.slice(1).join(" ").trim(); }
+      if (vTxt) out.push({ lang: "vi", vi: vTxt, ko: HG.isHangul(kTxt) ? kTxt : "", start: t, end: null, done: false });
+      continue;
+    }
     const { ko, vi } = splitKoVi(body);
     if (!HG.isHangul(ko)) { const p = out[out.length - 1]; if (p) p.vi = (p.vi ? p.vi + " " : "") + body.replace(/^\(|\)$/g, ""); continue; }
     out.push({ ko, vi, start: t, end: null, done: false });
@@ -5606,6 +5667,7 @@ const TR_COLS = [
   ["time", h => /thoi gian|time|^gio|moc/.test(h)],
   ["ko", h => /tieng han|^han$|korean|cau han|^ko$/.test(h)],
   ["vi", h => /tieng viet|^viet$|nghia|dich|vietnam/.test(h)],
+  ["lang", h => /^noi$|nguoi noi|ngon ngu|^lang/.test(h)],
 ];
 async function fetchTranscriptTab(link) {
   const m = String(link || "").match(/\/spreadsheets\/d\/([\w-]{20,})/); if (!m) return null;
@@ -5622,9 +5684,10 @@ async function fetchTranscriptTab(link) {
       rows.slice(1).forEach(r => {
         const g = k => (col[k] != null ? String(r[col[k]] || "").trim() : "");
         const bai = parseInt(g("bai"), 10) || lastBai; if (!bai) return; lastBai = bai;
-        const ko = g("ko"); if (!ko) return;
-        const t = g("time").replace(/^[\[(]|[\])]$/g, ""), vi = g("vi");
-        (out[bai] = out[bai] || []).push(`${t ? `(${t}) ` : ""}${ko}${vi ? ` (${vi})` : ""}`);
+        const ko = g("ko"), vi = g("vi"), t = g("time").replace(/^[\[(]|[\])]$/g, "");
+        const viSpoken = /^v/i.test(normHead(g("lang"))) || (!ko && vi);
+        if (!ko && !vi) return;
+        (out[bai] = out[bai] || []).push(`${t ? `(${t}) ` : ""}${viSpoken ? `[VI] ${vi}${ko ? ` | ${ko}` : ""}` : `${ko}${vi ? ` (${vi})` : ""}`}`);
       });
       const res = {}; Object.keys(out).forEach(k => { res[k] = out[k].join("\n"); });
       return res;
@@ -5687,6 +5750,7 @@ async function syncSheet(opt = {}) {
         if (before !== JSON.stringify([old.title, old.url, old.topic, old.level, old.sheetVocab, old.sheetGrammar, old.sheetPron, old.trHash])) updated++;
       }
     });
+    DB.lessons.forEach(l => { if (l.fromSheet) l.bi = !!l.aiBi || l.sentences.some(s => s.lang === "vi"); });
     const gone = DB.lessons.filter(l => l.fromSheet && !seen.has(l.id));
     if (gone.length) { DB.lessons = DB.lessons.filter(l => !gone.includes(l)); if (gone.some(l => l.id === cur.lessonId)) { destroyPlayer(); cur.lessonId = null; } }
     DB.sheetSync = { at: Date.now(), n: seen.size };
