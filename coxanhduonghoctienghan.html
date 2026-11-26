@@ -4001,11 +4001,17 @@ ACT["ai-redo-part"] = async el => {
 };
 const sheetLine = s => `(${fmtTime(s.start || 0)}) ${s.ko}${s.vi ? ` (${s.vi})` : ""}`;
 function showSheetTranscript(l) {
-  const txt = l.sentences.map(sheetLine).join("\n");
-  openModal("Lời thoại để dán vào sheet", `<p class="hint" style="margin-top:0">Copy rồi dán vào ô <b>Transcript</b> của bài <b>${esc(l.title)}</b> trong Google Sheet, để lời thoại được lưu lâu dài.</p>
-    <textarea class="input" id="sheetTr" rows="12" style="min-height:260px" readonly>${esc(txt)}</textarea>`,
+  const cellTxt = l.sentences.map(sheetLine).join("\n");
+  const tabTxt = l.sentences.map((s, i) => [i === 0 ? (l.stt ?? "") : "", fmtTime(s.start || 0), s.ko, s.vi || ""].map(x => String(x).replace(/[\t\n]/g, " ")).join("\t")).join("\n");
+  let mode = "tab";
+  const hint = () => mode === "tab"
+    ? `<p class="hint" style="margin-top:0">Dán vào tab <b>Lời thoại</b> của sheet: bấm vào ô cột <b>Bài</b> ở dòng trống đầu tiên rồi dán — mỗi câu tự nằm 1 dòng, đủ 4 cột <b>Bài · Thời gian · Tiếng Hàn · Tiếng Việt</b>. Ô Transcript của bài này ở tab chính để trống.</p>`
+    : `<p class="hint" style="margin-top:0">Dán thẳng vào ô <b>Transcript</b> của bài <b>${esc(l.title)}</b> ở tab chính.</p>`;
+  openModal("Lời thoại để dán vào sheet", `<div class="seg" id="trMode" style="margin-bottom:10px"><button class="active" data-m="tab">Dạng bảng (tab Lời thoại)</button><button data-m="cell">Dạng 1 ô</button></div><div id="trHint">${hint()}</div>
+    <textarea class="input" id="sheetTr" rows="12" style="min-height:260px;white-space:pre;overflow:auto" readonly>${esc(tabTxt)}</textarea>`,
     `<button class="btn" data-act="modal-close">Đóng</button><button class="btn primary" id="copyTr">${ic("check")} Sao chép</button>`);
-  $("#copyTr").onclick = async () => { const ta = $("#sheetTr"); try { await navigator.clipboard.writeText(ta.value); } catch (e) { ta.select(); document.execCommand("copy"); } toast("Đã sao chép — dán vào cột Transcript trong sheet nhé", "ok"); };
+  $$("#trMode button").forEach(b => b.onclick = () => { mode = b.dataset.m; $$("#trMode button").forEach(x => x.classList.toggle("active", x === b)); $("#trHint").innerHTML = hint(); $("#sheetTr").value = mode === "tab" ? tabTxt : cellTxt; });
+  $("#copyTr").onclick = async () => { const ta = $("#sheetTr"); try { await navigator.clipboard.writeText(ta.value); } catch (e) { ta.select(); document.execCommand("copy"); } toast(mode === "tab" ? "Đã sao chép — dán vào tab Lời thoại nhé" : "Đã sao chép — dán vào ô Transcript nhé", "ok"); };
 }
 ACT["sheet-transcript"] = () => { const l = curLesson(); if (l && l.sentences.length) showSheetTranscript(l); };
 ACT["ai-transcribe-pick"] = el => {
@@ -5592,6 +5598,40 @@ function topicToCat(topic) {
   return c ? c[0] : "other";
 }
 const strHash = s => { let h = 0; s = String(s || ""); for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0; return (h >>> 0).toString(36); };
+/* Tab "Lời thoại" (không bắt buộc): mỗi câu 1 dòng — cột Bài/STT · Thời gian · Tiếng Hàn · Tiếng Việt.
+   Ô "Bài" để trống thì hiểu là cùng bài với dòng trên. Bài nào ô Transcript ở tab chính trống sẽ lấy lời thoại từ đây. */
+const TR_TAB_NAMES = ["Lời thoại", "Loi thoai", "Transcript"];
+const TR_COLS = [
+  ["bai", h => /^stt$|^bai|so bai|^#$/.test(h)],
+  ["time", h => /thoi gian|time|^gio|moc/.test(h)],
+  ["ko", h => /tieng han|^han$|korean|cau han|^ko$/.test(h)],
+  ["vi", h => /tieng viet|^viet$|nghia|dich|vietnam/.test(h)],
+];
+async function fetchTranscriptTab(link) {
+  const m = String(link || "").match(/\/spreadsheets\/d\/([\w-]{20,})/); if (!m) return null;
+  for (const name of TR_TAB_NAMES) {
+    try {
+      const r = await fetch(`https://docs.google.com/spreadsheets/d/${m[1]}/gviz/tq?tqx=out:csv&headers=1&sheet=${encodeURIComponent(name)}`, { cache: "no-store" });
+      const txt = await r.text(); if (!r.ok || /^\s*<(!doctype|html)/i.test(txt)) continue;
+      const rows = parseCSV(txt); if (!rows.length) continue;
+      const heads = rows[0].map(normHead), col = {};
+      if (heads.some(h => /tieu de|trans/.test(h))) continue;   // gviz trả về tab chính khi không có tab này
+      TR_COLS.forEach(([k, test]) => { const i = heads.findIndex((h, j) => test(h) && !Object.values(col).includes(j)); if (i >= 0) col[k] = i; });
+      if (col.bai == null || col.ko == null) continue;
+      const out = {}; let lastBai = null;
+      rows.slice(1).forEach(r => {
+        const g = k => (col[k] != null ? String(r[col[k]] || "").trim() : "");
+        const bai = parseInt(g("bai"), 10) || lastBai; if (!bai) return; lastBai = bai;
+        const ko = g("ko"); if (!ko) return;
+        const t = g("time").replace(/^[\[(]|[\])]$/g, ""), vi = g("vi");
+        (out[bai] = out[bai] || []).push(`${t ? `(${t}) ` : ""}${ko}${vi ? ` (${vi})` : ""}`);
+      });
+      const res = {}; Object.keys(out).forEach(k => { res[k] = out[k].join("\n"); });
+      return res;
+    } catch (e) { }
+  }
+  return null;
+}
 async function fetchSheetRows(link) {
   const urls = sheetCsvUrls(link);
   if (!urls) throw new Error("Link sheet chưa đúng. Hãy copy link trên thanh địa chỉ khi đang mở Google Sheet (dạng docs.google.com/spreadsheets/d/…).");
@@ -5616,13 +5656,15 @@ async function syncSheet(opt = {}) {
   SHEET.busy = true; SHEET.status = "loading"; refreshSheetUI();
   try {
     const rows = await fetchSheetRows(link);
+    const trTab = await fetchTranscriptTab(link).catch(() => null);
     const { col, headerRow } = sheetColumns(rows);
     const cell = (r, k) => (col[k] != null ? String(r[col[k]] || "").trim() : "");
     const seen = new Set(); let added = 0, updated = 0;
     rows.slice(headerRow + 1).forEach((r, k) => {
-      const tr = cell(r, "transcript"), title = cell(r, "title"), sttRaw = cell(r, "stt");
+      let tr = cell(r, "transcript"); const title = cell(r, "title"), sttRaw = cell(r, "stt");
       if (!tr && !title) return;
       const stt = parseInt(sttRaw, 10) || k + 1;
+      if (!tr && trTab && trTab[stt]) tr = trTab[stt];
       const id = "sh-" + stt; if (seen.has(id)) return; seen.add(id);
       const link = cell(r, "link"), src = detectSource(link) || { type: "none", label: "Không có video" };
       const topic = cell(r, "topic"), level = cell(r, "level");
